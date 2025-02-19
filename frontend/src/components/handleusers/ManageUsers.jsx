@@ -7,22 +7,25 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SaveIcon from '@mui/icons-material/Save';
+import { useLanguage } from "../../languagecontext";
 
 const ManageUsers = () => {
 
+    const { t } = useLanguage();
+
     const [searchedName, setSearchedName] = useState('');
-    const [selectedRole, setSelectedRole] = useState('All');
+    const [selectedRole, setSelectedRole] = useState("all");
     const [orderState, setOrderState] = useState('Down');
     const [selectedOrder, setSelectedOrder] = useState('Name');
 
     const [users, setUsers] = useState({
-        user1: { id: "1", name: "Sara Oualha", role: "Trainer", email: "Sara.Oualha@groupe-telnet.net", password: "password" , modified: false},
-        user2: { id: "2", name: "Mohamed Dhouib", role: "Trainer", email: "Mohamed.Dhouib@groupe-telnet.net", password: "password", modified: false},
-        user3: { id: "3", name: "Mohamed Dhouib", role: "Trainer", email: "Mohamed.Dhouib@groupe-telnet.net", password: "password", modified: false},
-        user4: { id: "4", name: "Mohamed Dhouib", role: "Trainer", email: "Mohamed.Dhouib@groupe-telnet.net", password: "password", modified: false },
-        user5: { id: "5", name: "Mohamed Dhouib", role: "Trainer", email: "Mohamed.Dhouib@groupe-telnet.net", password: "password", modified: false},
-        user6: { id: "6", name: "Mohamed Dhouib", role: "Trainer", email: "Mohamed.Dhouib@groupe-telnet.net", password: "password", modified: false},
-        user7: { id: "7", name: "Mohamed Dhouib", role: "Trainer", email: "Mohamed.Dhouib@groupe-telnet.net", password: "password", modified: false },
+        user1: { id: "1", name: "Sara Oualha", role: "trainer", email: "Sara.Oualha@groupe-telnet.net", password: "password" , modified: false},
+        user2: { id: "2", name: "Mohamed Dhouib", role: "trainer", email: "Mohamed.Dhouib@groupe-telnet.net", password: "password", modified: false},
+        user3: { id: "3", name: "Mohamed Dhouib", role: "trainer", email: "Mohamed.Dhouib@groupe-telnet.net", password: "password", modified: false},
+        user4: { id: "4", name: "Mohamed Dhouib", role: "trainer", email: "Mohamed.Dhouib@groupe-telnet.net", password: "password", modified: false },
+        user5: { id: "5", name: "Mohamed Dhouib", role: "trainer", email: "Mohamed.Dhouib@groupe-telnet.net", password: "password", modified: false},
+        user6: { id: "6", name: "Mohamed Dhouib", role: "trainer", email: "Mohamed.Dhouib@groupe-telnet.net", password: "password", modified: false},
+        user7: { id: "7", name: "Mohamed Dhouib", role: "trainer", email: "Mohamed.Dhouib@groupe-telnet.net", password: "password", modified: false },
     });
 
     const handleSearchChange = (e) => {
@@ -80,7 +83,7 @@ const ManageUsers = () => {
             ...prevUsers,
             [Object.keys(prevUsers).find(key => prevUsers[key].id === id)]: {
                 ...prevUsers[Object.keys(prevUsers).find(key => prevUsers[key].id === id)],
-                role: e.target.value,
+                role: e.target.value.toLowerCase(),
                 modified: true
             }
         }));
@@ -120,13 +123,13 @@ const ManageUsers = () => {
         setUsers({});
     };
 
-    const FilterRoles = ["All","Trainer", "Trainee"];
-    const UserRoles = ["Trainer", "Trainee"];
+
+    const FilterRoles = ["all","trainer","trainee"];
+    const UserRoles = ["trainer", "trainee"];
 
     const orderStyle = {
         color: "text.primary",
     }
-
     return (
         <Box
             sx={{
@@ -160,7 +163,7 @@ const ManageUsers = () => {
                     top: '5%',
                 }}
             >
-                Manage Users
+                {t("manage_users")}
             </Typography>
             <Box
                 sx={{
@@ -174,7 +177,7 @@ const ManageUsers = () => {
                 }}
             >
                 <Input
-                    placeholder="Search by Name"
+                    placeholder={t("search_by_name")}
                     value={searchedName}
                     onChange={handleSearchChange}
                     sx={{
@@ -200,8 +203,8 @@ const ManageUsers = () => {
                 </Input>
                 <TextField
                     select
-                    label="Role"
-                    defaultValue="All"
+                    label={t("role")}
+
                     value={selectedRole}
                     onChange={handleFilterRoleChange}
                     sx={{
@@ -210,7 +213,7 @@ const ManageUsers = () => {
                     >
                     {FilterRoles.map((role) => (
                         <MenuItem key={role} value={role}>
-                            {role}
+                            {t(role)}
                         </MenuItem>
                     ))}
                 </TextField>
@@ -242,7 +245,7 @@ const ManageUsers = () => {
                         onClick={() => handleChangeOrder("Name")}
                     >
                         <Typography>
-                            Name
+                            {t("name")}
                         </Typography>
                         {selectedOrder === "Name" ? (orderState === "Up" ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />) : null}
                     </Button>
@@ -251,7 +254,7 @@ const ManageUsers = () => {
                         onClick={() => handleChangeOrder("Email")}
                     >
                         <Typography>
-                            Email
+                            {t("email")}
                         </Typography>
                         {selectedOrder === "Email" ? (orderState === "Up" ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />) : null}
                     </Button>
@@ -260,7 +263,7 @@ const ManageUsers = () => {
                         onClick={() => handleChangeOrder("Password")}
                     >
                         <Typography>
-                            Password
+                            {t("password")}
                         </Typography>
                         {selectedOrder === "Password" ? (orderState === "Up" ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />) : null}
                     </Button>
@@ -269,17 +272,17 @@ const ManageUsers = () => {
                         onClick={() => handleChangeOrder("Role")}
                     >
                         <Typography>
-                            Role
+                            {t("role")}
                         </Typography>
                         {selectedOrder === "Role" ? (orderState === "Up" ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />) : null}
                     </Button>
                     <Box sx={{width:'15%', display:"flex", flexDirection:"row", justifyContent:"end"}}>
-                        <Tooltip title="Save All" arrow> 
+                        <Tooltip title={t("save") + " " + t("all")} arrow> 
                             <IconButton onClick={handleSaveAllChanges} sx={{ color: "#76C5E1" }}>
                                 <SaveIcon />
                             </IconButton>
                         </Tooltip>
-                        <Tooltip title="Delete All" arrow> 
+                        <Tooltip title={t("delete") + " " + t("all")} arrow> 
                             <IconButton onClick={handleDeleteAllUsers} sx={{color:"#EA9696"}}>
                                 <DeleteIcon/>
                             </IconButton>
@@ -310,7 +313,7 @@ const ManageUsers = () => {
                 .map(([key, user]) => ({ id: key, ...user }))
                 .filter(user =>
                     user.name.toLowerCase().includes(searchedName.toLowerCase()) &&
-                    (selectedRole === user.role || selectedRole === "All")
+                    (selectedRole === user.role || selectedRole === "all")
                 )
                 .sort((fuser, suser) => {
                     if (selectedOrder && fuser[selectedOrder.toLowerCase()] !== undefined && suser[selectedOrder.toLowerCase()] !== undefined) {
@@ -332,23 +335,23 @@ const ManageUsers = () => {
                             gap: '5px',
                         }}
                     >
-                    <TextField variant="outlined" required placeholder="Name" value={user.name} sx={{width:"20%"}} onChange={(e) => handleNameChange(e,user.id)}/>
-                    <TextField variant="outlined" required placeholder="Email" value={user.email} sx={{width:"30%"}} onChange={(e) => handleEmailChange(e,user.id)}/>
-                    <TextField variant="outlined" required placeholder="Password" value={user.password} sx={{width:"20%"}} onChange={(e) => handlePasswordChange(e,user.id)}/>
-                    <TextField select variant="outlined" required placeholder="Role" value={user.role} sx={{width:"15%"}} onChange={(e) => handleRoleChange(e,user.id)}> 
+                    <TextField variant="outlined" required placeholder={t("name")} value={user.name} sx={{width:"20%"}} onChange={(e) => handleNameChange(e,user.id)}/>
+                    <TextField variant="outlined" required placeholder={t("email")} value={user.email} sx={{width:"30%"}} onChange={(e) => handleEmailChange(e,user.id)}/>
+                    <TextField variant="outlined" required placeholder={t("password")} value={user.password} sx={{width:"20%"}} onChange={(e) => handlePasswordChange(e,user.id)}/>
+                    <TextField select variant="outlined" required placeholder={t("role")} value={user.role} sx={{width:"15%"}} onChange={(e) => handleRoleChange(e,user.id)}> 
                     {UserRoles.map((role) => (
                         <MenuItem key={role} value={role}>
-                            {role}
+                            {t(role)}
                         </MenuItem>
                     ))}
                     </TextField>
                     <Box sx={{width:'15%', display:"flex", flexDirection:"row", justifyContent:"end"}}>
-                        <Tooltip title="Save" arrow> 
+                        <Tooltip title={t("save")} arrow> 
                             <IconButton sx={{color:"#76C5E1"}} disabled={!user.modified} onClick={() => handleSaveCahnges(user.id)}>
                                 <SaveIcon/>
                             </IconButton>
                         </Tooltip>
-                        <Tooltip title="Delete" arrow> 
+                        <Tooltip title={t("delete")} arrow> 
                             <IconButton sx={{color:"#EA9696"}} onClick={() => handleDeleteUser(user.id)}>
                                 <DeleteIcon/>
                             </IconButton>

@@ -1,14 +1,17 @@
 import { createContext, useState, useMemo } from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import { getCookie, deleteCookie , setCookie} from './components/Cookies';
 
 export const ThemeContext = createContext();
 
 export const ThemeProviderWrapper = ({ children }) => {
-    const [darkMode, setDarkMode] = useState(false);
+    const [darkMode, setDarkMode] = useState(getCookie("DarkMode"));
 
-    const toggleTheme = () => setDarkMode(!darkMode);
-
+    const toggleTheme = () => {
+        setCookie("DarkMode",!darkMode,5)
+        setDarkMode(getCookie("DarkMode"));
+    };
     const theme = useMemo(
         () =>
             createTheme({

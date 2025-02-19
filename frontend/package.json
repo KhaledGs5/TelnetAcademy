@@ -8,9 +8,13 @@
     "@fontsource/roboto": "^5.1.1",
     "@mui/icons-material": "^6.4.3",
     "@mui/material": "^6.4.3",
+    "axios": "^1.7.9",
     "cra-template": "1.2.0",
+    "i18next": "^24.2.2",
+    "js-cookie": "^3.0.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-i18next": "^15.4.0",
     "react-router-dom": "^7.1.5",
     "react-scripts": "5.0.1"
   },

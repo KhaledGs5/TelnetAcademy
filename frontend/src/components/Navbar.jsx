@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useContext } from 'react';
 import { ThemeContext } from '../themecontext';
-import { Box, Link, Typography, Menu, MenuItem, Button} from "@mui/material";
+import { getCookie, deleteCookie , setCookie} from './Cookies';
+import { Box, Link, Typography, Menu, MenuItem} from "@mui/material";
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import Logo from "../assets/Telnet.png";
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
@@ -10,9 +11,13 @@ import EditIcon from '@mui/icons-material/Edit';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import LogoutIcon from '@mui/icons-material/Logout';
+import LanguageIcon from '@mui/icons-material/Language';
+import { useLanguage } from "../languagecontext";
 
 const Navbar = () => {
 
+    const { t, setLanguage } = useLanguage();
+    const [choosedLanguage, setChoosedLanguage] = useState(getCookie("Language"));
     const { darkMode, toggleTheme } = useContext(ThemeContext);
 
     const [signedIn, setSignedIn] = useState(true);
@@ -20,6 +25,13 @@ const Navbar = () => {
 
     const handleOpenMenu = (event) => setAnchorEl(event.currentTarget);
     const handleCloseMenu = () => setAnchorEl(null);
+
+    const toggleLanguage = () => {
+        const newLanguage = choosedLanguage === "en" ? "fr" : "en";
+        setChoosedLanguage(newLanguage);
+        setLanguage(newLanguage);
+        setCookie("Language", newLanguage, 5);
+    };
 
     const menuOpen = Boolean(anchorEl);
 
@@ -81,14 +93,15 @@ const Navbar = () => {
                 backgroundImage: `url(${Logo})`,
                 backgroundSize: "cover",
                 backgroundPosition: "center",
-               }}             
+               }}
+               onClick={}          
             >   
             </Box>
             {signedIn ? <Box
                 sx={{
                     position: 'absolute',
                     left: '40%',
-                    width: '40%',
+                    width: '45%',
                     height: '100%',
                     display: 'flex',
                     flexDirection: 'row',
@@ -97,12 +110,12 @@ const Navbar = () => {
                     gap: '20px',
                 }}
             >
-                <Link href="/dashboard" sx={linkStyle('/dashboard')}>Dashboard</Link>
-                <Link href="/managesessions" sx={linkStyle('/managesessions')}>Sessions</Link>
-                <Link href="/manageusers" sx={linkStyle('/manageusers')}>Users</Link>
-                <Link href="/calendar" sx={linkStyle('/calendar')}>Calendar</Link>
-                <Link href="/contact" sx={linkStyle('/contact')}>Contact</Link>
-                <Link href="/about" sx={linkStyle('/about')}>About</Link>
+                <Link href="/dashboard" sx={linkStyle('/dashboard')}>{t("dashboard")}</Link>
+                <Link href="/managesessions" sx={linkStyle('/managesessions')}>{t("sessions")}</Link>
+                <Link href="/manageusers" sx={linkStyle('/manageusers')}>{t("users")}</Link>
+                <Link href="/calendar" sx={linkStyle('/calendar')}>{t("calendar")}</Link>
+                <Link href="/contact" sx={linkStyle('/contact')}>{t("contact")}</Link>
+                <Link href="/about" sx={linkStyle('/about')}>{t("about")}</Link>
             </Box> : null}
             {!signedIn ? 
             <Box
@@ -153,11 +166,15 @@ const Navbar = () => {
                     onMouseLeave: handleCloseMenu, 
                 }}
                 >
-                    <MenuItem >Account</MenuItem>
+                    <MenuItem >{t("Account")}</MenuItem>
                     <MenuItem onClick={() => window.location.href = "/manageusers"} sx={menuStyle("/manageusers")}><ManageAccountsIcon sx={{marginRight:'5px'}}/>Manage</MenuItem>
                     <MenuItem sx={menuStyle("")} onClick={toggleTheme}>
                         {darkMode ? <Brightness7Icon sx={{marginRight:'5px'}}/> : <Brightness4Icon sx={{marginRight:'5px'}}/>}
                         {darkMode? "Light Mode" : "Dark Mode"}
+                    </MenuItem>
+                    <MenuItem sx={menuStyle("")} onClick={toggleLanguage}>
+                        <LanguageIcon sx={{marginRight:'5px'}}/>
+                        {choosedLanguage === "en" ? "French" : "English"}
                     </MenuItem>
                     <MenuItem onClick={() => window.location.href = "/account"} sx={menuStyle("/account")}><EditIcon sx={{marginRight:'5px'}}/>Profile</MenuItem>
                     <MenuItem onClick={() => window.location.href = "/logout"} sx={menuStyle("/logout")}><LogoutIcon sx={{marginRight:'5px'}}/>Logout</MenuItem>
