@@ -1,10 +1,11 @@
 import React from "react";
 import { Box, Link, Typography } from "@mui/material";
 import Class from "../assets/Class.jpg";
-import { useState } from "react";
-
+import { useLanguage } from "../languagecontext";
 
 const Home = () => {
+
+    const { t } = useLanguage();
 
     const buttonStyle = {
         color: 'white',
@@ -15,7 +16,7 @@ const Home = () => {
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        width: '20%',
+        width: '25%',
         height: '100%',
         fontWeight: 'bold',
         '&:hover': {
@@ -28,9 +29,9 @@ const Home = () => {
         <Box>
             <Box
                 sx={{
-                    width: '30%',
+                    width: '35%',
                     height: '500px',
-                    backgroundColor: "white",
+                    backgroundColor: "background.paper",
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "center",
@@ -38,7 +39,7 @@ const Home = () => {
                     boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.25)",
                     borderRadius: '10px',
                     position: "absolute",
-                    left: '10%',
+                    left: '5%',
                     top: '20%',
                 }}
                 >
@@ -56,19 +57,19 @@ const Home = () => {
                         top: '5%',
                     }}
                 >
-                    Telnet Academy
+                    {t("telnet_academy")}
                 </Typography>
                 <Typography   
                     sx={{
                         fontSize: 20,
                         fontWeight: "bold",
                         textAlign: "center",
-                        color: "Black",
+                        color: "text.primary",
                         position: "absolute",
                         left: '6%',
                         top: '40%',
                     }}>
-                    Choose Your Position
+                    {t("choose_your_position")}
                 </Typography>
                 <Box
                     sx={{
@@ -86,13 +87,13 @@ const Home = () => {
                     }}
                     >
                     <Link href='/verify' sx={buttonStyle}>
-                        Manager
+                        {t("manager")}
                     </Link>
                     <Link href='/verify' sx={buttonStyle}>
-                        Admin
+                        {t("admin")}
                     </Link>
-                    <Link sx={buttonStyle}>
-                        User
+                    <Link href='/signin' sx={buttonStyle}>
+                        {t("user")}
                     </Link>
                 </Box>
             </Box>
@@ -113,7 +114,6 @@ const Home = () => {
             >
             </Box>
         </Box>
-        
       );
 };
 

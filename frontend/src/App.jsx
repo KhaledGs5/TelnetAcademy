@@ -7,6 +7,7 @@ import ManageUsers from './components/handleusers/ManageUsers.jsx';
 import ManageSessions from './components/manage/ManageSessions.jsx';
 import SignIn from './components/Auth/SignIn.jsx';
 import Verify from './components/Auth/Verify.jsx';
+import AdminSettings from './components/handleusers/AdminSettings.jsx';
 import './index.css';
 
 
@@ -22,6 +23,7 @@ function App() {
         <Route path="/manageusers" element={<ManageUsers />} />
         <Route path="/dashboard" element={<Dashboard />}/>
         <Route path="/managesessions" element={<ManageSessions />}/>
+        <Route path="/account" element={<AdminSettings />}/>
       </Routes>
     </Router>
   );

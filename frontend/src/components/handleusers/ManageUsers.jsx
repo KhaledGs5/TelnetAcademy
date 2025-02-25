@@ -204,7 +204,6 @@ const ManageUsers = () => {
                 <TextField
                     select
                     label={t("role")}
-
                     value={selectedRole}
                     onChange={handleFilterRoleChange}
                     sx={{

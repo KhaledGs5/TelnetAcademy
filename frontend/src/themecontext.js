@@ -19,13 +19,17 @@ export const ThemeProviderWrapper = ({ children }) => {
                     mode: darkMode ? 'dark' : 'light',
                     background: {
                         default: darkMode ? '#444444' : '#ffffff', 
-                        paper: darkMode ? '#555555' : '#ffffff',
+                        paper: darkMode ? '#555555' : '#f9f9f9',
                         navbar: darkMode ? '#666666' : '#ffffff',
                     },
                     text: {
-                        primary: darkMode ? '#ffffff' : '#000000',
+                        primary: darkMode ? '#eeeeee' : '#111111',
                         secondary: darkMode ? '#dddddd' : '#888B93',
                     },
+                    button: {
+                        primary: darkMode ? '#76C5E1':'#2CA8D5',
+                        secondary: darkMode? '#dddddd' : '#888B93',
+                    }
                 },
             }),
         [darkMode]
