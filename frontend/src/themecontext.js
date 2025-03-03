@@ -21,6 +21,8 @@ export const ThemeProviderWrapper = ({ children }) => {
                         default: darkMode ? '#444444' : '#ffffff', 
                         paper: darkMode ? '#555555' : '#f9f9f9',
                         navbar: darkMode ? '#666666' : '#ffffff',
+                        calendar: darkMode ? '#666666' : '#ffffff',
+                        dcalendar: darkMode ? '#222222' : '#aaaaaa',
                     },
                     text: {
                         primary: darkMode ? '#eeeeee' : '#111111',

@@ -58,6 +58,19 @@ const translations = {
       "email_sent_successfully": "Email Sent successfully",
       "to_reset_password": "to reset your password",
       "mail_sent_including_your_password": "Mail sent including your password",
+      "add_user": "Add User",
+      "sort_by_date_added": "Sort by date added",
+      "add_new_user": "Add New User",
+      "cancel": "Cancel",
+      "add": "Add",
+      "trainee_trainer": "Trainee-Trainer",
+      "sure_to_update_user": "Sure to update user",
+      "sure": "Sure",
+      "sure_to_delete_user": "Sure to delete user",
+      "sure_to_delete_all_users": "Sure to delete all users",
+      "sure_to_update_all_users": "Sure to update all users",
+      "yes": "Yes",
+      "no": "No"
     },
     "fr": {
       "name": "Nom",
@@ -117,6 +130,19 @@ const translations = {
       "email_sent_successfully": "Email envoyé avec succès",
       "to_reset_password": "pour réinitialiser votre mot de passe",
       "mail_sent_including_your_password": "Mail envoyé incluant votre mot de passe",
+      "add_user": "Ajouter un utilisateur",
+      "sort_by_date_added": "Trier par date d'ajout",
+      "add_new_user": "Ajouter un nouvel utilisateur",
+      "cancel": "Annuler",
+      "add": "Ajouter",
+      "trainee_trainer": "Formateur-Formé",
+      "sure_to_update_user": "Êtes-vous sûr de vouloir mettre à jour l'utilisateur",
+      "sure": "Sure",
+      "sure_to_delete_user": "Etes-vous sur de vouloir supprimer l'utilisateur",
+      "sure_to_delete_all_users": "Etes-vous sur de vouloir supprimer tous les utilisateurs",
+      "sure_to_update_all_users": "Etes-vous sur de vouloir mettre à jour tous les utilisateurs",
+      "yes": "Oui",
+      "no": "Non"
     }
   };
   

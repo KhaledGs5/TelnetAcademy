@@ -8,8 +8,8 @@ import ManageSessions from './components/manage/ManageSessions.jsx';
 import SignIn from './components/Auth/SignIn.jsx';
 import Verify from './components/Auth/Verify.jsx';
 import AdminSettings from './components/handleusers/AdminSettings.jsx';
+import Calendar from './components/Calendar.jsx';
 import './index.css';
-
 
 
 function App() {
@@ -24,6 +24,7 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />}/>
         <Route path="/managesessions" element={<ManageSessions />}/>
         <Route path="/account" element={<AdminSettings />}/>
+        <Route path="/calendar" element={<Calendar />}/>
       </Routes>
     </Router>
   );
