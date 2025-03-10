@@ -1,12 +1,12 @@
 import { createContext, useState, useMemo } from 'react';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { getCookie, deleteCookie , setCookie} from './components/Cookies';
+import { getCookie , setCookie} from './components/Cookies';
 
 export const ThemeContext = createContext();
 
 export const ThemeProviderWrapper = ({ children }) => {
-    const [darkMode, setDarkMode] = useState(getCookie("DarkMode"));
+    const [darkMode, setDarkMode] = useState(getCookie("DarkMode") || false);
 
     const toggleTheme = () => {
         setCookie("DarkMode",!darkMode,5)
@@ -31,6 +31,7 @@ export const ThemeProviderWrapper = ({ children }) => {
                     button: {
                         primary: darkMode ? '#76C5E1':'#2CA8D5',
                         secondary: darkMode? '#dddddd' : '#888B93',
+                        tertiary: darkMode? '#444444' : '#eeeeee',
                     }
                 },
             }),

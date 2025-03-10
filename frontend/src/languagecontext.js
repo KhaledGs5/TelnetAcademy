@@ -1,11 +1,11 @@
 import React, { createContext, useState, useContext } from "react";
 import translations from "./translations";
-import { getCookie, deleteCookie , setCookie} from './components/Cookies';
+import { getCookie } from './components/Cookies';
 
 const LanguageContext = createContext();
 
 export const LanguageProvider = ({ children }) => {
-  const [language, setLanguage] = useState(getCookie("Language"));
+  const [language, setLanguage] = useState(getCookie("Language") || "en");
 
   const t = (key) => translations[language][key] || key;
 

@@ -19,6 +19,7 @@ const Home = () => {
         width: '25%',
         height: '100%',
         fontWeight: 'bold',
+        textTransform: "none",
         '&:hover': {
           backgroundColor: '#76C5E1',
           color: 'white',
@@ -86,9 +87,6 @@ const Home = () => {
                         gap: '20px'
                     }}
                     >
-                    <Link href='/verify' sx={buttonStyle}>
-                        {t("manager")}
-                    </Link>
                     <Link href='/verify' sx={buttonStyle}>
                         {t("admin")}
                     </Link>

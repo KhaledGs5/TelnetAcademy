@@ -1,10 +1,10 @@
 const mongoose = require("mongoose");
 const validator = require('validator');
 
-const userSchema = new mongoose.Schema({
+const adminSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true , validate: [validator.isEmail, 'Invalid email format']},
-  password: { type: String, required: true,
+  password: { type: String, required: true, 
     minlength: 8,
     validate: {
       validator: function (value) {
@@ -14,12 +14,7 @@ const userSchema = new mongoose.Schema({
         'Password must be at least 8 characters long and include one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)',
     },
   },
-  role: { type: String, enum: ["trainer", "trainee", "trainee_trainer", "manager"], required: true },
-  activity: { type: String, required: true },
-  jobtitle: { type: String, required: true },
-  gender: { type: String, required: true },
-  grade: { type: String, required: true },
-}, { collection: 'users', timestamps: true });
+}, { timestamps: true, collection: 'admin' });
 
-const User = mongoose.model("User", userSchema);
-module.exports = User;
+const Admin = mongoose.model("Admin", adminSchema);
+module.exports = Admin;

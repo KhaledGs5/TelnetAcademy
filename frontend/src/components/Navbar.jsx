@@ -8,6 +8,8 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import SettingsIcon from '@mui/icons-material/Settings';
 import Logo from "../assets/Telnet.png";
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
+import ChangeCircleIcon from '@mui/icons-material/ChangeCircle';
+import GroupAddIcon from '@mui/icons-material/GroupAdd';
 import EditIcon from '@mui/icons-material/Edit';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
@@ -18,14 +20,42 @@ import { useLanguage } from "../languagecontext";
 const Navbar = () => {
 
     const { t, setLanguage } = useLanguage();
-    const [choosedLanguage, setChoosedLanguage] = useState(getCookie("Language"));
+    const [choosedLanguage, setChoosedLanguage] = useState(getCookie("Language") || "en");
     const { darkMode, toggleTheme } = useContext(ThemeContext);
 
     const [signedIn, setSignedIn] = useState(getCookie("SignedIn"));
 
-    const [anchorEl, setAnchorEl] = useState(null);
-    const handleOpenMenu = (event) => setAnchorEl(event.currentTarget);
-    const handleCloseMenu = () => setAnchorEl(null);
+    // Menu .............
+
+    const [menuAnchorEl, setMenuAnchorEl] = useState(null);
+    const [menuOpen, setMenuOpen] = useState(false);
+    const handleMenuAnchorEl = (event) => setMenuAnchorEl(event.currentTarget);
+    const handleOpenMenu = () => setMenuOpen(true);
+    const handleCloseMenu = () => {
+        setMenuOpen(false);
+        setMenuAnchorEl(null);
+    };
+
+    //SubMenu .................
+    const [submenuZindex, setSubmenuZindex] = useState(1);
+    const [submenuAnchorEl, setSubmenuAnchorEl] = useState(null);
+    const [submenuOpen, setSubmenuOpen] = useState(false);
+    const handleOpenSubmenu = () => {
+        setSubmenuOpen(true);
+    };
+    const handleCloseSubmenu = () => {
+        setSubmenuOpen(false);
+        setSubmenuZindex(1);
+    };
+    const handleSubMenuAnchorEl = (event) => {
+        setSubmenuAnchorEl(event.currentTarget);
+    }
+    const UserRoles = ["trainer", "trainee"];
+    const [selectedRole, setSelectedRole] = useState("trainer");
+    const handleRoleChange = (role) => {
+        setSelectedRole(role);
+        setSubmenuAnchorEl(null);
+    };
 
     const toggleLanguage = () => {
         const newLanguage = choosedLanguage === "en" ? "fr" : "en";
@@ -48,7 +78,7 @@ const Navbar = () => {
         window.location.href = "/";
     };
 
-    const menuOpen = Boolean(anchorEl);
+    const user = getCookie("User");
 
     const location = useLocation();
 
@@ -100,6 +130,7 @@ const Navbar = () => {
     return (
         <Box
             sx={{
+                width: '100%',
                 backgroundColor: "background.navbar",
                 position: 'relative',
                 display: "flex",
@@ -135,8 +166,11 @@ const Navbar = () => {
                 }}
             >
                 <Link href="/dashboard" sx={linkStyle('/dashboard')}>{t("dashboard")}</Link>
-                <Link href="/managesessions" sx={linkStyle('/managesessions')}>{t("sessions")}</Link>
-                <Link href="/manageusers" sx={linkStyle('/manageusers')}>{t("users")}</Link>
+                <Link href={(user.role === "trainer" || user.role === "trainee_trainer") ? '/trainersession' : user.role === "trainee" ? '/traineesession' : user.role === 'manager' ? '/managesessions' : ''} 
+                sx={linkStyle(user.role === "trainer" || user.role === "trainee_trainer" ? '/trainersession' : user.role === "trainee" ? '/traineesession' : user.role === 'manager' ? '/managesessions' : '')}>{t("sessions")}</Link>
+                {!(user.role) ?  <Link href="/manageusers" sx={linkStyle('/manageusers')}>{t("users")}</Link> : (user.role === "manager")? 
+                            <Link href="/requests" sx={linkStyle('/requests')}>{t("requests")}</Link> : 
+                             <Link href="/enrolled" sx={linkStyle('/enrolled')}>{t("enrolled")}</Link>   }
                 <Link href="/calendar" sx={linkStyle('/calendar')}>{t("calendar")}</Link>
                 <Link href="/contact" sx={linkStyle('/contact')}>{t("contact")}</Link>
                 <Link href="/about" sx={linkStyle('/about')}>{t("about")}</Link>
@@ -181,7 +215,10 @@ const Navbar = () => {
                         backgroundColor: menuOpen? "#76C5E1" : "background.paper",
                         width:'100%'
                     }} 
-                    onMouseEnter={handleOpenMenu}
+                    onMouseEnter={(event) => {
+                        handleOpenMenu();
+                        handleMenuAnchorEl(event);
+                    }}
                     >
                         <SettingsIcon
                             sx={{
@@ -192,10 +229,11 @@ const Navbar = () => {
                             {t("settings")}
                         </Typography>
                     </Link>
-                    <Menu anchorEl={anchorEl} open={menuOpen} onClose={handleCloseMenu}
+                    <Menu anchorEl={menuAnchorEl} open={menuOpen} onClose={handleCloseMenu}
                     MenuListProps={{
                         onMouseLeave: handleCloseMenu, 
                     }}
+                    disableScrollLock={true}
                     >
                         <MenuItem sx={menuStyle("")}>
                             {t("settings")}
@@ -216,7 +254,7 @@ const Navbar = () => {
                 sx={{
                     position: 'absolute',
                     right: '20px',
-                    width: '12%',
+                    width: 'auto',
                     height: '100%',
                     display: 'flex',
                     flexDirection: 'row',
@@ -224,39 +262,95 @@ const Navbar = () => {
                     justifyContent: 'end',
                 }}
             >
+                {user.role === "trainee_trainer" ?
+                <Typography
+                    sx={{
+                    width: '200px',
+                    height: 'cover',
+                    display: "flex",
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    color: 'text.secondary',
+                    cursor: "pointer",
+                    }}>
+                    {t(selectedRole)}
+                </Typography> : null}
                 <Link href="/account" sx={{...buttonStyle,
                     color: menuOpen ? "white" : location.pathname === "/account" ? "white" : "text.secondary",
                     backgroundColor: menuOpen? "#76C5E1" : location.pathname === "/account" ? "#2CA8D5" : "background.paper",
                 }} 
-                onMouseEnter={handleOpenMenu}
+                onMouseEnter={(event) => {
+                    handleMenuAnchorEl(event);
+                    handleOpenMenu();
+                    handleCloseSubmenu();
+                }}              
                 >
                     {ProfileImage ? <img src={ProfileImage} alt="Img" style={profileImageStyle}/>:
                     <AccountCircleIcon  sx={{marginRight:5}} />
                     }
                     <Typography>
-                        Khaled Gassara
+                        {user.name}
                     </Typography>
                 </Link>
-                <Menu anchorEl={anchorEl} open={menuOpen} onClose={handleCloseMenu}
+                <Menu anchorEl={menuAnchorEl} open={menuOpen} onClose={handleCloseMenu}
+                sx={{ zIndex : 2}}
                 MenuListProps={{
-                    onMouseLeave: handleCloseMenu, 
+                    onMouseLeave: (!submenuOpen ? handleCloseMenu : null),
                 }}
+                disableScrollLock={true}
                 >
-                    <MenuItem sx={{ ...menuStyle(""), height: "60px", display: "flex", flexDirection: "column", alignItems: "start" }}>
-                        <Typography variant="body1">{t("account")}</Typography>
-                        <Typography variant="caption" color="text.secondary">Khaled Gassara</Typography>
+                    <MenuItem sx={{ ...menuStyle(""), height: "60px", display: "flex", flexDirection: "column", alignItems: "start" }} onMouseEnter={handleCloseSubmenu}>
+                        <Typography variant="body1">{user.name}</Typography>
+                        <Typography variant="caption" color="text.secondary">{user.role ? t(user.role) : t("admin")}</Typography>
                     </MenuItem>
-                    <MenuItem onClick={() => window.location.href = "/manageusers"} sx={menuStyle("/manageusers")}><ManageAccountsIcon sx={{marginRight:'5px'}}/>{t("manage")}</MenuItem>
-                    <MenuItem sx={menuStyle("")} onClick={toggleTheme}>
-                        {darkMode ? <Brightness7Icon sx={{marginRight:'5px'}}/> : <Brightness4Icon sx={{marginRight:'5px'}}/>}
+                    {!(user.role) ? <MenuItem onClick={() => window.location.href = "/manageusers"} sx={menuStyle("/manageusers")}><ManageAccountsIcon sx={{marginRight:'10px'}}/>{t("manage")}</MenuItem> : null}
+                    {(user.role === "trainee_trainer") ? <MenuItem 
+                        onMouseEnter={(event) => {
+                            handleSubMenuAnchorEl(event);
+                            handleOpenSubmenu();
+                        }}
+                        onMouseLeave={() => setSubmenuZindex(2)} 
+                     sx={menuStyle("")}>
+                    <ChangeCircleIcon sx={{marginRight:'5px'}}/>{t("change_space")}
+                        <Menu
+                            sx={{ zIndex : submenuZindex}}
+                            anchorEl={submenuAnchorEl}
+                            open={submenuOpen}
+                            onClose={handleCloseSubmenu}
+                            MenuListProps={{
+                                onMouseLeave: () => {
+                                    handleCloseSubmenu();                         
+                                },
+                            }}
+                            onClick={handleCloseSubmenu}
+                            disableScrollLock={true}
+                            anchorOrigin={{
+                                vertical: "top",
+                                horizontal: "left",
+                            }}
+                            transformOrigin={{
+                                vertical: "top",
+                                horizontal: "right",
+                            }}
+                        >
+                            {UserRoles.map((role) => (
+                                <MenuItem key={role} value={role} onClick={() => handleRoleChange(role)}>
+                                    {t(role)} 
+                                </MenuItem>
+                            ))}
+                        </Menu>
+                    </MenuItem> : null}
+                    {user.role === 'manager' ? <MenuItem onClick={() => window.location.href = "/callfortrainers"} sx={menuStyle("/callfortrainers")}><GroupAddIcon sx={{marginRight:'10px'}}/>{t("call_for_trainers")}</MenuItem> : null}
+                    <MenuItem sx={menuStyle("")} onClick={toggleTheme}  onMouseEnter={handleCloseSubmenu}>
+                        {darkMode ? <Brightness7Icon sx={{marginRight:'10px'}}/> : <Brightness4Icon sx={{marginRight:'10px'}}/>}
                         {darkMode? t("light_mode") : t("dark_mode")}
                     </MenuItem>
-                    <MenuItem sx={menuStyle("")} onClick={toggleLanguage}>
-                        <LanguageIcon sx={{marginRight:'5px'}}/>
+                    <MenuItem sx={menuStyle("")} onClick={toggleLanguage}  onMouseEnter={handleCloseSubmenu}>
+                        <LanguageIcon sx={{marginRight:'10px'}}/>
                         {choosedLanguage === "en" ? t("french") : t("english")}
                     </MenuItem>
-                    <MenuItem onClick={() => window.location.href = "/account"} sx={menuStyle("/account")}><EditIcon sx={{marginRight:'5px'}}/>{t("profile")}</MenuItem>
-                    <MenuItem onClick={handleLogout} sx={menuStyle("/logout")}><LogoutIcon sx={{marginRight:'5px'}}/>{t("logout")}</MenuItem>
+                    <MenuItem onClick={() => window.location.href = "/account"} sx={menuStyle("/account")} onMouseEnter={handleCloseSubmenu}><EditIcon sx={{marginRight:'10px'}}/>{t("profile")}</MenuItem>
+                    <MenuItem onClick={handleLogout} sx={menuStyle("/logout")} onMouseEnter={handleCloseSubmenu}><LogoutIcon sx={{marginRight:'10px'}}/>{t("logout")}</MenuItem>
                 </Menu>
             </Box>}
         </Box>

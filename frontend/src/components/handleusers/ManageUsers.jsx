@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from "react";
-import { Box, TextField , Typography, Button,Input,IconButton, InputAdornment, Tooltip, Fab, OutlinedInput, FormControl, InputLabel, Pagination } from "@mui/material";
+import { Box, TextField , Typography, Button,Input,IconButton, InputAdornment, Tooltip, OutlinedInput, FormControl, InputLabel, Pagination,Radio, Alert, Snackbar  } from "@mui/material";
 import ClearIcon from '@mui/icons-material/Clear';
 import SearchIcon from '@mui/icons-material/Search';
 import MenuItem from '@mui/material/MenuItem';
@@ -12,8 +12,12 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Dialog from '@mui/material/Dialog';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
+import CheckIcon from '@mui/icons-material/Check';
 import { useLanguage } from "../../languagecontext";
 import axios from "axios";
+import * as XLSX from 'xlsx';
 
 const ManageUsers = () => {
 
@@ -21,6 +25,16 @@ const ManageUsers = () => {
 
     const UserRoles = ["trainer", "trainee","manager","trainee_trainer"];
     const [selectedUserId, setSelectedUserId] = useState(null);
+
+    const [newUserName, setNewUserName] = useState("");
+    const [newUserEmail, setNewUserEmail] = useState("");
+    const [newUserPassword, setNewUserPassword] = useState("");
+    const [confirmNewUserPassword,setConfirmNewUserPassword]= useState("");
+    const [newUserRole, setNewUserRole] = useState("");
+    const [newUserGender, setNewUserGender] = useState("");
+    const [newUserActivity, setNewUserActivity] = useState("");
+    const [newUserJobtitle, setNewUserJobtitle] = useState("");
+    const [newUserGrade, setNewUserGrade] = useState("");
 
     // Fetch All Users ....................
 
@@ -46,9 +60,23 @@ const ManageUsers = () => {
         fetchUsers();
     }, []);
 
+    // Verify Update Or Create User...........
+
+    const [showsVerificationAlert, setShowsVerifificationAlert] = useState(false);
+    const [verifyAlertMessage, setVerifyAlertMessage] = useState("");
+    const [verifyAlert, setVerifyAlert] = useState("error");
+    const handleVerificationAlertClose = () => {
+        setShowsVerifificationAlert(false);
+    };
+
     // Adding new User
     const [newUser, setNewUser] = useState(false);
-
+    const [showNewUserPassword, setShowNewUserPassword] = useState(false);
+    const [showConfirmNewUserPassword, setShowConfirmNewUserPassword] = useState(false);
+    const UserActivities = ["enablers", "mechanical", "formation_systems", "databox", "telecom", "quality", "e-paysys", "media&energy", "electronics", "space"];
+    const [otherActivity, setOtherActivity]= useState(false);
+    const UserGrades = ["F1", "F2", "F3", "F4", "M1", "M2", "M3", "M4", "M5", "M6"]
+    
     const showNewUserForm = () => {
         setNewUser(true);
     };
@@ -63,30 +91,73 @@ const ManageUsers = () => {
             email: newUserEmail,
             password: newUserPassword,
             role: newUserRole,
+            gender: newUserGender,
+            activity: newUserActivity,
+            jobtitle: newUserJobtitle,
+            grade: newUserGrade,
         };
-
-        console.log(newUser);
-        axios.post("http://localhost:5000/api/users", newUser)
+        if(confirmNewUserPassword === newUserPassword) {
+            axios.post("http://localhost:5000/api/users", newUser)
             .then(() => {
                 fetchUsers();
                 hideNewUserForm();
+                setVerifyAlert("success");
             })
             .catch((error) => {
-                if (error.response && error.response.status === 400) {
-                    alert("Email already exists");
-                } else {
-                    console.error("Error adding user:", error);
-                }
+                setVerifyAlertMessage(error.response.data.error);
+                setVerifyAlert("error");
+                setShowsVerifificationAlert(true);
             }); 
+        }
+        else{
+            setVerifyAlertMessage("passwords_do_not_match");
+            setVerifyAlert("error");
+            setShowsVerifificationAlert(true);
+            return;
+        } 
     };
 
+    //  Adding All Users
+    const [file, setFile] = useState(null);
+
+    const handleFileChange = (event) => {
+        setFile(event.target.files[0]);
+    };
+
+    const handleUpload = async () => {
+        if (!file) {
+          alert("Please select a file.");
+          return;
+        }
+      
+        const reader = new FileReader();
+        reader.onload = async () => {
+          const data = reader.result;
+          const workbook = XLSX.read(data, { type: 'array' });
+      
+          const sheetName = workbook.SheetNames[0];
+          const sheet = workbook.Sheets[sheetName];
+      
+          const jsonData = XLSX.utils.sheet_to_json(sheet);
+      
+          try {
+            const response = await axios.post('http://localhost:5000/api/uploadUsers', { data: jsonData });
+            if(response.status === 200) {
+                fetchUsers();
+                setVerifyAlert("success");
+            };
+          } catch (error) {
+            setVerifyAlertMessage(error.response.data.error);
+            setVerifyAlert("error");
+            setShowsVerifificationAlert(true);
+          }
+        };
+      
+        reader.readAsArrayBuffer(file);
+      };
+      
     // Updating user by Id............
     const [verifyUpdate, setVerifyUpdate] = useState(false);
-
-    const [newUserName, setNewUserName] = useState("");
-    const [newUserEmail, setNewUserEmail] = useState("");
-    const [newUserPassword, setNewUserPassword] = useState("");
-    const [newUserRole, setNewUserRole] = useState("");
 
     const showVerifyUpdateDialog = (userId) => {
         setSelectedUserId(userId);
@@ -100,12 +171,14 @@ const ManageUsers = () => {
     const handleUpdateUser = (userId) => {
         const updatedUser = Object.values(users).find(user => user._id === userId);
         axios.put(`http://localhost:5000/api/users/${userId}`, updatedUser)
-            .then((response) => {
-                console.log(response.data.message); 
+            .then((response) => { 
                 hideVerifyUpdateDialog();
+                setVerifyAlert("success");
             })
             .catch((error) => {
-                console.error("Error updating user:", error);
+                setVerifyAlertMessage(error.response.data.error);
+                setVerifyAlert("error");
+                setShowsVerifificationAlert(true);
             });
 
         setUsers((prevUsers) => ({
@@ -185,6 +258,24 @@ const ManageUsers = () => {
         listofallusers.forEach((userId) => handleDeleteUser(userId));
         hideVerifyDeleteAllDialog();
     };
+
+    //Show User Details.......................
+    const [showUserDetails, setShowUserDetails] = useState(false);
+    const [selectedUser, setSelectedUser] = useState({});
+    
+    const handleShowUserDetails = (userId) => {
+        setShowUserDetails(true);
+        handleSelectedUser(userId);
+    };
+
+    const handleHideUserDetails = () => {
+        setShowUserDetails(false);
+    };
+
+    const handleSelectedUser = async (userId) =>{
+        const user = await axios.get(`http://localhost:5000/api/users/${userId}`);
+        setSelectedUser(user.data);
+    } ;
 
     // Order ........................
     const [orderState, setOrderState] = useState('Down');
@@ -333,6 +424,7 @@ const ManageUsers = () => {
 
     const orderStyle = {
         color: "text.primary",
+        textTransform: "none",
     };
 
 
@@ -376,8 +468,12 @@ const ManageUsers = () => {
                     top: 0,
                     paddingTop: '20px',
                     backgroundColor: "background.paper",
-                    zIndex: 100,
-                    height: '140px',
+                    zIndex: 1,
+                    height: '150px',
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: '10px',
                 }}
             >
                 <Box
@@ -432,6 +528,11 @@ const ManageUsers = () => {
                         sx={{
                             width: '20%'
                         }}
+                        SelectProps={{
+                            MenuProps: {
+                              disableScrollLock: true, 
+                            }
+                        }}
                         >
                         {FilterRoles.map((role) => (
                             <MenuItem key={role} value={role}>
@@ -440,82 +541,359 @@ const ManageUsers = () => {
                         ))}
                     </TextField>
                     <Tooltip title={t("add_user")} arrow> 
-                        <Fab color="primary" aria-label="add" size="small" onClick={showNewUserForm}>
+                        <IconButton color="primary" aria-label="add" size="small" onClick={showNewUserForm} 
+                                sx={{ borderRadius: '50%'}}>
                             <AddIcon />
-                        </Fab>
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title={t("select_file")} arrow>
+                        <label htmlFor="file-upload">
+                            <IconButton color="primary" aria-label="select-file" size="small" component="span"
+                            >
+                                <UploadFileIcon />
+                            </IconButton>
+                            <input
+                                id="file-upload"
+                                type="file"
+                                accept=".xlsx, .xls"
+                                onChange={handleFileChange}
+                                style={{ display: "none" }}
+                            />
+                        </label>
+                    </Tooltip>
+
+                    <Tooltip title={t("upload_file")} arrow>
+                        <IconButton 
+                            color="button.primary" 
+                            aria-label="upload-file" 
+                            size="small" 
+                            onClick={handleUpload}
+                            disabled={!file}
+                            sx={{ borderRadius: '50%'}}
+                        >
+                            <CheckIcon />
+                        </IconButton>
                     </Tooltip>
                     <Dialog
                         open={newUser}
                         onClose={hideNewUserForm}
+                        disableScrollLock={true}
                         PaperProps={{
                             sx: {
-                                width: "400px",  
-                                height: "500px", 
+                                width: "800px",  
+                                height: "auto", 
                                 display: "flex",
                                 flexDirection: "column",
                                 justifyContent: "start",
                                 alignItems: "center",
-                                borderRadius: "5px",
+                                borderRadius: "10px",
+                                gap: "20px",
+                                padding: "20px",
+                                scrollbarWidth: "none",
+                                "&::-webkit-scrollbar": {
+                                    display: "none"  
+                                }
                             }
                         }}
                     >
                         <DialogTitle>{t("add_new_user")}</DialogTitle>
-                        <FormControl variant="outlined" sx={{ 
-                            position: "absolute",
-                            top: '15%',
-                            width: '80%',
-                        }}
+                        <Box
+                            sx={{
+                                width: "100%",
+                                display: "flex",
+                                flexDirection: "row",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                gap: "20px",
+                            }}
                         >
-                            <InputLabel required>{t("name")}</InputLabel>
-                            <OutlinedInput
-                                value={newUserName}
-                                onChange={(e) => setNewUserName(e.target.value)}
-                                label="Name"
-                            />
-                        </FormControl>
-                        <FormControl variant="outlined" sx={{ 
-                            position: "absolute",
-                            top: '30%',
-                            width: '80%',
-                        }}
-                        >
+                            <FormControl variant="outlined" sx={{ 
+                            width: '50%',
+                            }}
+                            >
+                                <InputLabel required>{t("name")}</InputLabel>
+                                <OutlinedInput
+                                    value={newUserName}
+                                    onChange={(e) => setNewUserName(e.target.value)}
+                                    label="Name......."
+                                />
+                            </FormControl>
+                            <FormControl variant="outlined" sx={{ 
+                                width: '50%',
+                            }}
+                            >
                             <InputLabel required>{t("email")}</InputLabel>
                             <OutlinedInput
                                 value={newUserEmail}
                                 onChange={(e) => setNewUserEmail(e.target.value)}
-                                label="Email"
+                                label="Email......"
                             />
-                        </FormControl>
-                        <FormControl variant="outlined" sx={{ 
-                            position: "absolute",
-                            top: '45%',
-                            width: '80%',
-                        }}
-                        >
-                            <InputLabel required>{t("password")}</InputLabel>
-                            <OutlinedInput
-                                value={newUserPassword}
-                                onChange={(e) => setNewUserPassword(e.target.value)}
-                                label="Password"
-                            />
-                        </FormControl>
-                        <TextField
-                            select
-                            label={t("role")}
-                            value={newUserRole}
-                            onChange={(e) => setNewUserRole(e.target.value)}
+                            </FormControl>
+                        </Box>
+                        <Box
                             sx={{
-                                width: '40%',
-                                position : 'absolute',
-                                top: '60%',
+                                width: "100%",
+                                display: "flex",
+                                flexDirection: "row",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                gap: "20px",
+                            }}
+                        >
+                            <FormControl variant="outlined" sx={{ 
+                                width: '50%',
                             }}
                             >
-                            {UserRoles.map((role) => (
-                                <MenuItem key={role} value={role}>
-                                    {t(role)}
-                                </MenuItem>
-                            ))}
-                        </TextField>
+                                <InputLabel required>{t("password")}</InputLabel>
+                                <OutlinedInput
+                                    type={showNewUserPassword ? 'text' : 'password'}
+                                    value={newUserPassword}
+                                    onChange={(e) => setNewUserPassword(e.target.value)}
+                                    label="Password ........."
+                                    endAdornment={
+                                        <InputAdornment position="end">
+                                            <IconButton onClick={() => setShowNewUserPassword(!showNewUserPassword)} size="small">
+                                                {showNewUserPassword ? <VisibilityOff /> : <Visibility />}
+                                            </IconButton>
+                                        </InputAdornment>
+                                    }
+                                />
+                            </FormControl>
+                            <FormControl variant="outlined" sx={{ 
+                                width: '50%',
+                            }}
+                            >
+                                <InputLabel required>{t("confirm_password")}</InputLabel>
+                                <OutlinedInput
+                                    type={showConfirmNewUserPassword ? 'text' : 'password'}
+                                    value={confirmNewUserPassword}
+                                    onChange={(e) => setConfirmNewUserPassword(e.target.value)}
+                                    label="confirm_password ................"
+                                    endAdornment={
+                                        <InputAdornment position="end">
+                                            <IconButton onClick={() => setShowConfirmNewUserPassword(!showConfirmNewUserPassword)} size="small">
+                                                {showConfirmNewUserPassword ? <VisibilityOff /> : <Visibility />}
+                                            </IconButton>
+                                        </InputAdornment>
+                                    }
+                                />
+                            </FormControl>
+                        </Box>
+                        {verifyAlertMessage === "wrong_password_format"? 
+                        <Typography
+                            sx={{
+                                color: "red",
+                                fontSize: 12,
+                                textAlign: "center",
+                                width:'90%',
+                            }}
+                        >
+                               {t("Password must be at least 8 characters long and include one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)")}
+                        </Typography>: null}
+                        <Box
+                            sx={{
+                                width: "100%",
+                                display: "flex",
+                                flexDirection: "row",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                gap: "20px",
+                            }}
+                        >
+                            <TextField
+                                select={!otherActivity  && (UserActivities.includes(newUserActivity) || newUserActivity === "")}
+                                required
+                                label={t("activity")}
+                                value={newUserActivity}
+                                onChange={(e) => setNewUserActivity(e.target.value)}
+                                sx={{
+                                    width: '50%',
+                                }}
+                            >
+                                {UserActivities.map((activity) => (
+                                    <MenuItem key={activity} value={activity}>
+                                        {t(activity)}
+                                    </MenuItem>
+                                ))}
+                                <Button 
+                                    sx={{
+                                        width: "100%",
+                                        textTransform: "none",
+                                        color: "black",
+                                    }}
+                                    onClick={() => setOtherActivity(true)}
+                                >
+                                    {t("other")}...
+                                </Button>
+                            </TextField>
+                            <Dialog
+                                open={otherActivity}
+                                onClose={() => setOtherActivity(false)}
+                                disableScrollLock={true}
+                                PaperProps={{
+                                    sx: {
+                                        width: "auto",  
+                                        height: "auto", 
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        borderRadius: "10px",
+                                        padding: '20px',
+                                    }
+                                }}
+                            >
+                                <FormControl variant="outlined" sx={{ 
+                                        width: '200px',
+                                    }}
+                                >
+                                    <InputLabel required>{t("activity")}</InputLabel>
+                                    <OutlinedInput
+                                        value={newUserActivity}
+                                        onChange={(e) => setNewUserActivity(e.target.value)}
+                                        label="Activity  ................"
+                                    />
+                                </FormControl>
+                                <Button
+                                    sx={{
+                                        color: 'white',
+                                        backgroundColor: '#2CA8D5',
+                                        padding: '5px 10px',
+                                        borderRadius: '10px',
+                                        textDecoration: 'none',
+                                        fontWeight: 'bold',
+                                        width: '100px',
+                                        height: '40px',
+                                        marginTop: '10px',
+                                        textTransform: "none",
+                                        '&:hover': {
+                                            backgroundColor: '#76C5E1',
+                                            color: 'white',
+                                        },
+                                    }}
+                                    onClick={() => {
+                                        setOtherActivity(false);
+                                    }}
+                                >
+                                    {t("save")}
+                                </Button>
+                            </Dialog>
+                            <FormControl variant="outlined" sx={{ 
+                                    width: '50%',
+                                }}
+                            >
+                                <InputLabel required>{t("jobtitle")}</InputLabel>
+                                <OutlinedInput
+                                    value={newUserJobtitle}
+                                    onChange={(e) => setNewUserJobtitle(e.target.value)}
+                                    label="Job Title................"
+                                />
+                            </FormControl>
+                        </Box>
+                        <Box
+                            sx={{
+                                width: "100%",
+                                display: "flex",
+                                flexDirection: "row",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                gap: "20px",
+                            }}
+                        >
+                            <TextField
+                                select
+                                label={t("grade")}
+                                value={newUserGrade}
+                                onChange={(e) => setNewUserGrade(e.target.value)}
+                                sx={{
+                                    width: '50%',
+                                }}
+                                >
+                                {UserGrades.map((grade) => (
+                                    <MenuItem key={grade} value={grade}>
+                                        {t(grade)}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+                            <TextField
+                                select
+                                label={t("role")}
+                                value={newUserRole}
+                                onChange={(e) => setNewUserRole(e.target.value)}
+                                sx={{
+                                    width: '50%',
+                                }}
+                                >
+                                {UserRoles.map((role) => (
+                                    <MenuItem key={role} value={role}>
+                                        {t(role)}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+                        </Box>
+                        <Box
+                            sx={{
+                                display: "flex",
+                                flexDirection: "row",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                width: '100%',
+                                gap: '20px',
+                            }}
+                        >
+                            <Typography   
+                                sx={{
+                                    fontSize: 15,
+                                    textAlign: "center",
+                                    color: "text.primary",
+                                }}>
+                                {t("gender")} :
+                            </Typography>
+                            <Box
+                                sx={{
+                                     width: '20%',
+                                     display: "flex",
+                                     justifyContent: "center",
+                                     alignItems: "center",
+                                }}
+                            >
+                                <Radio
+                                    checked={newUserGender === "male"}
+                                    onChange={() => setNewUserGender("male")}
+                                    value="male"
+                                />
+                                <Typography   
+                                    sx={{
+                                        fontSize: 15,
+                                        textAlign: "center",
+                                        color: "text.primary",
+                                    }}>
+                                    {t("male")}
+                                </Typography>
+                            </Box>
+                            <Box
+                                sx={{
+                                     width: '20%',
+                                     display: "flex",
+                                     justifyContent: "center",
+                                     alignItems: "center",
+                                }}
+                            >
+                                <Radio
+                                    checked={newUserGender === 'female'}
+                                    onChange={() => setNewUserGender("female")}
+                                    value="female"
+                                />
+                                <Typography   
+                                    sx={{
+                                        fontSize: 15,
+                                        textAlign: "center",
+                                        color: "text.primary",
+                                    }}>
+                                    {t("female")}
+                                </Typography>
+                            </Box>
+                        </Box>
                         <Box 
                             sx={{
                                 width: '100%',
@@ -523,8 +901,6 @@ const ManageUsers = () => {
                                 flexDirection: 'row',
                                 justifyContent: 'center',
                                 alignItems: 'center',
-                                position: 'absolute',
-                                top: '80%',
                                 gap: '20px',
                             }}
                         >
@@ -538,6 +914,7 @@ const ManageUsers = () => {
                             width: '100px',
                             height: '40px',
                             marginTop: '10px',
+                            textTransform: "none",
                             '&:hover': {
                                 backgroundColor: '#EAB8B8',
                                 color: 'white',
@@ -556,6 +933,7 @@ const ManageUsers = () => {
                             width: '100px',
                             height: '40px',
                             marginTop: '10px',
+                            textTransform: "none",
                             '&:hover': {
                                 backgroundColor: '#76C5E1',
                                 color: 'white',
@@ -638,20 +1016,22 @@ const ManageUsers = () => {
                         </Box>
                         <Dialog
                                 open={verifyUpdateAll}
+                                disableScrollLock={true}
                                 onClose={hideVerifyUpdateAllDialog}
                                 PaperProps={{
                                     sx: {
-                                        width: "400px",  
-                                        height: "200px", 
+                                        width: "auto",  
+                                        height: "auto", 
                                         display: "flex",
                                         flexDirection: "column",
-                                        justifyContent: "start",
+                                        justifyContent: "center",
                                         alignItems: "center",
-                                        borderRadius: "5px",
+                                        borderRadius: "10px",
+                                        padding: '20px',
                                     }
                                 }}
                             >
-                                <DialogTitle>{t("sure_to_update_all_users")}?</DialogTitle>
+                                <DialogTitle>{t("confirm_update_all_users")}?</DialogTitle>
                                 <Box 
                                     sx={{
                                         width: '100%',
@@ -659,8 +1039,6 @@ const ManageUsers = () => {
                                         flexDirection: 'row',
                                         justifyContent: 'center',
                                         alignItems: 'center',
-                                        position: 'absolute',
-                                        top: '50%',
                                         gap: '20px',
                                     }}
                                 >
@@ -674,6 +1052,7 @@ const ManageUsers = () => {
                                         width: '100px',
                                         height: '40px',
                                         marginTop: '10px',
+                                        textTransform: "none",
                                         '&:hover': {
                                             backgroundColor: '#EAB8B8',
                                             color: 'white',
@@ -692,6 +1071,7 @@ const ManageUsers = () => {
                                         width: '100px',
                                         height: '40px',
                                         marginTop: '10px',
+                                        textTransform: "none",
                                         '&:hover': {
                                             backgroundColor: '#76C5E1',
                                             color: 'white',
@@ -704,20 +1084,22 @@ const ManageUsers = () => {
                         </Dialog>
                         <Dialog
                             open={verifyDeleteAll}
+                            disableScrollLock={true}
                             onClose={hideVerifyDeleteAllDialog}
                             PaperProps={{
                                 sx: {
-                                    width: "400px",  
-                                    height: "200px", 
+                                    width: "auto",  
+                                    height: "auto", 
                                     display: "flex",
                                     flexDirection: "column",
-                                    justifyContent: "start",
+                                    justifyContent: "center",
                                     alignItems: "center",
-                                    borderRadius: "5px",
+                                    borderRadius: "10px",
+                                    padding: '20px',
                                 }
                             }}
                         >
-                            <DialogTitle>{t("sure_to_delete_all_users")}?</DialogTitle>
+                            <DialogTitle>{t("confirm_delete_all_users")}?</DialogTitle>
                             <Box 
                                 sx={{
                                     width: '100%',
@@ -725,8 +1107,6 @@ const ManageUsers = () => {
                                     flexDirection: 'row',
                                     justifyContent: 'center',
                                     alignItems: 'center',
-                                    position: 'absolute',
-                                    top: '50%',
                                     gap: '20px',
                                 }}
                             >
@@ -740,6 +1120,7 @@ const ManageUsers = () => {
                                     width: '100px',
                                     height: '40px',
                                     marginTop: '10px',
+                                    textTransform: "none",
                                     '&:hover': {
                                         backgroundColor: '#EAB8B8',
                                         color: 'white',
@@ -758,6 +1139,7 @@ const ManageUsers = () => {
                                     width: '100px',
                                     height: '40px',
                                     marginTop: '10px',
+                                    textTransform: "none",
                                     '&:hover': {
                                         backgroundColor: '#76C5E1',
                                         color: 'white',
@@ -811,7 +1193,13 @@ const ManageUsers = () => {
                                 }
                             />
                         </FormControl>
-                        <TextField select variant="outlined" required placeholder={t("role")} value={user.role} sx={{width:"15%"}} onChange={(e) => handleRoleChange(e,user._id)}> 
+                        <TextField select variant="outlined" required placeholder={t("role")} value={user.role} sx={{width:"15%"}} 
+                        onChange={(e) => handleRoleChange(e,user._id)}
+                        SelectProps={{
+                            MenuProps: {
+                              disableScrollLock: true, 
+                            }
+                          }}> 
                         {UserRoles.map((role) => (
                             <MenuItem key={role} value={role}>
                                 {t(role)}
@@ -819,6 +1207,11 @@ const ManageUsers = () => {
                         ))}
                         </TextField>
                         <Box sx={{width:'15%', display:"flex", flexDirection:"row", justifyContent:"end"}}>
+                            <Tooltip title={t("view_details")} arrow> 
+                                <IconButton sx={{color:"#76C5E1"}} onClick={() => handleShowUserDetails(user._id)}>
+                                    <RemoveRedEyeIcon/>
+                                </IconButton>
+                            </Tooltip>
                             <Tooltip title={t("save")} arrow>
                                 <IconButton sx={{color:"#76C5E1"}} disabled={!user.modified} onClick={() => showVerifyUpdateDialog(user._id)}>
                                     <SaveIcon/>
@@ -830,141 +1223,264 @@ const ManageUsers = () => {
                                 </IconButton>
                             </Tooltip>
                         </Box>
-                        <Dialog
-                            open={verifyUpdate}
-                            onClose={hideVerifyUpdateDialog}
-                            PaperProps={{
-                                sx: {
-                                    width: "400px",  
-                                    height: "200px", 
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    justifyContent: "start",
-                                    alignItems: "center",
-                                    borderRadius: "5px",
-                                }
-                            }}
-                        >
-                            <DialogTitle>{t("sure_to_update_user")}?</DialogTitle>
-                            <Box 
-                                sx={{
-                                    width: '100%',
-                                    display: 'flex',
-                                    flexDirection: 'row',
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
-                                    position: 'absolute',
-                                    top: '50%',
-                                    gap: '20px',
-                                }}
-                            >
-                                <Button sx={{
-                                    color: 'white',
-                                    backgroundColor: '#EA9696',
-                                    padding: '5px 10px',
-                                    borderRadius: '10px',
-                                    textDecoration: 'none',
-                                    fontWeight: 'bold',
-                                    width: '100px',
-                                    height: '40px',
-                                    marginTop: '10px',
-                                    '&:hover': {
-                                        backgroundColor: '#EAB8B8',
-                                        color: 'white',
-                                    },
-                                }} 
-                                onClick={hideVerifyUpdateDialog}>
-                                    {t("no")}
-                                </Button>
-                                <Button sx={{
-                                    color: 'white',
-                                    backgroundColor: '#2CA8D5',
-                                    padding: '5px 10px',
-                                    borderRadius: '10px',
-                                    textDecoration: 'none',
-                                    fontWeight: 'bold',
-                                    width: '100px',
-                                    height: '40px',
-                                    marginTop: '10px',
-                                    '&:hover': {
-                                        backgroundColor: '#76C5E1',
-                                        color: 'white',
-                                    },
-                                }} 
-                                onClick={() => handleUpdateUser(selectedUserId)}>
-                                    {t("yes")}
-                                </Button>
-                            </Box>
-                        </Dialog>
-                        <Dialog
-                            open={verifyDelete}
-                            onClose={hideVerifyDeleteDialog}
-                            PaperProps={{
-                                sx: {
-                                    width: "400px",  
-                                    height: "200px", 
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    justifyContent: "start",
-                                    alignItems: "center",
-                                    borderRadius: "5px",
-                                }
-                            }}
-                        >
-                            <DialogTitle>{t("sure_to_delete_user")}?</DialogTitle>
-                            <Box 
-                                sx={{
-                                    width: '100%',
-                                    display: 'flex',
-                                    flexDirection: 'row',
-                                    justifyContent: 'center',
-                                    alignItems: 'center',
-                                    position: 'absolute',
-                                    top: '50%',
-                                    gap: '20px',
-                                }}
-                            >
-                                <Button sx={{
-                                    color: 'white',
-                                    backgroundColor: '#EA9696',
-                                    padding: '5px 10px',
-                                    borderRadius: '10px',
-                                    textDecoration: 'none',
-                                    fontWeight: 'bold',
-                                    width: '100px',
-                                    height: '40px',
-                                    marginTop: '10px',
-                                    '&:hover': {
-                                        backgroundColor: '#EAB8B8',
-                                        color: 'white',
-                                    },
-                                }} 
-                                onClick={hideVerifyDeleteDialog}>
-                                    {t("no")}
-                                </Button>
-                                <Button sx={{
-                                    color: 'white',
-                                    backgroundColor: '#2CA8D5',
-                                    padding: '5px 10px',
-                                    borderRadius: '10px',
-                                    textDecoration: 'none',
-                                    fontWeight: 'bold',
-                                    width: '100px',
-                                    height: '40px',
-                                    marginTop: '10px',
-                                    '&:hover': {
-                                        backgroundColor: '#76C5E1',
-                                        color: 'white',
-                                    },
-                                }} 
-                                onClick={() => handleDeleteUser(selectedUserId)}>
-                                    {t("yes")}
-                                </Button>
-                            </Box>
-                        </Dialog>
                     </Box>
                 ))}
             </Box>
+            <Dialog
+                open={verifyUpdate}
+                disableScrollLock={true}
+                onClose={hideVerifyUpdateDialog}
+                PaperProps={{
+                    sx: {
+                        width: "auto",  
+                        height: "auto", 
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        borderRadius: "10px",
+                        padding: '20px',
+                    }
+                }}
+            >
+                <DialogTitle>{t("confirm_update_user")}?</DialogTitle>
+                <Box 
+                    sx={{
+                        width: '100%',
+                        display: 'flex',
+                        flexDirection: 'row',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        gap: '20px',
+                    }}
+                >
+                    <Button sx={{
+                        color: 'white',
+                        backgroundColor: '#EA9696',
+                        padding: '5px 10px',
+                        borderRadius: '10px',
+                        textDecoration: 'none',
+                        fontWeight: 'bold',
+                        width: '100px',
+                        height: '40px',
+                        marginTop: '10px',
+                        textTransform: "none",
+                        '&:hover': {
+                            backgroundColor: '#EAB8B8',
+                            color: 'white',
+                        },
+                    }} 
+                    onClick={hideVerifyUpdateDialog}>
+                        {t("no")}
+                    </Button>
+                    <Button sx={{
+                        color: 'white',
+                        backgroundColor: '#2CA8D5',
+                        padding: '5px 10px',
+                        borderRadius: '10px',
+                        textDecoration: 'none',
+                        fontWeight: 'bold',
+                        width: '100px',
+                        height: '40px',
+                        marginTop: '10px',
+                        textTransform: "none",
+                        '&:hover': {
+                            backgroundColor: '#76C5E1',
+                            color: 'white',
+                        },
+                    }} 
+                    onClick={() => handleUpdateUser(selectedUserId)}>
+                        {t("yes")}
+                    </Button>
+                </Box>
+            </Dialog>
+            <Dialog
+                open={verifyDelete}
+                disableScrollLock={true}
+                onClose={hideVerifyDeleteDialog}
+                PaperProps={{
+                    sx: {
+                        width: "auto",  
+                        height: "auto", 
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "",
+                        alignItems: "center",
+                        borderRadius: "10px",
+                        padding: '20px',
+                    }
+                }}
+            >
+                <DialogTitle>{t("confirm_delete_user")}?</DialogTitle>
+                <Box 
+                    sx={{
+                        width: '100%',
+                        display: 'flex',
+                        flexDirection: 'row',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        gap: '20px',
+                    }}
+                >
+                    <Button sx={{
+                        color: 'white',
+                        backgroundColor: '#EA9696',
+                        borderRadius: '10px',
+                        textDecoration: 'none',
+                        fontWeight: 'bold',
+                        width: '100px',
+                        height: '40px',
+                        marginTop: '10px',
+                        textTransform: "none",
+                        '&:hover': {
+                            backgroundColor: '#EAB8B8',
+                            color: 'white',
+                        },
+                    }} 
+                    onClick={hideVerifyDeleteDialog}>
+                        {t("no")}
+                    </Button>
+                    <Button sx={{
+                        color: 'white',
+                        backgroundColor: '#2CA8D5',
+                        borderRadius: '10px',
+                        textDecoration: 'none',
+                        fontWeight: 'bold',
+                        width: '100px',
+                        height: '40px',
+                        marginTop: '10px',
+                        textTransform: "none",
+                        '&:hover': {
+                            backgroundColor: '#76C5E1',
+                            color: 'white',
+                        },
+                    }} 
+                    onClick={() => handleDeleteUser(selectedUserId)}>
+                        {t("yes")}
+                    </Button>
+                </Box>
+            </Dialog>
+            <Dialog
+                open={showUserDetails}
+                disableScrollLock={true}
+                onClose={handleHideUserDetails}
+                PaperProps={{
+                    sx: {
+                        width: "400px",  
+                        height: "auto", 
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "start",
+                        alignItems: "center",
+                        borderRadius: "10px",
+                        gap: "10px",
+                        padding: "20px",
+                    }
+                }}
+            >
+                <DialogTitle
+                    sx={{
+                        fontSize: 25,
+                        fontWeight: "bold",
+                        textAlign: "center",
+                        letterSpacing: 0.2,
+                        lineHeight: 1,
+                        userSelect: "none",
+                        color: "#2CA8D5",
+                    }}
+                >{t("user_details")}</DialogTitle>
+                <Box
+                    sx={{
+                        height: '20px',
+                        width: '100%',
+                        display: "flex",
+                        flexDirection: "row",
+                        alignItems: "center", 
+                        gap: "10px",
+                    }}
+                >
+                    <Typography variant="body1">{t("name")} :</Typography>
+                    <Typography variant="body2" color="text.secondary">{selectedUser.name}</Typography>
+                </Box>
+                <Box
+                    sx={{
+                        height: '20px',
+                        width: '100%',
+                        display: "flex",
+                        flexDirection: "row",
+                        alignItems: "center", 
+                        gap: "10px",
+                    }}
+                >
+                    <Typography variant="body1">{t("email")} :</Typography>
+                    <Typography variant="body2" color="text.secondary">{selectedUser.email}</Typography>
+                </Box>
+                <Box
+                    sx={{
+                        height: '20px',
+                        width: '100%',
+                        display: "flex",
+                        flexDirection: "row",
+                        alignItems: "center", 
+                        gap: "10px",
+                    }}
+                >
+                    <Typography variant="body1">{t("gender")} :</Typography>
+                    <Typography variant="body2" color="text.secondary">{t(selectedUser.gender)}</Typography>
+                </Box>
+                <Box
+                    sx={{
+                        height: '20px',
+                        width: '100%',
+                        display: "flex",
+                        flexDirection: "row",
+                        alignItems: "center", 
+                        gap: "10px",
+                    }}
+                >
+                    <Typography variant="body1">{t("activity")} :</Typography>
+                    <Typography variant="body2" color="text.secondary">{selectedUser.activity}</Typography>
+                </Box>
+                <Box
+                    sx={{
+                        height: '20px',
+                        width: '100%',
+                        display: "flex",
+                        flexDirection: "row",
+                        alignItems: "center", 
+                        gap: "10px",
+                    }}
+                >
+                    <Typography variant="body1">{t("jobtitle")} :</Typography>
+                    <Typography variant="body2" color="text.secondary">{selectedUser.jobtitle}</Typography>
+                </Box>
+                <Box
+                    sx={{
+                        height: '20px',
+                        width: '100%',
+                        display: "flex",
+                        flexDirection: "row",
+                        alignItems: "center", 
+                        gap: "10px",
+                    }}
+                >
+                    <Typography variant="body1">{t("grade")} :</Typography>
+                    <Typography variant="body2" color="text.secondary">{selectedUser.grade}</Typography>
+                </Box>
+                <Box
+                    sx={{
+                        height: '20px',
+                        width: '100%',
+                        display: "flex",
+                        flexDirection: "row",
+                        alignItems: "center", 
+                        gap: "10px",
+                    }}
+                >
+                    <Typography variant="body1">{t("role")} :</Typography>
+                    <Typography variant="body2" color="text.secondary">{t(selectedUser.role)}</Typography>
+                </Box>
+            </Dialog>
             <Pagination
                 count={pageCount}
                 page={page}
@@ -972,6 +1488,11 @@ const ManageUsers = () => {
                 color="primary"
                 sx={{ marginTop: "20px", display: "flex", justifyContent: "center" }}
             />
+            <Snackbar open={showsVerificationAlert} autoHideDuration={3000} onClose={handleVerificationAlertClose}>
+                <Alert onClose={handleVerificationAlertClose} severity={verifyAlert} variant="filled">
+                    {t(verifyAlertMessage)}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 };

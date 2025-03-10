@@ -6,18 +6,19 @@ import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import DialogTitle from '@mui/material/DialogTitle';
 import Dialog from '@mui/material/Dialog';
+import axios from 'axios';
 
 const Verify = () => {
 
     const { t } = useLanguage();
 
+    // Sign in
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [verifyEmail, setVerifyEmail] = useState('');
-    const [showVerifyEmailAlert, setShowVerifyEmailAlert] = useState(false);
-    const [verifyEmailAlert, setVerifyEmailAlert] = useState('');
-    const [showPassword, setShowPassword] = useState(false);
-    const [dialogOpen, setDialogOpen] = useState(false);
+    const [showsSignInAlert, setShowsSignInAlert] = useState(false);
+    const [signInAlert, setSignInAlert] = useState('error');
+    const [signInAlertMessage, setSignInAlertMessage] = useState('email_not_found');
+    const [rememberMe, setRememberMe] = useState(false);
 
     const handleEmailChange = (e) => {
         setEmail(e.target.value);
@@ -27,19 +28,45 @@ const Verify = () => {
         setPassword(e.target.value);
     };
 
+    const handleSignIn = async () => {
+        try {
+          const response = await axios.post("http://localhost:5000/api/admin/sign-in", { 
+            email, 
+            password, 
+          });
+          if (response.status == 200) {
+            if(rememberMe) {
+                setCookie("User",response.data, 5);
+            }else{
+                setCookie("User",response.data);
+            }
+            setCookie("SignedIn",true, 5);
+            window.location.href = "/manageusers";
+          };
+        } catch (error) {
+          if (error.response) {
+            const errorMessage = error.response.data.message;
+              setSignInAlert("error");
+              setSignInAlertMessage(errorMessage);
+              setShowsSignInAlert(true);
+          }
+        }
+    };
+
+    const handleSignInAlertClose = () => {
+        setShowsSignInAlert(false);
+    };
+
+    // Forgot Password
+
+    const [verifyEmail, setVerifyEmail] = useState('');
+    const [showVerifyEmailAlert, setShowVerifyEmailAlert] = useState(false);
+    const [verifyEmailAlert, setVerifyEmailAlert] = useState('');
+    const [dialogOpen, setDialogOpen] = useState(false);
+
     const handleVerifyEmailChange = (e) => {
         setVerifyEmail(e.target.value);
     };
-
-    const toggleShowPassword = () => {
-        setShowPassword(!showPassword);
-    };
-
-    const handleSignIn = () => {
-        setCookie("SignedIn",true, 5);
-        window.location.href = "/manageusers";
-    };
-
   
     const handleDialogClose = () => {
         setDialogOpen(false);
@@ -60,30 +87,45 @@ const Verify = () => {
 
     const resetpasswordmessage = "Your New Password is : Random";
   
-    const sendEmail = async () => {
-        const emailData = {
-          toEmail: verifyEmail,
-          message: resetpasswordmessage,
-        };
+    const sendResetPasswordEmail = async () => {
+        try {
+            const response = await axios.post("http://localhost:5000/api/users/verify-email", { email: verifyEmail });
+
+            if(response.status === 200){
+                correctEmail();
+                const emailData = {
+                    toEmail: verifyEmail,
+                    message: resetpasswordmessage,
+                };
+        
+                await axios.post("http://localhost:5000/password-reset", emailData, {
+                    headers: { "Content-Type": "application/json" },
+                });
+            };
+
+        } catch (error) {
+            console.error("Error:", error);
+            wrongEmail();
+        }
+    };
+    
+    const correctEmail = () => {
         setShowVerifyEmailAlert(true);
         setVerifyEmailAlert("success");
         handleDialogClose();
-        try {
-          const res = await fetch("http://localhost:5000/send-email", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(emailData),
-          });
-        } catch (error) {
-
-        }
     };
 
     const wrongEmail = () => {
         setShowVerifyEmailAlert(true);
         setVerifyEmailAlert("error");
+    };
+
+    //Password visibility
+
+    const [showPassword, setShowPassword] = useState(false);
+
+    const toggleShowPassword = () => {
+        setShowPassword(!showPassword);
     };
 
     // Styles ......................................
@@ -106,6 +148,7 @@ const Verify = () => {
         width: '40%',
         height: '45%',
         fontWeight: 'bold',
+        textTransform: "none",
         '&:hover': {
           backgroundColor: '#76C5E1',
           color: 'white',
@@ -162,7 +205,7 @@ const Verify = () => {
                     <OutlinedInput
                         value={email}
                         onChange={handleEmailChange}
-                        label="Email"
+                        label="Email...."
                     />
                 </FormControl>
 
@@ -172,7 +215,7 @@ const Verify = () => {
                         type={showPassword ? 'text' : 'password'}
                         value={password}
                         onChange={handlePasswordChange}
-                        label="Password"
+                        label="Password........."
                         endAdornment={
                             <InputAdornment position="end">
                                 <IconButton onClick={toggleShowPassword} size="small">
@@ -191,7 +234,7 @@ const Verify = () => {
                         alignItems: 'center',
                         gap: '7px',
                     }}>
-                    <Checkbox />
+                    <Checkbox value={rememberMe} onChange={(e) => setRememberMe(e.target.checked)}/>
                     <Typography
                         sx={{
                             fontSize: 15,
@@ -221,6 +264,11 @@ const Verify = () => {
                     <Link sx={linkStyle} onClick={showForgotPasswordMessage} >
                         {t("forgot_password")}
                     </Link>
+                    <Snackbar open={showsSignInAlert} autoHideDuration={3000} onClose={handleSignInAlertClose}>
+                        <Alert onClose={handleSignInAlertClose} severity={signInAlert} variant="filled">
+                            {t(signInAlertMessage)}
+                        </Alert>
+                    </Snackbar>
                     <Dialog
                         open={dialogOpen}
                         onClose={handleDialogClose}
@@ -281,7 +329,7 @@ const Verify = () => {
                               color: 'white',
                             },
                         }} 
-                        onClick={() => validateEmail(verifyEmail) ? sendEmail() : wrongEmail()}>
+                        onClick={() => validateEmail(verifyEmail) ? sendResetPasswordEmail() : wrongEmail()}>
                             {t("submit")}
                         </Button>
                     </Dialog>

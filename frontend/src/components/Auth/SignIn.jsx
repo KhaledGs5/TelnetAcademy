@@ -1,24 +1,25 @@
 import React, {useState} from "react";
 import { Box, Radio, Checkbox, Typography, Button, Link,FormControl,InputLabel,OutlinedInput,InputAdornment,IconButton,Alert, Snackbar } from "@mui/material";
 import { useLanguage } from "../../languagecontext";
+import { setCookie } from "../Cookies";
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import DialogTitle from '@mui/material/DialogTitle';
 import Dialog from '@mui/material/Dialog';
+import axios from "axios";
 
 const SignIn = () => {
 
-    const [selectedRole, setSelectedRole] = useState('Trainer');
-
     const { t } = useLanguage();
 
+    // Sign In
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [verifyEmail, setVerifyEmail] = useState('');
-    const [showVerifyEmailAlert, setShowVerifyEmailAlert] = useState(false);
-    const [verifyEmailAlert, setVerifyEmailAlert] = useState('');
-    const [dialogOpen, setDialogOpen] = useState(false);
-    const [showPassword, setShowPassword] = useState(false);
+    const [selectedRole, setSelectedRole] = useState('trainer');
+    const [showsSignInAlert, setShowsSignInAlert] = useState(false);
+    const [signInAlert, setSignInAlert] = useState('error');
+    const [signInAlertMessage, setSignInAlertMessage] = useState('email_not_found');
+    const [rememberMe, setRememberMe] = useState(false);
 
     const handleEmailChange = (e) => {
         setEmail(e.target.value);
@@ -27,46 +28,75 @@ const SignIn = () => {
     const handlePasswordChange = (e) => {
         setPassword(e.target.value);
     };
+    
+    const handleRoleChange = (event) => {
+        setSelectedRole(event.target.value);
+    };
+
+    const handleSignIn = async () => {
+        try {
+          const response = await axios.post("http://localhost:5000/api/users/sign-in", { 
+            email, 
+            password, 
+            role: selectedRole 
+          });
+          if (response.status == 200) {
+            if(rememberMe) {
+                setCookie("User",response.data, 5);
+            }else{
+                setCookie("User",response.data);
+            }
+            setCookie("SignedIn",true, 5);
+            window.location.href = "/dashboard";
+          };
+        } catch (error) {
+          if (error.response) {
+            const errorMessage = error.response.data.message;
+            setShowsSignInAlert(true);
+            setSignInAlertMessage(errorMessage);
+            if (errorMessage === "wrongRole") {
+                setSignInAlert("warning");
+            }else{
+                setSignInAlert("error");
+            }
+          }
+        }
+    };
+      
+    const handleSignInAlertClose = () => {
+        setShowsSignInAlert(false);
+    };
+
+    // Verify
+    const [verifyEmail, setVerifyEmail] = useState('');
+    const [showVerifyEmailAlert, setShowVerifyEmailAlert] = useState(false);
+    const [verifyEmailAlert, setVerifyEmailAlert] = useState('');
+    const [verifyDialogOpen, setVerifyDialogOpen] = useState(false);
 
     const handleVerifyEmailChange = (e) => {
         setVerifyEmail(e.target.value);
     };
 
-    const toggleShowPassword = () => {
-        setShowPassword(!showPassword);
-    };
-
-    const handleDialogClose = () => {
-        setDialogOpen(false);
+    const handleVerifyDialogClose = () => {
+        setVerifyDialogOpen(false);
     };
 
     const showForgotPasswordMessage = () => {
-        setDialogOpen(true);
-    };
-
-    const handleChange = (event) => {
-        setSelectedRole(event.target.value);
-    };
-
-    const handleAlertClose = (event, reason) => {
-        if (reason === "clickaway") {
-          return;
-        }
-        setShowVerifyEmailAlert(false);
+        setVerifyDialogOpen(true);
     };
 
     const validateEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
     const resetpasswordmessage = "Your New Password is : Random";
   
-    const sendEmail = async () => {
+    const sendResetPasswordEmail = async () => {
         const emailData = {
           toEmail: verifyEmail,
           message: resetpasswordmessage,
         };
         setShowVerifyEmailAlert(true);
         setVerifyEmailAlert("success");
-        handleDialogClose();
+        handleVerifyDialogClose();
         try {
           const res = await fetch("http://localhost:5000/send-email", {
             method: "POST",
@@ -83,6 +113,20 @@ const SignIn = () => {
     const wrongEmail = () => {
         setShowVerifyEmailAlert(true);
         setVerifyEmailAlert("error");
+    };
+
+    const handleAlertClose = (event, reason) => {
+        if (reason === "clickaway") {
+          return;
+        }
+        setShowVerifyEmailAlert(false);
+    };
+
+    // Password Visibility
+    const [showPassword, setShowPassword] = useState(false);
+
+    const toggleShowPassword = () => {
+        setShowPassword(!showPassword);
     };
 
 
@@ -106,6 +150,7 @@ const SignIn = () => {
         width: '40%',
         height: '45%',
         fontWeight: 'bold',
+        textTransform: "none",
         '&:hover': {
           backgroundColor: '#76C5E1',
           color: 'white',
@@ -162,7 +207,7 @@ const SignIn = () => {
                     <OutlinedInput
                         value={email}
                         onChange={handleEmailChange}
-                        label="Email"
+                        label="Email...."
                     />
                 </FormControl>
 
@@ -172,7 +217,7 @@ const SignIn = () => {
                         type={showPassword ? 'text' : 'password'}
                         value={password}
                         onChange={handlePasswordChange}
-                        label="Password"
+                        label="Password........."
                         endAdornment={
                             <InputAdornment position="end">
                                 <IconButton onClick={toggleShowPassword} size="small">
@@ -202,35 +247,72 @@ const SignIn = () => {
                         display: "flex",
                         flexDirection: "row",
                         alignItems: "center",
-                        gap: "10px",
+                        gap: "25px",
                     }}
                 >
-                    <Typography   
+                    <Box
                         sx={{
-                            fontSize: 15,
-                            textAlign: "center",
-                            color: "text.primary",
-                        }}>
-                        {t("trainer")}
-                    </Typography>
-                    <Radio
-                        checked={selectedRole === 'Trainer'}
-                        onChange={handleChange}
-                        value="Trainer"
-                    />
-                    <Typography   
+                            display: "flex",
+                            flexDirection: "row",
+                            alignItems: "center",
+                        }}
+                    >
+                        <Radio
+                            checked={selectedRole === 'manager'}
+                            onChange={handleRoleChange}
+                            value="manager"
+                        />
+                        <Typography   
+                            sx={{
+                                fontSize: 15,
+                                textAlign: "center",
+                                color: "text.primary",
+                            }}>
+                            {t("manager")}
+                        </Typography>
+                    </Box>
+                    <Box
                         sx={{
-                            fontSize: 15,
-                            textAlign: "center",
-                            color: "text.primary",
-                        }}>
-                        {t("trainee")}
-                    </Typography>
-                    <Radio
-                        checked={selectedRole === 'Trainee'}
-                        onChange={handleChange}
-                        value="Trainee"
-                    />
+                            display: "flex",
+                            flexDirection: "row",
+                            alignItems: "center",
+                        }}
+                    >
+                        <Radio
+                            checked={selectedRole === 'trainer'}
+                            onChange={handleRoleChange}
+                            value="trainer"
+                        />
+                        <Typography   
+                            sx={{
+                                fontSize: 15,
+                                textAlign: "center",
+                                color: "text.primary",
+                            }}>
+                            {t("trainer")}
+                        </Typography>
+                    </Box>
+                    <Box
+                        sx={{
+                            display: "flex",
+                            flexDirection: "row",
+                            alignItems: "center",
+                        }}
+                    >
+                        <Radio
+                            checked={selectedRole === 'trainee'}
+                            onChange={handleRoleChange}
+                            value="trainee"
+                        />
+                        <Typography   
+                            sx={{
+                                fontSize: 15,
+                                textAlign: "center",
+                                color: "text.primary",
+                            }}>
+                            {t("trainee")}
+                        </Typography>
+                    </Box>
                 </Box>
                 <Box sx={{
                         position: "absolute",
@@ -242,7 +324,7 @@ const SignIn = () => {
                         alignItems: 'center',
                         gap: '7px',
                     }}>
-                    <Checkbox />
+                    <Checkbox value={rememberMe} onChange={(e) => setRememberMe(e.target.checked)}/>
                     <Typography
                         sx={{
                             fontSize: 15,
@@ -266,15 +348,20 @@ const SignIn = () => {
                         gap: '7px',
                     }}
                 >
-                    <Button sx={buttonStyle}>
+                    <Button sx={buttonStyle} onClick={handleSignIn}>
                         {t("submit")}
                     </Button>
                     <Link sx={linkStyle} onClick={showForgotPasswordMessage}>
                         {t("forgot_password")}
                     </Link>
+                    <Snackbar open={showsSignInAlert} autoHideDuration={3000} onClose={handleSignInAlertClose}>
+                        <Alert onClose={handleSignInAlertClose} severity={signInAlert} variant="filled">
+                            {t(signInAlertMessage)}
+                        </Alert>
+                    </Snackbar>
                     <Dialog
-                        open={dialogOpen}
-                        onClose={handleDialogClose}
+                        open={verifyDialogOpen}
+                        onClose={handleVerifyDialogClose}
                         PaperProps={{
                             sx: {
                                 width: "400px",  
@@ -332,7 +419,7 @@ const SignIn = () => {
                               color: 'white',
                             },
                         }} 
-                        onClick={() => validateEmail(verifyEmail) ? sendEmail() : wrongEmail()}>
+                        onClick={() => validateEmail(verifyEmail) ? sendResetPasswordEmail() : wrongEmail()}>
                             {t("submit")}
                         </Button>
                     </Dialog>
