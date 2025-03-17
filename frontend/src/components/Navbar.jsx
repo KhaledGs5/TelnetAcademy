@@ -78,7 +78,8 @@ const Navbar = () => {
         window.location.href = "/";
     };
 
-    const user = getCookie("User");
+    const user = getCookie("User") ?? null;
+
 
     const location = useLocation();
 
@@ -152,7 +153,7 @@ const Navbar = () => {
                onClick={goToDashBoard}          
             >   
             </Box>
-            {signedIn ? <Box
+            {signedIn && user ? <Box
                 sx={{
                     position: 'absolute',
                     left: '40%',
@@ -249,7 +250,7 @@ const Navbar = () => {
                     </Menu>
                 </Box>
             </Box>
-            : 
+            : user ?
             <Box                
                 sx={{
                     position: 'absolute',
@@ -286,7 +287,7 @@ const Navbar = () => {
                 }}              
                 >
                     {ProfileImage ? <img src={ProfileImage} alt="Img" style={profileImageStyle}/>:
-                    <AccountCircleIcon  sx={{marginRight:5}} />
+                    <AccountCircleIcon  sx={{marginRight:"5px"}} />
                     }
                     <Typography>
                         {user.name}
@@ -352,7 +353,7 @@ const Navbar = () => {
                     <MenuItem onClick={() => window.location.href = "/account"} sx={menuStyle("/account")} onMouseEnter={handleCloseSubmenu}><EditIcon sx={{marginRight:'10px'}}/>{t("profile")}</MenuItem>
                     <MenuItem onClick={handleLogout} sx={menuStyle("/logout")} onMouseEnter={handleCloseSubmenu}><LogoutIcon sx={{marginRight:'10px'}}/>{t("logout")}</MenuItem>
                 </Menu>
-            </Box>}
+            </Box> : null}
         </Box>
     );
 };

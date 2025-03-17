@@ -37,10 +37,11 @@ const Verify = () => {
           if (response.status == 200) {
             if(rememberMe) {
                 setCookie("User",response.data, 5);
+                setCookie("SignedIn",true, 5);
             }else{
                 setCookie("User",response.data);
+                setCookie("SignedIn",true);
             }
-            setCookie("SignedIn",true, 5);
             window.location.href = "/manageusers";
           };
         } catch (error) {

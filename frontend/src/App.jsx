@@ -15,7 +15,6 @@ import './index.css';
 
 
 function App() {
-
   const user = getCookie("User") || null;
   const signedIn = getCookie("SignedIn") || null;
 
@@ -30,12 +29,16 @@ function App() {
         )}
         <Route path="/signin" element={<SignIn />} />
         <Route path="/verify" element={<Verify />} />
-        <Route path="/manageusers" element={<ManageUsers />} />
-        <Route path="/dashboard" element={<Dashboard />}/>
-        <Route path="/managesessions" element={<ManageSessions />}/>
-        <Route path="/trainersessions" element={<TrainerSession />}/>
-        <Route path="/account" element={<Profile />}/>
-        <Route path="/calendar" element={<Calendar />}/>
+        {signedIn && (
+          <>
+            <Route path="/manageusers" element={<ManageUsers />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/managesessions" element={<ManageSessions />} />
+            <Route path="/trainersession" element={<TrainerSession />} />
+            <Route path="/account" element={<Profile />} />
+            <Route path="/calendar" element={<Calendar />} />
+          </>
+        )}
       </Routes>
     </Router>
   );

@@ -23,6 +23,7 @@ export const ThemeProviderWrapper = ({ children }) => {
                         navbar: darkMode ? '#666666' : '#ffffff',
                         calendar: darkMode ? '#666666' : '#ffffff',
                         dcalendar: darkMode ? '#222222' : '#aaaaaa',
+                        noBigDiff: darkMode ? '#666666' : '#f6f6f6',
                     },
                     text: {
                         primary: darkMode ? '#eeeeee' : '#111111',
@@ -31,7 +32,7 @@ export const ThemeProviderWrapper = ({ children }) => {
                     button: {
                         primary: darkMode ? '#76C5E1':'#2CA8D5',
                         secondary: darkMode? '#dddddd' : '#888B93',
-                        tertiary: darkMode? '#444444' : '#eeeeee',
+                        tertiary: darkMode? '#777777' : '#eeeeee',
                     }
                 },
             }),

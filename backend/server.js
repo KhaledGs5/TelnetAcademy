@@ -21,8 +21,13 @@ app.use("/api", userRoutes);
 const adminRoutes = require("./app/routes/admin.routes");
 app.use("/api", adminRoutes);
 
-// Automatic Mail Sending ..........
+const trainingRoutes = require("./app/routes/training.routes");
+app.use("/api", trainingRoutes);
 
+const sessionRoutes = require("./app/routes/session.routes");
+app.use("/api", sessionRoutes);
+
+// Automatic Mail Sending ..........
 const transporter = nodemailer.createTransport({
   service: "gmail", 
   auth: {
