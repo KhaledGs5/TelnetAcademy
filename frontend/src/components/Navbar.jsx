@@ -13,6 +13,7 @@ import GroupAddIcon from '@mui/icons-material/GroupAdd';
 import EditIcon from '@mui/icons-material/Edit';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
+import AddAlertIcon from '@mui/icons-material/AddAlert';
 import LogoutIcon from '@mui/icons-material/Logout';
 import LanguageIcon from '@mui/icons-material/Language';
 import { useLanguage } from "../languagecontext";
@@ -341,6 +342,9 @@ const Navbar = () => {
                             ))}
                         </Menu>
                     </MenuItem> : null}
+                    {(user.role === "trainer") || (user.role === "trainee_trainer" && selectedRole === "trainer") ? 
+                    <MenuItem onClick={() => window.location.href = "/trainercall"} sx={menuStyle("/trainercall")}><AddAlertIcon sx={{marginRight:'10px'}}/>{t("training_calls")}</MenuItem>
+                    : null}
                     {user.role === 'manager' ? <MenuItem onClick={() => window.location.href = "/callfortrainers"} sx={menuStyle("/callfortrainers")}><GroupAddIcon sx={{marginRight:'10px'}}/>{t("call_for_trainers")}</MenuItem> : null}
                     <MenuItem sx={menuStyle("")} onClick={toggleTheme}  onMouseEnter={handleCloseSubmenu}>
                         {darkMode ? <Brightness7Icon sx={{marginRight:'10px'}}/> : <Brightness4Icon sx={{marginRight:'10px'}}/>}

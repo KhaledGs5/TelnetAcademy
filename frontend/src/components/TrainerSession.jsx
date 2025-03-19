@@ -1,27 +1,23 @@
 import React, { useState, useEffect } from "react";
 import { useLanguage } from "../languagecontext";
-import { Box, TextField , Typography, Button,Input,IconButton, InputAdornment, Tooltip, OutlinedInput, FormControl, InputLabel, Pagination,Radio, Alert, Snackbar , Autocomplete, Popover  } from "@mui/material";
+import { Box, TextField , Typography, Button,Input,IconButton, InputAdornment, Tooltip, OutlinedInput, FormControl, InputLabel, Pagination,Radio, Alert, Snackbar , Autocomplete, Popover,Table, TableBody, TableCell, TableContainer, 
+    TableHead, TableRow, Paper, Checkbox, FormControlLabel  } from "@mui/material";
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import ClearIcon from '@mui/icons-material/Clear';
 import SearchIcon from '@mui/icons-material/Search';
-import UploadFileIcon from '@mui/icons-material/UploadFile';
 import MenuItem from '@mui/material/MenuItem';
-import CheckIcon from '@mui/icons-material/Check';
-import AddIcon from '@mui/icons-material/Add';
+import StarBorderIcon from '@mui/icons-material/StarBorder';
+import AppRegistrationIcon from '@mui/icons-material/AppRegistration';
+import StarIcon from '@mui/icons-material/Star';
 import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
 import FilterAltOffIcon from '@mui/icons-material/FilterAltOff';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
-import DeleteIcon from '@mui/icons-material/Delete';
-import SaveIcon from '@mui/icons-material/Save';
 import DialogTitle from '@mui/material/DialogTitle';
 import Dialog from '@mui/material/Dialog';
-import { StaticDatePicker, LocalizationProvider , DateTimePicker} from "@mui/x-date-pickers";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import { getCookie } from "./Cookies";
 import dayjs from 'dayjs';
 import axios from "axios";
-import * as XLSX from 'xlsx';
 
 const TrainerSession = () => {
 
@@ -38,28 +34,11 @@ const TrainerSession = () => {
   }, []);
   
 
-  const [newTrainingTitle, setNewTrainingTitle] = useState("");
-  const [newTrainingMonth, setNewTrainingMonth] = useState("");
-  const [newTrainingSkillType, setNewTrainingSkillType] = useState("");
-  const [newTrainingDate,setNewTrainingDate]= useState("");
-  const [newTrainingNbOfHours, setNewTrainingNbOfHours] = useState(0);
-  const [newTrainingLocation, setNewTrainingLocation] = useState("");
-  const [newTrainingMode, setNewTrainingMode] = useState("");
-  const [newTrainingType, setNewTrainingType] = useState("");
-  const [newTrainingTrainer, setNewTrainingTrainer] = useState("");
-  const [newTrainingDescription, setNewTrainingDescription] = useState("");
-  const [newTrainingNbOfSessions, setNewTrainingNbOfSessions] = useState(0);
-  const [newTrainingNbOfParticipants, setNewTrainingNbOfParticipants ] = useState(0);
-  
 
-  const [newSessionsNames, setNewSessionsNames] = useState([]);
-  const [newSessionsDates, setNewSessionsDates] = useState([]);
-  const [newSessionsDurations, setNewSessionsDurations] = useState([]);
-  const [newSessionsLocations, setNewSessionsLocations] = useState([]);
-
-
-  // Fetch All Tranings with corresponding sessions
+  // Fetch All Trainings with corresponding sessions
   const [trainings, setTrainings] = useState([]);
+  const [markedTrainingsIds, setMarkedTrainingsIds] = useState([]);
+  const user = getCookie("User");
 
   const updateStatus = () => {
     trainings.forEach((training) => {
@@ -80,7 +59,6 @@ const TrainerSession = () => {
         .then((response) => {
             const trainingsWithModified = response.data.map(training => ({
                 ...training,
-                modified: false,
                 sessions: [],
                 full: training.nbOfAcceptedRequests >= training.nbOfParticipants,
             }));
@@ -92,7 +70,6 @@ const TrainerSession = () => {
                     .then((response) => {
                         const updatedSessions = response.data.map(session => ({
                             ...session,
-                            otherSessionLocation: false, 
                         }));
                         setTrainings((prevTrainings) =>
                             prevTrainings.map((t) =>
@@ -110,6 +87,17 @@ const TrainerSession = () => {
         });
   };
 
+  const fetchMarkedTrainingsIds = () => {
+    axios.get(`http://localhost:5000/api/users/${user._id}`)
+       .then((response) => {
+            const data = response.data;
+            setMarkedTrainingsIds(data.listOfMarkedTrainings || []);
+        })
+       .catch((error) => {
+            console.error("Error fetching marked trainings:", error);
+        });
+  };
+
   // Verify Update Or Create Training...........
 
   const [showsVerificationAlert, setShowsVerifificationAlert] = useState(false);
@@ -119,314 +107,59 @@ const TrainerSession = () => {
       setShowsVerifificationAlert(false);
   };
 
-  // Adding new Training
-  const [newTraining, setNewTraining] = useState(false);
-  const [otherLocation, setOtherLocation] = useState(false);
-  const [otherFilterLocation, setOtherFilterLocation] = useState(false);
-  const [otherSessionsLocations, setOtherSessionsLocations] = useState([]);
-  const [otherUpdateLocation, setOtherUpdateLocation] = useState(false);
-  const [otherSessionsUpdateLocations, setOtherSessionsUpdateLocations] = useState([]);
 
-  const TrainingMonths = [
-    "january", "february", "march", "april", "may", "june",
-    "july", "august", "september", "october", "november", "december"
-  ];
-  const getMonthDate = (monthName) => {
-    const monthIndex = TrainingMonths.indexOf(monthName);
-    if (monthIndex === -1) return dayjs(); 
-    return dayjs().month(monthIndex).startOf("month");
-  };
+    const [TrainingTrainers, setTrainingTrainers] = useState([]); 
 
-  const [selectedDays, setSelectedDays] = useState([]);
-  const [dateAnchorEl, setDateAnchorEl] = useState(null);
+    // Mark the training
 
-  const handleOpenDatePicker = (event) => {
-    setDateAnchorEl(event.currentTarget);
-  };
-
-  const handleCloseDatePicker = () => {
-    setDateAnchorEl(null);
-  };
-
-  const handleDateChange = (newValue) => {
-    const selectedDay = newValue.date(); 
-
-    setSelectedDays((prevDays) => {
-      let updatedDays;
-      if (prevDays.includes(selectedDay)) {
-        updatedDays = prevDays.filter((day) => day !== selectedDay);
-      } else {
-        updatedDays = [...prevDays, selectedDay].sort((a, b) => a - b);
-      }
-
-      setNewTrainingDate(updatedDays.join(" "));
-      return updatedDays;
-    });
-  };
-
-  const TrainingSkillTypes = ["soft_skill", "technical_skill"];
-  const TrainingModes = ["online", "face_to_face", "hybrid"];
-  const TrainingLocations = ['Telnet Sfax', 'Telnet Tunis Lac', 'Telnet Tunis CDS', 'Microsoft Teams'];
-  const TrainingTypes = ["internal", "external"];
-  const [TrainingTrainers, setTrainingTrainers] = useState([]); 
-  
-  const showNewTrainingForm = () => {
-      setNewTraining(true);
-  };
-
-  const hideNewTrainingForm = () => {
-      setNewTraining(false);
-  };
-
-  const handleAddTraining = () => {
-      const newTraining = {
-          title: newTrainingTitle,
-          month: newTrainingMonth,
-          skillType: newTrainingSkillType,
-          date: newTrainingDate,
-          nbOfHours: newTrainingNbOfHours,
-          location: newTrainingLocation,
-          mode: newTrainingMode,
-          type: newTrainingType,
-          description: newTrainingDescription,
-          nbOfSessions: newTrainingNbOfSessions,
-          nbOfParticipants: newTrainingNbOfParticipants,
-          trainer: newTrainingTrainer,
-      };
-      axios.post("http://localhost:5000/api/trainings", newTraining)
-        .then((response) => {
-          fetchTrainings();
-          hideNewTrainingForm();
-          addSessions(response.data._id);
-        })
-        .catch((error) => {
-          console.error("Error adding training:", error);
-        });
-      
-      const addSessions = (trainingId) => {
-        for (let i = 0; i < newTrainingNbOfSessions; i++) {
-          const newSession = {
-            name: newSessionsNames[i],
-            date: newSessionsDates[i],
-            duration: newSessionsDurations[i],
-            location: newSessionsLocations[i],
-            training: trainingId, 
-          };
-      
-          axios.post("http://localhost:5000/api/sessions", newSession)
-            .then(() => {
-            })
-            .catch((error) => {
-            });
-        }
-      };
-   };
-
-    //  Adding All Trainings
-    const [file, setFile] = useState(null);
-
-    const handleFileChange = (event) => {
-        setFile(event.target.files[0]);
-    };
-
-    const handleUpload = async () => {
-        if (!file) {
-            alert("Please select a file.");
-            return;
-        }
-        
-        const reader = new FileReader();
-        reader.onload = async () => {
-            const data = reader.result;
-            const workbook = XLSX.read(data, { type: 'array' });
-        
-            const sheetName = workbook.SheetNames[0];
-            const sheet = workbook.Sheets[sheetName];
-        
-            const jsonData = XLSX.utils.sheet_to_json(sheet);
-        
-            try {
-            const response = await axios.post('http://localhost:5000/api/uploadUsers', { data: jsonData });
-            } catch (error) {
-            }
-        };
-        
-        reader.readAsArrayBuffer(file);
-        };
-
-    // Updating training by Id............
-    const [updateTraining, setUpdateTraining] = useState(false);
-    const [selectedUpdateDays, setSelectedUpdateDays] = useState([]);
-    const handleUpdateDateChange = (newValue, id) => {
-        const selectedDay = newValue.date(); 
+    const toggleAndUpdateTrainingMark = async (id) => {
+        setMarkedTrainingsIds(prevIds => {
+            const updatedIds = prevIds.includes(id) 
+                ? prevIds.filter(trainingId => trainingId !== id) 
+                : [...prevIds, id];
     
-        setSelectedUpdateDays((prevDays) => {
-          let updatedDays;
-          if (prevDays.includes(selectedDay)) {
-            updatedDays = prevDays.filter((day) => day !== selectedDay);
-          } else {
-            updatedDays = [...prevDays, selectedDay].sort((a, b) => a - b);
-          }
-          setTrainings((prevTranings) => {
-            const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === id);
-            if (!trainingKey) return prevTranings;     
-            return {
-                ...prevTranings,
-                [trainingKey]: {
-                    ...prevTranings[trainingKey],
-                    date: updatedDays.join(" "),
-                    modified: true,
-                },
-            };
-        });
-          return updatedDays;
+            (async () => {
+                try {
+                    await axios.put(`http://localhost:5000/api/users/marked_trainings/${user._id}`, { listOfMarkedTrainings: updatedIds }).
+                    then((response) => {
+                        console.log("Updated successfully:", response.data);
+                    })
+                    
+                } catch (error) {
+                    console.error("Update failed:", error.response?.data || error.message);
+                }
+            })();
+    
+            return updatedIds;
         });
     };
+    
+    
+    
+    //show training enroll form
+    const [enrollForm, setEnrollForm] = useState(false);
 
-    const showUpdateTrainingForm = (trainingId) => {
-        setUpdateTraining(true);
+    const showEnrollForm = (trainingId) => {
+        setEnrollForm(true);
         setSelectedTrainingId(trainingId);
-        const training = getTrainingById(trainingId);
-        if (training && training.date) {
-            setSelectedUpdateDays(training.date.split(" ").map(day => parseInt(day)));
-        }
     };
 
-    const hideUpdateTrainingForm = () => {
-        setUpdateTraining(false);
+    const hideEnrollForm = () => {
+        setEnrollForm(false);
     };
 
-    const [verifyUpdate, setVerifyUpdate] = useState(false);
-    const [selectedTrainingNbOfSessions, setSelectedTrainingNbOfSessions] = useState(0);
+    // show training details by Id............
+    const [showTraining, setShowTraining] = useState(false);
 
-    const showVerifyUpdateDialog = (trainingId) => {
+    const showTrainingDetails = (trainingId) => {
+        setShowTraining(true);
         setSelectedTrainingId(trainingId);
-        setVerifyUpdate(true);
     };
 
-    const hideVerifyUpdateDialog = () => {
-        setVerifyUpdate(false);
+    const hideTrainingDetails = () => {
+        setShowTraining(false);
     };
-    
-    const handleUpdateTraining = (trainingId) => {
-      const updatedTraining = Object.values(trainings).find(training => training._id === trainingId);
-      console.log(updatedTraining);
-      
-      if (!updatedTraining) return;
   
-      axios.put(`http://localhost:5000/api/trainings/${trainingId}`, updatedTraining)
-          .then(() => { 
-              hideVerifyUpdateDialog();
-              setVerifyAlert("success");
-          })
-          .catch((error) => {
-              setVerifyAlertMessage(error.response?.data?.error || "An error occurred");
-              setVerifyAlert("error");
-              setShowsVerifificationAlert(true);
-          });
-
-    updatedTraining.sessions.forEach(session => {
-        axios.put(`http://localhost:5000/api/sessions/${session._id}`, session)
-            .catch(error => {});
-    });
-
-    for (let i = selectedTrainingNbOfSessions; i < getTrainingById(selectedTrainingId)?.nbOfSessions; i++) {
-        const newSession = {
-          name: newSessionsNames[i],
-          date: newSessionsDates[i],
-          duration: newSessionsDurations[i],
-          location: newSessionsLocations[i],
-          training: selectedTrainingId, 
-        };
-    
-        axios.post("http://localhost:5000/api/sessions", newSession)
-          .then(() => {
-          })
-          .catch((error) => {
-          });
-      }
-      fetchTrainings();
-  
-      setTrainings((prevTrainings) => ({
-          ...prevTrainings,
-          [Object.keys(prevTrainings).find(key => prevTrainings[key]._id === trainingId)]: {
-              ...updatedTraining,
-              modified: false
-          }
-      }));
-  };
-  
-
-    // Update all trainings .................
-    const [verifyUpdateAll, setVerifyUpdateAll] = useState(false);
-
-    const showVerifyUpdateAllDialog = () => {
-        setVerifyUpdateAll(true);
-    };
-
-    const hideVerifyUpdateAllDialog = () => {
-        setVerifyUpdateAll(false);
-    };
-
-    const handleUpdateAllTrainings = () => {
-        const listofchangedtrainings = Object.values(trainings)
-            .filter((training) => training.modified)
-            .map((training) => training._id);
-    
-        listofchangedtrainings.forEach((trainingId) => handleUpdateTraining(trainingId));
-        hideVerifyUpdateAllDialog();
-    }; 
-
-    // Deleting user by Id..............
-    const [verifyDelete, setVerifyDelete] = useState(false);
-
-    const showVerifyDeleteDialog = (trainingId) => {
-        setSelectedTrainingId(trainingId);
-        setVerifyDelete(true);
-    };
-
-    const hideVerifyDeleteDialog = () => {
-        setVerifyDelete(false);
-    };
-
-    const handleDeleteTraining = (trainingId) => {
-        axios.delete(`http://localhost:5000/api/trainings/${trainingId}`)
-            .then((response) => {
-                console.log(response.data.message);
-                hideVerifyDeleteDialog();
-            })
-            .catch((error) => {
-                console.error("Error deleting training:", error);
-            });
-        
-        setTrainings((prevTrainings) => {
-            const updatedTrainings = Object.fromEntries(
-                Object.entries(prevTrainings).filter(([_, training]) => training._id !== trainingId) 
-            );
-            return updatedTrainings;
-        });
-    };
-    
-
-    // Delete all trainings ....................
-    const [verifyDeleteAll, setVerifyDeleteAll] = useState(false);
-
-    const showVerifyDeleteAllDialog = (userId) => {
-        setVerifyDeleteAll(true);
-    };
-
-    const hideVerifyDeleteAllDialog = () => {
-        setVerifyDeleteAll(false);
-    };
-
-    const handleDeleteAllTrainings = () => {
-        const listofalltrainings = Object.values(trainings)
-        .map((training) => training._id);
-    
-        listofalltrainings.forEach((trainingId) => handleDeleteTraining(trainingId));
-        hideVerifyDeleteAllDialog();
-    };
-
     // Order ........................
     const [orderState, setOrderState] = useState('Down');
     const [trainingOrderState, setTrainingOrderState]= useState('Down');  
@@ -444,6 +177,7 @@ const TrainerSession = () => {
     };
 
     // Filters ....................
+    const [otherFilterLocation, setOtherFilterLocation] = useState(false);
     const FilterColors = {
         "full": "#FFCDD2",
         "not_full": "#C8E6C9",
@@ -493,6 +227,7 @@ const TrainerSession = () => {
 
     useEffect(() => {
         fetchTrainers();
+        fetchMarkedTrainingsIds();
         fetchTrainings();
     }, []);
 
@@ -588,306 +323,41 @@ const TrainerSession = () => {
         return Object.values(trainings).find(training => training._id === id) || null;
     };
 
-    const handleTitleChange = (e, id) => {
-      setTrainings((prevTranings) => {
-        const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === id);
-        if (!trainingKey) return prevTranings;     
-        return {
-            ...prevTranings,
-            [trainingKey]: {
-                ...prevTranings[trainingKey],
-                title: e.target.value,
-                modified: true,
-            },
-        };
-      });
-    };
-    const handleMonthChange = (e, id) => {
-        setTrainings((prevTranings) => {
-          const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === id);
-          if (!trainingKey) return prevTranings;     
-          return {
-              ...prevTranings,
-              [trainingKey]: {
-                  ...prevTranings[trainingKey],
-                  month: e.target.value,
-                  modified: true,
-              },
-          };
-        });
-    };
-    const handleSkillTypeChange = (e, id) => {
-    setTrainings((prevTranings) => {
-        const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === id);
-        if (!trainingKey) return prevTranings;     
-        return {
-            ...prevTranings,
-            [trainingKey]: {
-                ...prevTranings[trainingKey],
-                skillType: e.target.value,
-                modified: true,
-            },
-        };
+    // Form ...........
+    const [formData, setFormData] = useState({
+        matricule: "",
+        name: "",
+        fonction: "",
+        activite: "",
+        dateEmbauche: "",
+        domains: Array(4).fill({ description: "", expertise: "" }),
+        hasExperience: false,
+        exp: Array(2).fill({ theme: "", cadre: "", periode:""}),
+        motivation: "",
     });
+    
+    const handleChange = (field, value) => {
+        setFormData((prev) => ({ ...prev, [field]: value }));
     };
-    const handleTrainingDateChange = (e, id) => {
-    setTrainings((prevTranings) => {
-        const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === id);
-        if (!trainingKey) return prevTranings;     
-        return {
-            ...prevTranings,
-            [trainingKey]: {
-                ...prevTranings[trainingKey],
-                date: e.target.value,
-                modified: true,
-            },
-        };
-    });
+    
+    const handleDomainChange = (index, key, value) => {
+        setFormData((prev) => ({
+            ...prev,
+            domains: prev.domains.map((domain, i) =>
+                i === index ? { ...domain, [key]: value } : domain
+            ),
+        }));
     };
-    const handleNbOfHoursChange = (e, id) => {
-        setTrainings((prevTranings) => {
-          const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === id);
-          if (!trainingKey) return prevTranings;     
-          return {
-              ...prevTranings,
-              [trainingKey]: {
-                  ...prevTranings[trainingKey],
-                  nbOfHours: parseInt(e.target.value),
-                  modified: true,
-              },
-          };
-        });
+
+    const handleExpChange = (index, key, value) => {
+        setFormData((prev) => ({
+            ...prev,
+            epx: prev.exp.map((ex, i) =>
+                i === index ? { ...ex, [key]: value } : ex
+            ),
+        }));
     };
-    const handleLocationChange = (e, id) => {
-        setTrainings((prevTranings) => {
-          const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === id);
-          if (!trainingKey) return prevTranings;     
-          return {
-              ...prevTranings,
-              [trainingKey]: {
-                  ...prevTranings[trainingKey],
-                  location: e.target.value,
-                  modified: true,
-              },
-          };
-        });
-    };
-    const handleModeChange = (e, id) => {
-        setTrainings((prevTranings) => {
-          const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === id);
-          if (!trainingKey) return prevTranings;     
-          return {
-              ...prevTranings,
-              [trainingKey]: {
-                  ...prevTranings[trainingKey],
-                  mode: e.target.value,
-                  modified: true,
-              },
-          };
-        });
-    };
-    const handleTypeChange = (e, id) => {
-    setTrainings((prevTranings) => {
-        const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === id);
-        if (!trainingKey) return prevTranings;     
-        return {
-            ...prevTranings,
-            [trainingKey]: {
-                ...prevTranings[trainingKey],
-                type: e.target.value,
-                modified: true,
-            },
-        };
-    });
-    };
-    const handleNbOfSessionsChange = (e, id) => {
-        setTrainings((prevTranings) => {
-          const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === id);
-          if (!trainingKey) return prevTranings;     
-          return {
-              ...prevTranings,
-              [trainingKey]: {
-                  ...prevTranings[trainingKey],
-                  nbOfSessions: parseInt(e.target.value),
-                  modified: true,
-              },
-          };
-        });
-    };
-    const handleTrainerChange = (value, id) => {
-        setTrainings((prevTranings) => {
-          const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === id);
-          if (!trainingKey) return prevTranings;     
-          return {
-              ...prevTranings,
-              [trainingKey]: {
-                  ...prevTranings[trainingKey],
-                  trainer: value,
-                  modified: true,
-              },
-          };
-        });
-    };
-     const handleDescriptionChange = (e, id) => {
-        setTrainings((prevTranings) => {
-          const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === id);
-          if (!trainingKey) return prevTranings;     
-          return {
-              ...prevTranings,
-              [trainingKey]: {
-                  ...prevTranings[trainingKey],
-                  description: e.target.value,
-                  modified: true,
-              },
-          };
-        });
-    };
-    const handleNbOfParticipantsChange = (e, id) => {
-        setTrainings((prevTranings) => {
-          const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === id);
-          if (!trainingKey) return prevTranings;     
-          return {
-              ...prevTranings,
-              [trainingKey]: {
-                  ...prevTranings[trainingKey],
-                  nbOfParticipants: parseInt(e.target.value),
-                  modified: true,
-              },
-          };
-        });
-    };
-    const handleSessionNameChange = (e, tid, sid) => {
-      setTrainings((prevTranings) => {
-        const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === tid);
-        if (!trainingKey) return prevTranings;
-        return {
-            ...prevTranings,
-            [trainingKey]: {
-                ...prevTranings[trainingKey],
-                sessions: prevTranings[trainingKey].sessions.map((session) => {
-                    if (session._id === sid) {
-                        return {
-                            ...session,
-                            name: e.target.value,
-                        };
-                    }
-                    return session;
-                }),
-                modified: true,
-            },
-        };
-      });
-    };
-    const handleSessionDateChange = (e, tid, sid) => {
-        setTrainings((prevTranings) => {
-          const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === tid);
-          if (!trainingKey) return prevTranings;
-          return {
-              ...prevTranings,
-              [trainingKey]: {
-                  ...prevTranings[trainingKey],
-                  sessions: prevTranings[trainingKey].sessions.map((session) => {
-                      if (session._id === sid) {
-                          return {
-                              ...session,
-                              date: e?.toISOString() || "",
-                          };
-                      }
-                      return session;
-                  }),
-                  modified: true,
-              },
-          };
-        });
-    };
-    const handleSessionDurationChange = (e, tid, sid) => {
-    setTrainings((prevTranings) => {
-        const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === tid);
-        if (!trainingKey) return prevTranings;
-        return {
-            ...prevTranings,
-            [trainingKey]: {
-                ...prevTranings[trainingKey],
-                sessions: prevTranings[trainingKey].sessions.map((session) => {
-                    if (session._id === sid) {
-                        return {
-                            ...session,
-                            duration: parseInt(e.target.value),
-                        };
-                    }
-                    return session;
-                }),
-                modified: true,
-            },
-        };
-    });
-    };
-    const handleSessionLocationChange = (e, tid, sid) => {
-    setTrainings((prevTranings) => {
-        const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === tid);
-        if (!trainingKey) return prevTranings;
-        return {
-            ...prevTranings,
-            [trainingKey]: {
-                ...prevTranings[trainingKey],
-                sessions: prevTranings[trainingKey].sessions.map((session) => {
-                    if (session._id === sid) {
-                        return {
-                            ...session,
-                            location: e.target.value,
-                        };
-                    }
-                    return session;
-                }),
-                modified: true,
-            },
-        };
-    });
-    };
-    const openSessionOtherLocation = (e, tid, sid) => {
-        setTrainings((prevTranings) => {
-            const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === tid);
-            if (!trainingKey) return prevTranings;
-            return {
-                ...prevTranings,
-                [trainingKey]: {
-                    ...prevTranings[trainingKey],
-                    sessions: prevTranings[trainingKey].sessions.map((session) => {
-                        if (session._id === sid) {
-                            return {
-                                ...session,
-                                otherSessionLocation: true,
-                            };
-                        }
-                        return session;
-                    }),
-                    modified: true,
-                },
-            };
-        });
-    };
-    const closeSessionOtherLocation = (e, tid, sid) => {
-        setTrainings((prevTranings) => {
-            const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === tid);
-            if (!trainingKey) return prevTranings;
-            return {
-                ...prevTranings,
-                [trainingKey]: {
-                    ...prevTranings[trainingKey],
-                    sessions: prevTranings[trainingKey].sessions.map((session) => {
-                        if (session._id === sid) {
-                            return {
-                                ...session,
-                                otherSessionLocation: false,
-                            };
-                        }
-                        return session;
-                    }),
-                    modified: true,
-                },
-            };
-        });
-    };
+    
 
     // Styles ..............
 
@@ -1285,26 +755,6 @@ const TrainerSession = () => {
                             </MenuItem>
                         ))}
                     </TextField>
-                    <TextField
-                        select
-                        label={t("trainer")}
-                        value={selectedTrainer}
-                        onChange={(e) => setSelectedTrainer(e.target.value)}
-                        sx={{
-                            width: '15%'
-                        }}
-                        SelectProps={{
-                            MenuProps: {
-                                disableScrollLock: true, 
-                            }
-                        }}
-                        >
-                        {FilterTrainer.map((trainer) => (
-                            <MenuItem key={trainer.id} value={trainer.id}>
-                                {t(trainer.name)}
-                            </MenuItem>
-                        ))}
-                    </TextField>
                 </Box>
                 <Box
                     sx={{
@@ -1385,155 +835,7 @@ const TrainerSession = () => {
                         {selectedTrainingOrder === "nbOfParticipants" ? (trainingOrderState === "Up" ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />) : null}
                     </Button>
                     <Box sx={{width:'10%', display:"flex", flexDirection:"row", justifyContent:"end"}}>
-                        <Tooltip title={t("save") + " " + t("all")} arrow> 
-                            <IconButton onClick={showVerifyUpdateAllDialog} sx={{ color: "#76C5E1" }}>
-                                <SaveIcon />
-                            </IconButton>
-                        </Tooltip>
-                        <Tooltip title={t("delete") + " " + t("all")} arrow> 
-                            <IconButton onClick={showVerifyDeleteAllDialog} sx={{color:"#EA9696"}}>
-                                <DeleteIcon/>
-                            </IconButton>
-                        </Tooltip>
                     </Box>
-                    <Dialog
-                        open={verifyUpdateAll}
-                        disableScrollLock={true}
-                        onClose={hideVerifyUpdateAllDialog}
-                        PaperProps={{
-                            sx: {
-                                width: "auto",  
-                                height: "auto", 
-                                display: "flex",
-                                flexDirection: "column",
-                                justifyContent: "center",
-                                alignItems: "center",
-                                borderRadius: "10px",
-                                padding: '20px',
-                            }
-                        }}
-                    >
-                        <DialogTitle>{t("confirm_update_all_trainings")}?</DialogTitle>
-                        <Box 
-                            sx={{
-                                width: '100%',
-                                display: 'flex',
-                                flexDirection: 'row',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                gap: '20px',
-                            }}
-                        >
-                            <Button sx={{
-                                color: 'white',
-                                backgroundColor: '#EA9696',
-                                padding: '5px 10px',
-                                borderRadius: '10px',
-                                textDecoration: 'none',
-                                fontWeight: 'bold',
-                                width: '100px',
-                                height: '40px',
-                                marginTop: '10px',
-                                textTransform: "none",
-                                '&:hover': {
-                                    backgroundColor: '#EAB8B8',
-                                    color: 'white',
-                                },
-                            }} 
-                            onClick={hideVerifyUpdateAllDialog}>
-                                {t("no")}
-                            </Button>
-                            <Button sx={{
-                                color: 'white',
-                                backgroundColor: '#2CA8D5',
-                                padding: '5px 10px',
-                                borderRadius: '10px',
-                                textDecoration: 'none',
-                                fontWeight: 'bold',
-                                width: '100px',
-                                height: '40px',
-                                marginTop: '10px',
-                                textTransform: "none",
-                                '&:hover': {
-                                    backgroundColor: '#76C5E1',
-                                    color: 'white',
-                                },
-                            }} 
-                            onClick={handleUpdateAllTrainings}
-                            > 
-                                {t("yes")}
-                            </Button>
-                        </Box>
-                    </Dialog>
-                    <Dialog
-                        open={verifyDeleteAll}
-                        disableScrollLock={true}
-                        onClose={hideVerifyDeleteAllDialog}
-                        PaperProps={{
-                            sx: {
-                                width: "auto",  
-                                height: "auto", 
-                                display: "flex",
-                                flexDirection: "column",
-                                justifyContent: "center",
-                                alignItems: "center",
-                                borderRadius: "10px",
-                                padding: '20px',
-                            }
-                        }}
-                    >
-                        <DialogTitle>{t("confirm_delete_all_trainings")}?</DialogTitle>
-                        <Box 
-                            sx={{
-                                width: '100%',
-                                display: 'flex',
-                                flexDirection: 'row',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                gap: '20px',
-                            }}
-                        >
-                            <Button sx={{
-                                color: 'white',
-                                backgroundColor: '#EA9696',
-                                padding: '5px 10px',
-                                borderRadius: '10px',
-                                textDecoration: 'none',
-                                fontWeight: 'bold',
-                                width: '100px',
-                                height: '40px',
-                                marginTop: '10px',
-                                textTransform: "none",
-                                '&:hover': {
-                                    backgroundColor: '#EAB8B8',
-                                    color: 'white',
-                                },
-                            }} 
-                            onClick={hideVerifyDeleteAllDialog}>
-                                {t("no")}
-                            </Button>
-                            <Button sx={{
-                                color: 'white',
-                                backgroundColor: '#2CA8D5',
-                                padding: '5px 10px',
-                                borderRadius: '10px',
-                                textDecoration: 'none',
-                                fontWeight: 'bold',
-                                width: '100px',
-                                height: '40px',
-                                marginTop: '10px',
-                                textTransform: "none",
-                                '&:hover': {
-                                    backgroundColor: '#76C5E1',
-                                    color: 'white',
-                                },
-                            }} 
-                            onClick={handleDeleteAllTrainings}
-                            >
-                                {t("yes")}
-                            </Button>
-                        </Box>
-                    </Dialog>
                 </Box>
             </Box>
             <Box
@@ -1662,29 +964,26 @@ const TrainerSession = () => {
                         </Box> 
                         <FormControl variant="outlined" sx={{width:"15%"}}>
                             <OutlinedInput
-                                type='Number'
                                 value={training.nbOfParticipants}
-                                onChange={(e) => handleNbOfParticipantsChange(e, training._id)}
                             />
                         </FormControl>
                         <Box 
                         sx={{width:'10%', display:"flex", flexDirection:"row", justifyContent:"end"}}
                         >
                             <Tooltip title={t("view_details")} arrow> 
-                                <IconButton sx={{color:"#76C5E1"}}  onClick={() => {showUpdateTrainingForm(training._id);
-                                    setSelectedTrainingNbOfSessions(getTrainingById(training._id)?.nbOfSessions || 0);
+                                <IconButton sx={{color:"#76C5E1"}}  onClick={() => {showTrainingDetails(training._id);
                                 }}>
                                     <RemoveRedEyeIcon/>
                                 </IconButton>
                             </Tooltip>
-                            <Tooltip title={t("save")} arrow>
-                                <IconButton sx={{color:"#76C5E1"}} disabled={!training.modified} onClick={() => showVerifyUpdateDialog(training._id)}>
-                                    <SaveIcon/>
+                            <Tooltip title={t("enroll")} arrow>
+                                <IconButton sx={{color:"#76C5E1"}} onClick={() => showEnrollForm(training._id)}>
+                                    <AppRegistrationIcon/>
                                 </IconButton>
                             </Tooltip>
-                            <Tooltip title={t("delete")} arrow> 
-                                <IconButton sx={{color:"#EA9696"}} onClick={() => showVerifyDeleteDialog(training._id)}>
-                                    <DeleteIcon/>
+                            <Tooltip title={!markedTrainingsIds?.includes(training._id) ? t("bookmark") : t("unmark")} arrow> 
+                                <IconButton sx={{color:"button.secondary"}} onClick={() => toggleAndUpdateTrainingMark(training._id)}>
+                                    {markedTrainingsIds?.includes(training._id) ? <StarIcon/> : <StarBorderIcon/>}
                                 </IconButton>
                             </Tooltip>
                         </Box>
@@ -1692,142 +991,242 @@ const TrainerSession = () => {
                 ))}
             </Box>
             <Dialog
-            open={verifyUpdate}
-            disableScrollLock={true}
-            onClose={hideVerifyUpdateDialog}
-            PaperProps={{
-                sx: {
-                    width: "auto",  
-                    height: "auto", 
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    borderRadius: "10px",
-                    padding: '20px',
-                }
-            }}
-        >
-            <DialogTitle>{t("confirm_update_training")}?</DialogTitle>
-            <Box 
-                sx={{
-                    width: '100%',
-                    display: 'flex',
-                    flexDirection: 'row',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    gap: '20px',
+                open={enrollForm}
+                disableScrollLock={true}
+                onClose={hideEnrollForm}
+                PaperProps={{
+                    sx: {
+                        minWidth: "50%",  
+                        height: "auto", 
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "start",
+                        alignItems: "center",
+                        borderRadius: "10px",
+                        gap: "20px",
+                        padding: "20px",
+                        scrollbarWidth: "none",
+                        "&::-webkit-scrollbar": {
+                            display: "none"  
+                        }
+                    }
                 }}
             >
-                <Button sx={{
-                    color: 'white',
-                    backgroundColor: '#EA9696',
-                    padding: '5px 10px',
-                    borderRadius: '10px',
-                    textDecoration: 'none',
-                    fontWeight: 'bold',
-                    width: '100px',
-                    height: '40px',
-                    marginTop: '10px',
-                    textTransform: "none",
-                    '&:hover': {
-                        backgroundColor: '#EAB8B8',
-                        color: 'white',
-                    },
-                }} 
-                onClick={hideVerifyUpdateDialog}>
-                    {t("no")}
-                </Button>
-                <Button sx={{
-                    color: 'white',
-                    backgroundColor: '#2CA8D5',
-                    padding: '5px 10px',
-                    borderRadius: '10px',
-                    textDecoration: 'none',
-                    fontWeight: 'bold',
-                    width: '100px',
-                    height: '40px',
-                    marginTop: '10px',
-                    textTransform: "none",
-                    '&:hover': {
-                        backgroundColor: '#76C5E1',
-                        color: 'white',
-                    },
-                }} 
-                onClick={() => handleUpdateTraining(selectedTrainingId)}>
-                    {t("yes")}
-                </Button>
-            </Box>
-            </Dialog>
-            <Dialog
-            open={verifyDelete}
-            disableScrollLock={true}
-            onClose={hideVerifyDeleteDialog}
-            PaperProps={{
-                sx: {
-                    width: "auto",  
-                    height: "auto", 
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "",
-                    alignItems: "center",
-                    borderRadius: "10px",
-                    padding: '20px',
-                }
-            }}
-        >
-            <DialogTitle>{t("confirm_delete_training")}?</DialogTitle>
-            <Box 
-                sx={{
+                <DialogTitle>{t("enroll_in_this_training")}</DialogTitle>
+                <Box sx={{
                     width: '100%',
                     display: 'flex',
-                    flexDirection: 'row',
+                    flexDirection: 'column',
+                    height: '800px',
+                    gap: '10px',
+                }}>
+                    <Typography sx={{ fontWeight: "bold" }}>
+                        {t("candidate_information")}
+                    </Typography>
+                    <TextField  label={t("registration_number")} variant="outlined" 
+                    value={formData.matricule} 
+                    onChange={(e) => handleChange("matricule", e.target.value)} 
+                    />
+                    <TextField label={t("name_and_lastname")} variant="outlined" 
+                    value={formData.name} 
+                    onChange={(e) => handleChange("name", e.target.value)} 
+                    />
+                    <TextField label={t("position")} variant="outlined" 
+                    value={formData.fonction} 
+                    onChange={(e) => handleChange("fonction", e.target.value)} 
+                    />
+                    <TextField label={t("activity_department")} variant="outlined" 
+                    value={formData.activite} 
+                    onChange={(e) => handleChange("activite", e.target.value)} 
+                    />
+                    <TextField label={t("date_of_hire")} type="date" variant="outlined" 
+                    InputLabelProps={{ shrink: true }} 
+                    value={formData.dateEmbauche} 
+                    onChange={(e) => handleChange("dateEmbauche", e.target.value)} 
+                    />
+                </Box>
+                
+                <Box sx={{
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    height: '800px',
+                    gap: '20px',
+                }}>
+                    <Typography sx={{ fontWeight: "bold" }}>
+                        {t("domains_and_specialties_you_wish_to_work_in")}
+                    </Typography>
+
+                    <TableContainer component={Paper}>
+                        <Table>
+                            <TableHead>
+                                <TableRow>
+                                <TableCell sx={{ backgroundColor: "button.primary", color: "white", fontWeight: "bold" }}>{t("domains")}</TableCell>
+                                <TableCell sx={{ backgroundColor: "button.primary", color: "white", fontWeight: "bold" }}>{t("description")}</TableCell>
+                                <TableCell sx={{ backgroundColor: "button.primary", color: "white", fontWeight: "bold" }}>{t("references_related_to_expertise")}</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {formData.domains.map((row, index) => (
+                                <TableRow key={index}>
+                                    <TableCell sx={{width :"10%"}}>
+                                        <Typography>{index+1}</Typography>
+                                    </TableCell>
+                                    <TableCell sx={{width :"45%"}}>
+                                    <TextField value={row.description} 
+                                    multiline
+                                        onChange={(e) => handleDomainChange(index, "description", e.target.value)}
+                                        sx={{width :"100%"}} />
+                                    </TableCell>
+                                    <TableCell sx={{width :"45%"}}>
+                                    <TextField value={row.expertise} 
+                                    multiline
+                                        onChange={(e) => handleDomainChange(index, "expertise", e.target.value)} 
+                                        sx={{width :"100%"}}/>
+                                    </TableCell>
+                                </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                </Box>
+                <Box sx={{
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    height: '70px',
+                    gap: '10px',
+                }}>
+                    <Typography sx={{ fontWeight: "bold" }}>
+                        {t("do_you_have_previous_experience_as_a_trainer")}
+                    </Typography>
+                    <Box sx={{
+                        width: '100%',
+                        display: 'flex',
+                        flexDirection: 'row',
+                        height: '100%',
+                        gap: '10px',
+                    }}>
+                        <FormControlLabel 
+                            control={<Checkbox checked={formData.hasExperience} 
+                            onChange={(e) => handleChange("hasExperience", e.target.checked)} />} 
+                            label={t("yes")}
+                        />
+                        <FormControlLabel 
+                            control={<Checkbox checked={!formData.hasExperience} 
+                            onChange={(e) => handleChange("hasExperience", !e.target.checked)} />} 
+                            label={t("no")}
+                        />
+                    </Box>
+                </Box>
+                {formData.hasExperience ? 
+                <Box sx={{
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    height: '800px',
+                    gap: '20px',
+                }}>
+                    <TableContainer component={Paper}>
+                        <Table>
+                            <TableHead>
+                                <TableRow>
+                                <TableCell sx={{ backgroundColor: "button.primary", color: "white", fontWeight: "bold" }}>{t("training_theme")}</TableCell>
+                                <TableCell sx={{ backgroundColor: "button.primary", color: "white", fontWeight: "bold" }}>{t("in_what_context")}</TableCell>
+                                <TableCell sx={{ backgroundColor: "button.primary", color: "white", fontWeight: "bold" }}>{t("period")}</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {formData.exp.map((row, index) => (
+                                <TableRow key={index}>
+                                    <TableCell>
+                                    <TextField value={row.expertise} 
+                                    multiline
+                                        onChange={(e) => handleExpChange(index, "theme", e.target.value)} />
+                                    </TableCell>
+                                    <TableCell>
+                                    <TextField value={row.description}
+                                       multiline 
+                                        onChange={(e) => handleExpChange(index, "cadre", e.target.value)} />
+                                    </TableCell>
+                                    <TableCell>
+                                    <TextField value={row.expertise} 
+                                        multiline
+                                        onChange={(e) => handleExpChange(index, "periode", e.target.value)} />
+                                    </TableCell>
+                                </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                </Box>:null}
+                <Box sx={{
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    height: '800px',
+                    gap: '20px',
+                }}>
+                    <Typography sx={{ fontWeight: "bold" }}>
+                        {t("what_are_your_motivations_for_becoming_a_reference_trainer")}
+                    </Typography>
+                    <TextField value={formData.motivation}
+                        multiline 
+                        onChange={(e) => handleChange("motivation", e.target.value)} 
+                        sx={{width :"100%"}}/>
+                </Box>
+                <Box sx={{
+                    width: '100%',
+                    display: 'flex',
                     justifyContent: 'center',
                     alignItems: 'center',
+                    flexDirection: 'row',
+                    height: '100px',
                     gap: '20px',
-                }}
-            >
-                <Button sx={{
-                    color: 'white',
-                    backgroundColor: '#EA9696',
-                    borderRadius: '10px',
-                    textDecoration: 'none',
-                    fontWeight: 'bold',
-                    width: '100px',
-                    height: '40px',
-                    marginTop: '10px',
-                    textTransform: "none",
-                    '&:hover': {
-                        backgroundColor: '#EAB8B8',
+                }}>
+                    <Button sx={{
                         color: 'white',
-                    },
-                }} 
-                onClick={hideVerifyDeleteDialog}>
-                    {t("no")}
-                </Button>
-                <Button sx={{
-                    color: 'white',
-                    backgroundColor: '#2CA8D5',
-                    borderRadius: '10px',
-                    textDecoration: 'none',
-                    fontWeight: 'bold',
-                    width: '100px',
-                    height: '40px',
-                    marginTop: '10px',
-                    textTransform: "none",
-                    '&:hover': {
-                        backgroundColor: '#76C5E1',
+                        backgroundColor: '#EA9696',
+                        padding: '5px 10px',
+                        borderRadius: '10px',
+                        textDecoration: 'none',
+                        fontWeight: 'bold',
+                        width: '100px',
+                        height: '40px',
+                        marginTop: '10px',
+                        textTransform: "none",
+                        '&:hover': {
+                            backgroundColor: '#EAB8B8',
+                            color: 'white',
+                        },
+                    }} 
+                    onClick={hideEnrollForm}>
+                        {t("cancel")}
+                    </Button>
+                    <Button sx={{
                         color: 'white',
-                    },
-                }} 
-                onClick={() => handleDeleteTraining(selectedTrainingId)}>
-                    {t("yes")}
-                </Button>
-            </Box>
+                        backgroundColor: '#2CA8D5',
+                        padding: '5px 10px',
+                        borderRadius: '10px',
+                        textDecoration: 'none',
+                        fontWeight: 'bold',
+                        width: '100px',
+                        height: '40px',
+                        marginTop: '10px',
+                        textTransform: "none",
+                        '&:hover': {
+                            backgroundColor: '#76C5E1',
+                            color: 'white',
+                        },
+                    }} 
+                    >
+                        {t("send")}
+                    </Button>
+                </Box>
             </Dialog>
             <Dialog
-                open={updateTraining}
-                onClose={hideUpdateTrainingForm}
+                open={showTraining}
+                onClose={hideTrainingDetails}
                 disableScrollLock={true}
                 PaperProps={{
                     sx: {
@@ -1847,7 +1246,7 @@ const TrainerSession = () => {
                     }
                 }}
             >
-                <DialogTitle>{t("update_training")}</DialogTitle>
+                <DialogTitle>{t("training_details")}</DialogTitle>
                 <Box
                     sx={{
                         width: "100%",
@@ -1858,34 +1257,23 @@ const TrainerSession = () => {
                         gap: "20px",
                     }}
                 >
-                    <FormControl variant="outlined" sx={{ 
-                    width: '50%',
-                    }}
-                    >
-                        <InputLabel required>{t("title")}</InputLabel>
-                        <OutlinedInput
-                            value={getTrainingById(selectedTrainingId)?.title}
-                            onChange={(e) => handleTitleChange(e, selectedTrainingId)}
-                            label="Title......."
-                        />
-                    </FormControl>
                     <TextField
-                        select
+                        label={t("title")}
+                        value={t(getTrainingById(selectedTrainingId)?.title)}
+                        sx={{
+                            width: '50%',
+                        }}
+                        >
+                    </TextField>
+                    <TextField
                         label={t("month")}
-                        value={getTrainingById(selectedTrainingId)?.month}
-                        onChange={(e) => handleMonthChange(e, selectedTrainingId)}
+                        value={t(getTrainingById(selectedTrainingId)?.month)}
                         sx={{
                             width: '50%',
                         }}
                         >
-                        {TrainingMonths.map((month) => (
-                            <MenuItem key={month} value={month}>
-                                {t(month)}
-                            </MenuItem>
-                        ))}
                     </TextField>
                 </Box>
-                
                 <Box
                     sx={{
                         width: "100%",
@@ -1897,64 +1285,21 @@ const TrainerSession = () => {
                     }}
                 >
                     <TextField
-                        select
                         label={t("skill")}
-                        value={getTrainingById(selectedTrainingId)?.skillType}
-                        onChange={(e) => handleSkillTypeChange(e, selectedTrainingId)}
+                        value={t(getTrainingById(selectedTrainingId)?.skillType)}
                         sx={{
                             width: '50%',
                         }}
                         >
-                        {TrainingSkillTypes.map((skillType) => (
-                            <MenuItem key={skillType} value={skillType}>
-                                {t(skillType)}
-                            </MenuItem>
-                        ))}
                     </TextField>
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                    <FormControl variant="outlined" sx={{ width: "50%" }}>
-                        <InputLabel required>{t("date")}</InputLabel>
-                        <OutlinedInput
-                        readOnly
+                    <TextField
+                        label={t("date")}
                         value={getTrainingById(selectedTrainingId)?.date}
-                        onChange={(e) => handleTrainingDateChange(e, selectedTrainingId)}
-                        label="Date......."
-                        endAdornment={
-                            <InputAdornment position="end">
-                            <IconButton onClick={handleOpenDatePicker} edge="end">
-                                <CalendarTodayIcon />
-                            </IconButton>
-                            </InputAdornment>
-                        }
-                        />
-                    </FormControl>
-                    <Popover
-                        open={Boolean(dateAnchorEl)}
-                        anchorEl={dateAnchorEl}
-                        onClose={handleCloseDatePicker}
-                        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-                    >
-                        <StaticDatePicker
-                        displayStaticWrapperAs="desktop"
-                        views={["day"]}
-                        minDate={dayjs(getMonthDate(getTrainingById(selectedTrainingId)?.month)).startOf("month")}
-                        maxDate={dayjs(getMonthDate(getTrainingById(selectedTrainingId)?.month)).endOf("month")}
-                        onChange={(newValue) => handleUpdateDateChange(newValue , selectedTrainingId)}
                         sx={{
-                            "& .MuiPickersDay-root": {
-                            backgroundColor: "transparent !important",
-                            "&.Mui-selected": {
-                                backgroundColor: "transparent !important",
-                                color: "inherit",
-                            },
-                            "&:hover": {
-                                backgroundColor: "#f0f0f0 !important",
-                            },
-                            },
+                            width: '50%',
                         }}
-                        />
-                    </Popover>
-                    </LocalizationProvider>
+                        >
+                    </TextField>
                 </Box>
                 <Box
                     sx={{
@@ -1966,102 +1311,22 @@ const TrainerSession = () => {
                         gap: "20px",
                     }}
                 >
-                    <FormControl variant="outlined" 
-                    sx={{ 
-                        width: '50%',
-                    }}
-                    >
-                        <InputLabel required>{t("nbOfHours")}</InputLabel>
-                        <OutlinedInput
-                        type="number"
-                            value={getTrainingById(selectedTrainingId)?.nbOfHours}
-                            onChange={(e) => {
-                            const value = e.target.value;
-                            if (value === "" || (Number(value) >= 0 && Number.isInteger(Number(value)))) {
-                                handleNbOfHoursChange(e, selectedTrainingId);
-                            }
-                            }}
-                            label="Number Of Hours......."
-                        />
-                    </FormControl>
                     <TextField
-                        select={!otherUpdateLocation  && (TrainingLocations.includes(getTrainingById(selectedTrainingId)?.location) || getTrainingById(selectedTrainingId)?.location === "")}
+                        label={t("nbOfHours")}
+                        value={getTrainingById(selectedTrainingId)?.nbOfHours}
+                        sx={{
+                            width: '50%',
+                        }}
+                        >
+                    </TextField>
+                    <TextField
                         label={t("location")}
                         value={getTrainingById(selectedTrainingId)?.location}
-                        onChange={(e) => handleLocationChange(e, selectedTrainingId)}
                         sx={{
                             width: '50%',
                         }}
                         >
-                        {TrainingLocations.map((location) => (
-                            <MenuItem key={location} value={location}>
-                                {t(location)}
-                            </MenuItem>
-                        ))}
-                        <Button 
-                            sx={{
-                                width: "100%",
-                                textTransform: "none",
-                                color: "black",
-                            }}
-                            onClick={() => 
-                                setOtherUpdateLocation(true)}
-                        >
-                            {t("other")}...
-                        </Button>
                     </TextField>
-                    <Dialog
-                        open={otherUpdateLocation}
-                        onClose={() => setOtherUpdateLocation(false)}
-                        disableScrollLock={true}
-                        PaperProps={{
-                            sx: {
-                                width: "auto",  
-                                height: "auto", 
-                                display: "flex",
-                                flexDirection: "column",
-                                justifyContent: "center",
-                                alignItems: "center",
-                                borderRadius: "10px",
-                                padding: '20px',
-                            }
-                        }}
-                    >
-                        <FormControl variant="outlined" sx={{ 
-                                width: '200px',
-                            }}
-                        >
-                            <InputLabel required>{t("location")}</InputLabel>
-                            <OutlinedInput
-                                value={getTrainingById(selectedTrainingId)?.location}
-                                onChange={(e) => handleLocationChange(e, selectedTrainingId)}
-                                label="Activity  ................"
-                            />
-                        </FormControl>
-                        <Button
-                            sx={{
-                                color: 'white',
-                                backgroundColor: '#2CA8D5',
-                                padding: '5px 10px',
-                                borderRadius: '10px',
-                                textDecoration: 'none',
-                                fontWeight: 'bold',
-                                width: '100px',
-                                height: '40px',
-                                marginTop: '10px',
-                                textTransform: "none",
-                                '&:hover': {
-                                    backgroundColor: '#76C5E1',
-                                    color: 'white',
-                                },
-                            }}
-                            onClick={() => {
-                                setOtherUpdateLocation(false);
-                            }}
-                        >
-                            {t("save")}
-                        </Button>
-                    </Dialog>
                 </Box>
                 <Box
                     sx={{
@@ -2074,34 +1339,20 @@ const TrainerSession = () => {
                     }}
                 >
                     <TextField
-                        select
                         label={t("mode")}
-                        value={getTrainingById(selectedTrainingId)?.mode}
-                        onChange={(e) => handleModeChange(e, selectedTrainingId)}
+                        value={t(getTrainingById(selectedTrainingId)?.mode)}
                         sx={{
                             width: '50%',
                         }}
                         >
-                        {TrainingModes.map((mode) => (
-                            <MenuItem key={mode} value={mode}>
-                                {t(mode)}
-                            </MenuItem>
-                        ))}
                     </TextField>
                     <TextField
-                        select
                         label={t("type")}
-                        value={getTrainingById(selectedTrainingId)?.type}
-                        onChange={(e) => handleTypeChange(e, selectedTrainingId)}
+                        value={t(getTrainingById(selectedTrainingId)?.type)}
                         sx={{
                             width: '50%',
                         }}
                         >
-                        {TrainingTypes.map((type) => (
-                            <MenuItem key={type} value={type}>
-                                {t(type)}
-                            </MenuItem>
-                        ))}
                     </TextField>
                 </Box>
                 <Box
@@ -2114,39 +1365,24 @@ const TrainerSession = () => {
                         gap: '20px',
                     }}
                 >   
-                    <FormControl variant="outlined" 
-                    sx={{ 
-                        width: '50%',
-                    }}
-                    >
-                        <InputLabel required>{t("nbOfSessions")}</InputLabel>
-                        <OutlinedInput
-                        type="number"
-                            value={getTrainingById(selectedTrainingId)?.nbOfSessions}
-                            onChange={(e) => {
-                            const value = e.target.value;
-                            if (value === "" || (Number(value) >= 0 && Number.isInteger(Number(value)))) {
-                                handleNbOfSessionsChange(e, selectedTrainingId)
-                            };
-                            }}
-                            label="Number Of Sessions......."
-                        />
-                    </FormControl>
-                    <Autocomplete
-                    sx={{ width: '50%',}}
-                    options={TrainingTrainers}
-                    getOptionLabel={(option) => option.name}
-                    value={TrainingTrainers.find(trainer => trainer.id === getTrainingById(selectedTrainingId)?.trainer) || null}
-                    onChange={(event, newValue) => handleTrainerChange(newValue ? newValue.id : "",selectedTrainingId)}
-                    renderInput={(params) => (
-                        <TextField 
-                        {...params} 
-                        label={t("trainer")} 
-                        variant="outlined"
-                        sx={{ width: "100%" }} 
-                        />
-                    )}
+                    <TextField
+                        label={t("nbOfSessions")}
+                        value={getTrainingById(selectedTrainingId)?.nbOfSessions}
+                        sx={{
+                            width: '50%',
+                        }}
+                        >
+                    </TextField>
+                    <TextField
+                        label={t("trainer")}
+                        value={
+                            TrainingTrainers.find(trainer => trainer.id === getTrainingById(selectedTrainingId)?.trainer)?.name || ""
+                        }
+                        sx={{
+                            width: '50%',
+                        }}
                     />
+
                 </Box>
                 <Box
                     sx={{
@@ -2158,38 +1394,22 @@ const TrainerSession = () => {
                         gap: "20px",
                     }}
                 >
-                <FormControl variant="outlined" 
-                    sx={{ 
-                    width: '50%',
-                    }}
-                >
-                    <InputLabel required>{t("nbOfParticipants")}</InputLabel>
-                    <OutlinedInput
-                    type="number"
-                    value={getTrainingById(selectedTrainingId)?.nbOfParticipants}
-                    onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === "" || (Number(value) >= 0 && Number.isInteger(Number(value)))) {
-                            handleNbOfParticipantsChange(e, selectedTrainingId)
-                        };
-                    }}
-                    label="Number Of Participants......."
-                    />
-                </FormControl>
-                <FormControl variant="outlined" 
-                    sx={{ 
-                    width: '50%',
-                    }}
-                >
-                    <InputLabel required>{t("description")}</InputLabel>
-                    <OutlinedInput
-                    multiline
-                    type="text"
-                    value={getTrainingById(selectedTrainingId)?.description}
-                    onChange={(e) => handleDescriptionChange(e, selectedTrainingId)}
-                    label="Description......."
-                    />
-                </FormControl>
+                    <TextField
+                        label={t("nbOfParticipants")}
+                        value={getTrainingById(selectedTrainingId)?.nbOfParticipants}
+                        sx={{
+                            width: '50%',
+                        }}
+                        >
+                    </TextField>
+                    <TextField
+                        label={t("description")}
+                        value={getTrainingById(selectedTrainingId)?.description}
+                        sx={{
+                            width: '50%',
+                        }}
+                        >
+                    </TextField>
                 </Box>
                 <Box 
                     sx={{
@@ -2230,68 +1450,26 @@ const TrainerSession = () => {
                                     gap: "20px",
                                 }}
                             >
-                                <FormControl variant="outlined" 
-                                sx={{ 
-                                width: '50%',
-                                }}
-                                >
-                                    <InputLabel required>{t("name")}</InputLabel>
-                                    <OutlinedInput
+                                <TextField
+                                    label={t("name")}
                                     value={
-                                        getTrainingById(selectedTrainingId)?.sessions[index]?.name ??
-                                        newSessionsNames[index]
+                                        getTrainingById(selectedTrainingId)?.sessions[index]?.name
                                     }
-                                    onChange={(e) => {
-                                        const training = getTrainingById(selectedTrainingId);
-                                        const session = training?.sessions[index];
-                                    
-                                        if (session) {
-                                        handleSessionNameChange(e, selectedTrainingId, session._id);
-                                        } else {
-                                        setNewSessionsNames((prevSessions) => {
-                                            const updatedSessions = [...prevSessions];
-                                            updatedSessions[index] = e.target.value;
-                                            return updatedSessions;
-                                        });
-                                        }
+                                    sx={{
+                                        width: '50%',
                                     }}
-                                    label="Name......."
-                                    />
-                                </FormControl>
-                                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                <DateTimePicker
-                                    sx={{ 
-                                    width: '50%',
-                                    }}
+                                    >
+                                </TextField>
+                                <TextField
                                     label={t("date")}
-                                    shouldDisableDate={(date) => {
-                                        const dayOfMonth = date.date();
-                                        return !selectedUpdateDays.includes(dayOfMonth); 
-                                    }}
-                                    minDate={dayjs(getMonthDate(getTrainingById(selectedTrainingId)?.month)).startOf("month")}
-                                    maxDate={dayjs(getMonthDate(getTrainingById(selectedTrainingId)?.month)).endOf("month")}
                                     value={
                                         getTrainingById(selectedTrainingId)?.sessions[index]?.date
-                                          ? dayjs(getTrainingById(selectedTrainingId)?.sessions[index]?.date)
-                                          : newSessionsDates[index]
-                                      }
-                                      onChange={(dateTime) => {
-                                        const training = getTrainingById(selectedTrainingId);
-                                        const session = training?.sessions[index];
-                                      
-                                        if (session) {
-                                          handleSessionDateChange(dateTime, selectedTrainingId, session._id);
-                                        } else {
-                                          setNewSessionsDates((prevDates) => {
-                                            const updatedDates = [...prevDates];
-                                            updatedDates[index] = dateTime;
-                                            return updatedDates;
-                                          });
-                                        }
-                                      }}
-                                      
-                                />
-                                </LocalizationProvider>
+                                    }
+                                    sx={{
+                                        width: '50%',
+                                    }}
+                                    >
+                                </TextField>
                             </Box>
                             <Box
                                 sx={{
@@ -2303,142 +1481,26 @@ const TrainerSession = () => {
                                     gap: "20px",
                                 }}
                             >
-                                <FormControl variant="outlined" 
-                                sx={{ 
-                                width: '50%',
-                                }}
-                                >
-                                <InputLabel required>{t("duration")}</InputLabel>
-                                <OutlinedInput
-                                    type="number"
-                                    value={
-                                        getTrainingById(selectedTrainingId)?.sessions[index]?.duration ??
-                                        newSessionsDurations[index]
-                                      }
-                                      onChange={(e) => {
-                                        const training = getTrainingById(selectedTrainingId);
-                                        const session = training?.sessions[index];
-                                      
-                                        if (session) {
-                                          handleSessionDurationChange(e, selectedTrainingId, session._id);
-                                        } else {
-                                          setNewSessionsDurations((prevDurations) => {
-                                            const updatedDurations = [...prevDurations];
-                                            updatedDurations[index] = e.target.value;
-                                            return updatedDurations;
-                                          });
-                                        }
-                                      }}
-                                      
-                                    label="Duration......."
-                                />
-                                </FormControl>
                                 <TextField
-                                    select={!otherSessionsUpdateLocations[index] && (TrainingLocations.includes(getTrainingById(selectedTrainingId)?.sessions[index]?.location) || !getTrainingById(selectedTrainingId)?.sessions[index]?.location)}
-                                    label={t("location")}
+                                    label={t("duration")}
                                     value={
-                                        getTrainingById(selectedTrainingId)?.sessions[index]?.location ??
-                                        newSessionsLocations[index]
-                                      }
-                                      onChange={(e) => {
-                                        const training = getTrainingById(selectedTrainingId);
-                                        const session = training?.sessions[index];
-                                      
-                                        if (session) {
-                                          handleSessionLocationChange(e, selectedTrainingId, session._id);
-                                        } else {
-                                          setNewSessionsLocations((prevLocations) => {
-                                            const updatedLocations = [...prevLocations];
-                                            updatedLocations[index] = e.target.value;
-                                            return updatedLocations;
-                                          });
-                                        }
-                                      }}
+                                        getTrainingById(selectedTrainingId)?.sessions[index]?.duration
+                                    }
                                     sx={{
                                         width: '50%',
                                     }}
-                                    >
-                                    {TrainingLocations.map((location) => (
-                                        <MenuItem key={location} value={location}>
-                                            {t(location)}
-                                        </MenuItem>
-                                    ))}
-                                    <Button
-                                        sx={{
-                                            width: "100%",
-                                            textTransform: "none",
-                                            color: "black",
-                                        }}
-                                        onClick={() => 
-                                            setOtherSessionsUpdateLocations((prevLocations) => {
-                                                const updatedLocations = [...prevLocations];
-                                                updatedLocations[index] = true; 
-                                                return updatedLocations;
-                                            })
-                                        }
-                                    >
-                                        {t("other")}...
-                                    </Button>
+                                >
                                 </TextField>
-                                <Dialog
-                                    open={Boolean(otherSessionsUpdateLocations[index])}
-                                    onClose={() => 
-                                        setOtherSessionsUpdateLocations((prevLocations) => {
-                                            const updatedLocations = [...prevLocations];
-                                            updatedLocations[index] = false; 
-                                            return updatedLocations;
-                                        })
+                                <TextField
+                                    label={t("location")}
+                                    value={
+                                        getTrainingById(selectedTrainingId)?.sessions[index]?.location
                                     }
-                                    disableScrollLock={true}
-                                    PaperProps={{
-                                        sx: {
-                                            width: "auto",  
-                                            height: "auto", 
-                                            display: "flex",
-                                            flexDirection: "column",
-                                            justifyContent: "center",
-                                            alignItems: "center",
-                                            borderRadius: "10px",
-                                            padding: '20px',
-                                        }
+                                    sx={{
+                                        width: '50%',
                                     }}
                                 >
-                                    <FormControl variant="outlined" sx={{ width: '200px' }}>
-                                        <InputLabel required>{t("location")}</InputLabel>
-                                        <OutlinedInput
-                                            value={getTrainingById(selectedTrainingId)?.sessions[index]?.location}
-                                            onChange={(e) => handleSessionLocationChange(e, selectedTrainingId, getTrainingById(selectedTrainingId)?.sessions[index]?._id)}
-                                            label="Activity ................"
-                                        />
-                                    </FormControl>
-                                    <Button
-                                        sx={{
-                                            color: 'white',
-                                            backgroundColor: '#2CA8D5',
-                                            padding: '5px 10px',
-                                            borderRadius: '10px',
-                                            textDecoration: 'none',
-                                            fontWeight: 'bold',
-                                            width: '100px',
-                                            height: '40px',
-                                            marginTop: '10px',
-                                            textTransform: "none",
-                                            '&:hover': {
-                                                backgroundColor: '#76C5E1',
-                                                color: 'white',
-                                            },
-                                        }}
-                                        onClick={() => 
-                                            setOtherSessionsUpdateLocations((prevLocations) => {
-                                                const updatedLocations = [...prevLocations];
-                                                updatedLocations[index] = false; 
-                                                return updatedLocations;
-                                            })
-                                        }
-                                    >
-                                        {t("save")}
-                                    </Button>
-                                </Dialog>
+                                </TextField>
                             </Box>
                         </Box>
                     ))}
@@ -2469,8 +1531,8 @@ const TrainerSession = () => {
                         color: 'white',
                     },
                 }} 
-                onClick={hideUpdateTrainingForm}>
-                    {t("cancel")}
+                onClick={hideTrainingDetails}>
+                    {t("close")}
                 </Button>
                 <Button sx={{
                     color: 'white',
@@ -2489,10 +1551,10 @@ const TrainerSession = () => {
                     },
                 }} 
                 onClick={() => {
-                    handleUpdateTraining(selectedTrainingId);
-                    hideUpdateTrainingForm();
+                    hideTrainingDetails();
+                    showEnrollForm(selectedTrainingId);
                 }}>
-                    {t("save")}
+                    {t("enroll")}
                 </Button>
                 </Box> 
             </Dialog>

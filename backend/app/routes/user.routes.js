@@ -1,5 +1,5 @@
 const express = require("express");
-const { getUsers, signUser, verifyEmail,createUser, updateUser, deleteUser , getUserById} = require("../controllers/user.controllers");
+const { getUsers, signUser, verifyEmail,createUser, updateUser, deleteUser , getUserById, updateMarkedTrainings} = require("../controllers/user.controllers");
 
 const router = express.Router();
 
@@ -9,6 +9,7 @@ router.post("/users/sign-in", signUser);
 router.post("/users/verify-email", verifyEmail);
 router.post("/users", createUser);
 router.put("/users/:id", updateUser);
+router.put("/users/marked_trainings/:id", updateMarkedTrainings);
 router.delete("/users/:id", deleteUser);
 
 module.exports = router;

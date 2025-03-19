@@ -222,38 +222,6 @@ const ManageSessions = () => {
       };
    };
 
-    //  Adding All Trainings
-    const [file, setFile] = useState(null);
-
-    const handleFileChange = (event) => {
-        setFile(event.target.files[0]);
-    };
-
-    const handleUpload = async () => {
-        if (!file) {
-            alert("Please select a file.");
-            return;
-        }
-        
-        const reader = new FileReader();
-        reader.onload = async () => {
-            const data = reader.result;
-            const workbook = XLSX.read(data, { type: 'array' });
-        
-            const sheetName = workbook.SheetNames[0];
-            const sheet = workbook.Sheets[sheetName];
-        
-            const jsonData = XLSX.utils.sheet_to_json(sheet);
-        
-            try {
-            const response = await axios.post('http://localhost:5000/api/uploadUsers', { data: jsonData });
-            } catch (error) {
-            }
-        };
-        
-        reader.readAsArrayBuffer(file);
-        };
-
     // Updating training by Id............
     const [updateTraining, setUpdateTraining] = useState(false);
     const [selectedUpdateDays, setSelectedUpdateDays] = useState([]);
@@ -547,6 +515,33 @@ const ManageSessions = () => {
         setSearchedTitle(''); 
     };
 
+    const filterSessions = (training) => {
+        if (!training.sessions) return [];
+      
+        return training.sessions
+        .filter((session) => {
+          return session.status === selectedFilter || selectedFilter === "all" || selectedFilter === "full" || selectedFilter === "not_full";
+        })
+        .sort((fsession, ssession) => {
+          if (
+            selectedOrder &&
+            ((fsession[selectedOrder.toLowerCase()] !== undefined || fsession[selectedOrder] !== undefined) &&
+            (ssession[selectedOrder.toLowerCase()] !== undefined || ssession[selectedOrder] !== undefined))
+          ) {
+            if(selectedOrder.toLowerCase() === "duration"){
+              return orderState === "Down"
+               ? fsession[selectedOrder.toLowerCase()] - ssession[selectedOrder.toLowerCase()]
+                : ssession[selectedOrder.toLowerCase()] - fsession[selectedOrder.toLowerCase()];
+            }else{
+              return orderState === "Down"
+                ? fsession[selectedOrder.toLowerCase()].toLowerCase().localeCompare(ssession[selectedOrder.toLowerCase()].toLowerCase())
+                : ssession[selectedOrder.toLowerCase()].toLowerCase().localeCompare(fsession[selectedOrder.toLowerCase()].toLowerCase());
+            }
+          }
+          return 0;
+        });
+      };
+
     const filteredTrainings = Object.entries(trainings)
     .filter(([_, training]) => training !== undefined)
     .map(([key, training]) => ({ id: key, ...training }))
@@ -565,6 +560,7 @@ const ManageSessions = () => {
     &&
     ((selectedFilter === "full" && training.full) || (selectedFilter === "not_full" && !training.full) || (selectedFilter === "all")
        || (selectedFilter === "completed") || (selectedFilter === "in_progress") || (selectedFilter === "scheduled"))
+      && filterSessions(training).length > 0
      ).sort((ftraining, straining) => {
       if (
         selectedTrainingOrder &&
@@ -589,33 +585,6 @@ const ManageSessions = () => {
       }
     });
         
-
-    const filterSessions = (training) => {
-      if (!training.sessions) return [];
-    
-      return training.sessions
-      .filter((session) => {
-        return session.status === selectedFilter || selectedFilter === "all" || selectedFilter === "full" || selectedFilter === "not_full";
-      })
-      .sort((fsession, ssession) => {
-        if (
-          selectedOrder &&
-          ((fsession[selectedOrder.toLowerCase()] !== undefined || fsession[selectedOrder] !== undefined) &&
-          (ssession[selectedOrder.toLowerCase()] !== undefined || ssession[selectedOrder] !== undefined))
-        ) {
-          if(selectedOrder.toLowerCase() === "duration"){
-            return orderState === "Down"
-             ? fsession[selectedOrder.toLowerCase()] - ssession[selectedOrder.toLowerCase()]
-              : ssession[selectedOrder.toLowerCase()] - fsession[selectedOrder.toLowerCase()];
-          }else{
-            return orderState === "Down"
-              ? fsession[selectedOrder.toLowerCase()].toLowerCase().localeCompare(ssession[selectedOrder.toLowerCase()].toLowerCase())
-              : ssession[selectedOrder.toLowerCase()].toLowerCase().localeCompare(fsession[selectedOrder.toLowerCase()].toLowerCase());
-          }
-        }
-        return 0;
-      });
-    };
 
     // Pagination ...............
     const [page, setPage] = useState(1);
@@ -1212,33 +1181,6 @@ const ManageSessions = () => {
                         <IconButton color="primary" aria-label="add" size="small" 
                                 sx={{ borderRadius: '50%'}} onClick={showNewTrainingForm}>
                             <AddIcon />
-                        </IconButton>
-                    </Tooltip>
-                    <Tooltip title={t("select_file")} arrow>
-                        <label htmlFor="file-upload">
-                            <IconButton color="primary" aria-label="select-file" size="small" component="span"
-                            >
-                                <UploadFileIcon />
-                            </IconButton>
-                            <input
-                                id="file-upload"
-                                type="file"
-                                accept=".xlsx, .xls"
-                                onChange={handleFileChange}
-                                style={{ display: "none" }}
-                            />
-                        </label>
-                    </Tooltip>
-                    <Tooltip title={t("upload_file")} arrow>
-                        <IconButton 
-                            color="button.primary" 
-                            aria-label="upload-file" 
-                            size="small" 
-                            onClick={handleUpload}
-                            disabled={!file}
-                            sx={{ borderRadius: '50%'}}
-                        >
-                            <CheckIcon />
                         </IconButton>
                     </Tooltip>
                     <Dialog

@@ -110,6 +110,26 @@ const updateUser = async (req, res) => {
     }
 };
 
+const updateMarkedTrainings = async (req, res) => {
+  try {
+      const { id: _id } = req.params;
+      const { listOfMarkedTrainings } = req.body; 
+
+      const updatedUser = await User.findByIdAndUpdate(
+          _id,
+          { listOfMarkedTrainings },
+          { new: true }
+      );
+
+      if (!updatedUser) return res.status(404).json({ message: "User not found" });
+
+      res.json(updatedUser);
+  } catch (err) {
+      res.status(500).json({ message: err.message });
+  }
+};
+
+
 const deleteUser = async (req, res) => {
     try {
       const { id: _id } = req.params;
@@ -124,4 +144,4 @@ const deleteUser = async (req, res) => {
 
 
 
-module.exports = { getUsers,signUser,verifyEmail,createUser,updateUser,deleteUser, getUserById};
+module.exports = { getUsers,signUser,verifyEmail,createUser,updateUser,deleteUser, getUserById, updateMarkedTrainings};
