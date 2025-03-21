@@ -10,6 +10,8 @@ import SignIn from './components/Auth/SignIn.jsx';
 import Verify from './components/Auth/Verify.jsx';
 import Profile from './components/Profile.jsx';
 import Calendar from './components/Calendar.jsx';
+import TrainerRequest from './components/manage/TrainerRequest.jsx';
+import TrainerCalls from './components/TrainerCalls.jsx';
 import { getCookie } from './components/Cookies.jsx';
 import './index.css';
 
@@ -34,7 +36,9 @@ function App() {
             <Route path="/manageusers" element={<ManageUsers />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/managesessions" element={<ManageSessions />} />
+            <Route path="/trainerrequest" element={<TrainerRequest />} />
             <Route path="/trainersession" element={<TrainerSession />} />
+            <Route path="/trainercall" element={<TrainerCalls />} />
             <Route path="/account" element={<Profile />} />
             <Route path="/calendar" element={<Calendar />} />
           </>

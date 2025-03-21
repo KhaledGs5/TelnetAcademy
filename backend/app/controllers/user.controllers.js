@@ -1,5 +1,5 @@
 const User = require("../models/user.model");
-
+const Notification = require("../models/callnotification.model");
 
 const getUsers = async (req, res) => {
   try {
@@ -142,6 +142,50 @@ const deleteUser = async (req, res) => {
     }
 }
 
+const getNotif = async (req, res) => {
+  try {
+    const { id: _id } = req.params;
+    const unreadNotifications = await Notification.find({ recipient: _id, isRead: false });
+    console.log(unreadNotifications);
+    res.status(200).json({ count: unreadNotifications.length, notifications: unreadNotifications });
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching notifications" });
+  }
+};
+
+const getAvailableNotif = async (req, res) => {
+  try {
+    const { id: _id } = req.params;
+    const notifications = await Notification.find({ recipient: _id });
+    res.status(200).json({ notifications });
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching notifications" });
+  }
+};
+
+const markRead = async (req, res) => {
+  try {
+    const { id: _id } = req.params;
+    await Notification.updateMany({ recipient: _id, isRead: false }, { isRead: true });
+    req.io.to(trainerId).emit("readNotifications");
+    res.status(200).json({ message: "Notifications marked as read" });
+  } catch (error) {
+    res.status(500).json({ message: "Error updating notifications" });
+  }
+};
+
+const deleteNotif = async (req, res) => {
+  try {
+    const { id: _id } = req.params;
+    await Notification.deleteMany({ recipient: _id });
+    res.status(200).json({ message: "Notifications deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error deleting notifications" });
+  }
+};
 
 
-module.exports = { getUsers,signUser,verifyEmail,createUser,updateUser,deleteUser, getUserById, updateMarkedTrainings};
+
+module.exports = { getUsers,signUser,verifyEmail,createUser,updateUser,deleteUser, getUserById, updateMarkedTrainings, getNotif,markRead, deleteNotif,
+  getAvailableNotif
+};

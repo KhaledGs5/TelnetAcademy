@@ -1,15 +1,39 @@
 const mongoose = require("mongoose");
 const express = require("express");
 const cors = require("cors");
+const http = require('http');
+const socketIo = require('socket.io');
 const nodemailer = require("nodemailer");
 const connectDB = require("./db");
 
 const app = express();
+const server = http.createServer(app);
+const io = socketIo(server, {
+  cors: {
+    origin: "http://localhost:3000", 
+    methods: ["GET", "POST"]
+  }
+});
+
 
 app.use(express.json());
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
 app.use(cors({ origin: "http://localhost:3000" }));
 
 connectDB();
+io.on('connection', (socket) => {
+  console.log('New client connected');
+  socket.on('joinRoom', (trainerId) => {
+    socket.join(trainerId); 
+  });
+
+  socket.on('disconnect', () => {
+    console.log('Client disconnected');
+  });
+});
 
 app.get("/", (req, res) => {
   res.send("MongoDB is connected!");
@@ -26,6 +50,12 @@ app.use("/api", trainingRoutes);
 
 const sessionRoutes = require("./app/routes/session.routes");
 app.use("/api", sessionRoutes);
+
+const callnotificationRoutes = require("./app/routes/callnotification.routes");
+app.use("/api", callnotificationRoutes);
+
+const callFormRoutes = require("./app/routes/form.routes");
+app.use("/api", callFormRoutes);
 
 // Automatic Mail Sending ..........
 const transporter = nodemailer.createTransport({
@@ -69,4 +99,4 @@ app.post("/api/uploadUsers", async (req, res) => {
 });
 
 const PORT = process.env.PORT;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));

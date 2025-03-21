@@ -185,6 +185,16 @@ const translations = {
       "period": "Period",
       "what_are_your_motivations_for_becoming_a_reference_trainer": "What are your motivations for becoming a reference trainer?",
       "training_calls": "Training Calls",
+      "confirm_call_for_trainers": "Confirm Call for Trainers",
+      "application_form": "Application Form",
+      "trainer_referent_telnet_academy": "Trainer Referent Telnet Academy",
+      "telnet_academy_is_calling_for_training_sessions_could_you_please_add_a_suggestion_and_fill_out_the_form": "Telnet Academy is calling for training sessions. Could you please add a suggestion and fill out the form",
+      "hello": "Hello",
+      "add_suggestion": "Add suggestion",
+      "telnet_academy_is_not_calling_for_training_sessions": "Telnet Academy is not calling for training sessions",
+      "message": "Message",
+      "trainee_requests": "Trainee Requests",
+      "trainer_requests": "Trainer Requests",
     },
     "fr": {
       "name": "Nom",
@@ -371,6 +381,16 @@ const translations = {
       "period": "Période",
       "what_are_your_motivations_for_becoming_a_reference_trainer": "Quelles sont vos motivations pour devenir formateur référent ?",
       "training_calls": "Appel de formation",
+      "confirm_call_for_trainers": "Confirmer la demande des formateurs",
+      "application_form": "Formulaire de candidature",
+      "trainer_referent_telnet_academy": "Formateur Référent Telnet Academy",
+      "telnet_academy_is_calling_for_training_sessions_could_you_please_add_a_suggestion_and_fill_out_the_form": "Telnet Academy appelle pour des sessions de formation. Pouvez-vous ajouter une suggestion et remplir le formulaire",
+      "hello": "Bonjour",
+      "add_suggestion": "Ajouter une suggestion",
+      "telnet_academy_is_not_calling_for_training_sessions": "Telnet Academy ne lance pas d'appels pour des sessions de formation",
+      "message": "Message",
+      "trainee_requests":  "Les demandes des stagiaires",
+      "trainer_requests":  "Les demandes des formateurs",
     }
   };
   

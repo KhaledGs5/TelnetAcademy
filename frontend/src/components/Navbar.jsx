@@ -1,9 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useContext } from 'react';
 import { ThemeContext } from '../themecontext';
 import { getCookie , setCookie} from './Cookies';
-import { Box, Link, Typography, Menu, MenuItem} from "@mui/material";
+import { Box, Link, Typography, Menu, MenuItem, Dialog, Button, DialogTitle, Badge, Snackbar, Alert,
+    OutlinedInput,InputLabel,FormControl
+} from "@mui/material";
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import SettingsIcon from '@mui/icons-material/Settings';
 import Logo from "../assets/Telnet.png";
@@ -13,9 +15,11 @@ import GroupAddIcon from '@mui/icons-material/GroupAdd';
 import EditIcon from '@mui/icons-material/Edit';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
-import AddAlertIcon from '@mui/icons-material/AddAlert';
+import NotificationsIcon from '@mui/icons-material/Notifications';
 import LogoutIcon from '@mui/icons-material/Logout';
 import LanguageIcon from '@mui/icons-material/Language';
+import axios from 'axios';
+import io from "socket.io-client";
 import { useLanguage } from "../languagecontext";
 
 const Navbar = () => {
@@ -23,8 +27,15 @@ const Navbar = () => {
     const { t, setLanguage } = useLanguage();
     const [choosedLanguage, setChoosedLanguage] = useState(getCookie("Language") || "en");
     const { darkMode, toggleTheme } = useContext(ThemeContext);
-
     const [signedIn, setSignedIn] = useState(getCookie("SignedIn"));
+    // Verify Everything
+
+    const [showsVerificationAlert, setShowsVerifificationAlert] = useState(false);
+    const [verifyAlertMessage, setVerifyAlertMessage] = useState("");
+    const [verifyAlert, setVerifyAlert] = useState("error");
+    const handleVerificationAlertClose = () => {
+        setShowsVerifificationAlert(false);
+    };
 
     // Menu .............
 
@@ -83,6 +94,86 @@ const Navbar = () => {
 
 
     const location = useLocation();
+
+    // Call For Trainers
+    const socket = io("http://localhost:5000"); 
+    const [numberOfCalls, setNumberOfCalls] = useState(0);
+    const [callMessage, setCallMessage] = useState("");
+
+    const fetchNotifications = async () => {
+        try {
+            const response = await axios.get(`http://localhost:5000/api/users/callnotif/${user._id}`);
+            console.log("fetched notification");
+            console.log("unread notifications number :", response.data.count);
+            setNumberOfCalls(response.data.count);
+            console.log(numberOfCalls);
+        } catch (error) {
+            console.error("Error fetching notifications", error);
+        }
+    };
+
+    useEffect(() => {
+        if (!user) return; 
+    
+        if (!socket.connected) {
+            socket.connect();
+        }
+    
+        fetchNotifications();
+        socket.emit("joinRoom", user._id);
+        console.log("request sent to join room");
+    
+        socket.on("newNotification", () => {
+            fetchNotifications();
+        });
+    
+        socket.on("readNotifications", () => {
+            setNumberOfCalls(0);
+        });
+    
+        return () => {
+            socket.off("newNotification");
+            socket.off("readNotifications");
+        };
+    }, [user?._id]);
+    
+    const handleOpenNotifications = async () => {
+        try {
+          await axios.put(`http://localhost:5000/api/users/callnotif/${user._id}`);
+
+          setNumberOfCalls(0); 
+        } catch (error) {
+          console.error("Error marking notifications as read", error);
+        }
+    };
+    
+
+    const [verifyCallForTrainers, setVerifyCallForTrainers] = useState(false);
+
+    const openCallForTrainers = () => {
+        setVerifyCallForTrainers(true);
+    };
+
+    const closeCallForTrainers = () => {
+        setVerifyCallForTrainers(false);
+    };
+
+    const sendCallForTrainers = async () => {
+        try {
+            const response = await axios.post("http://localhost:5000/api/callnotification", {
+                message: callMessage,
+            });
+    
+            if (response.data.success) {
+                setVerifyAlert("success");
+                setVerifyAlertMessage("Call sent successfully !");
+                setShowsVerifificationAlert(true);
+                closeCallForTrainers();
+            }
+        } catch (error) {
+            console.error("Error sending call for trainers:", error);
+        }
+    };
 
     //Styles................................
 
@@ -171,7 +262,7 @@ const Navbar = () => {
                 <Link href={(user.role === "trainer" || user.role === "trainee_trainer") ? '/trainersession' : user.role === "trainee" ? '/traineesession' : user.role === 'manager' ? '/managesessions' : ''} 
                 sx={linkStyle(user.role === "trainer" || user.role === "trainee_trainer" ? '/trainersession' : user.role === "trainee" ? '/traineesession' : user.role === 'manager' ? '/managesessions' : '')}>{t("sessions")}</Link>
                 {!(user.role) ?  <Link href="/manageusers" sx={linkStyle('/manageusers')}>{t("users")}</Link> : (user.role === "manager")? 
-                            <Link href="/requests" sx={linkStyle('/requests')}>{t("requests")}</Link> : 
+                            <Link href="/trainerrequest" sx={linkStyle('/trainerrequest')}>{t("requests")}</Link> : 
                              <Link href="/enrolled" sx={linkStyle('/enrolled')}>{t("enrolled")}</Link>   }
                 <Link href="/calendar" sx={linkStyle('/calendar')}>{t("calendar")}</Link>
                 <Link href="/contact" sx={linkStyle('/contact')}>{t("contact")}</Link>
@@ -287,9 +378,22 @@ const Navbar = () => {
                     handleCloseSubmenu();
                 }}              
                 >
-                    {ProfileImage ? <img src={ProfileImage} alt="Img" style={profileImageStyle}/>:
-                    <AccountCircleIcon  sx={{marginRight:"5px"}} />
-                    }
+                    <Badge badgeContent={numberOfCalls} color="primary"
+                      sx={{ 
+                        "& .MuiBadge-badge": { 
+                          fontSize: "10px", 
+                          height: "16px", 
+                          minWidth: "16px", 
+                          padding: "2px",
+                          position: "absolute",
+                          right: "10px",
+                        } 
+                      }}
+                    > 
+                        {ProfileImage ? <img src={ProfileImage} alt="Img" style={profileImageStyle}/>:
+                        <AccountCircleIcon  sx={{marginRight:"10px"}} />
+                        }
+                    </Badge>
                     <Typography>
                         {user.name}
                     </Typography>
@@ -343,9 +447,27 @@ const Navbar = () => {
                         </Menu>
                     </MenuItem> : null}
                     {(user.role === "trainer") || (user.role === "trainee_trainer" && selectedRole === "trainer") ? 
-                    <MenuItem onClick={() => window.location.href = "/trainercall"} sx={menuStyle("/trainercall")}><AddAlertIcon sx={{marginRight:'10px'}}/>{t("training_calls")}</MenuItem>
+                    <MenuItem onClick={() => {
+                        handleOpenNotifications();
+                        window.location.href = "/trainercall";}}
+                    sx={menuStyle("/trainercall")}>
+                    <Badge badgeContent={numberOfCalls} color="primary"
+                      sx={{ 
+                        "& .MuiBadge-badge": { 
+                          fontSize: "10px", 
+                          height: "16px", 
+                          minWidth: "16px", 
+                          padding: "2px",
+                          position: "absolute",
+                          right: "10px",
+                        } 
+                      }}
+                    > <NotificationsIcon sx={{marginRight:'10px'}}/>
+                    </Badge>
+                    {t("training_calls")}
+                    </MenuItem>
                     : null}
-                    {user.role === 'manager' ? <MenuItem onClick={() => window.location.href = "/callfortrainers"} sx={menuStyle("/callfortrainers")}><GroupAddIcon sx={{marginRight:'10px'}}/>{t("call_for_trainers")}</MenuItem> : null}
+                    {user.role === 'manager' ? <MenuItem onClick={() => openCallForTrainers()} sx={menuStyle("/callfortrainers")}><GroupAddIcon sx={{marginRight:'10px'}}/>{t("call_for_trainers")}</MenuItem> : null}
                     <MenuItem sx={menuStyle("")} onClick={toggleTheme}  onMouseEnter={handleCloseSubmenu}>
                         {darkMode ? <Brightness7Icon sx={{marginRight:'10px'}}/> : <Brightness4Icon sx={{marginRight:'10px'}}/>}
                         {darkMode? t("light_mode") : t("dark_mode")}
@@ -358,6 +480,102 @@ const Navbar = () => {
                     <MenuItem onClick={handleLogout} sx={menuStyle("/logout")} onMouseEnter={handleCloseSubmenu}><LogoutIcon sx={{marginRight:'10px'}}/>{t("logout")}</MenuItem>
                 </Menu>
             </Box> : null}
+            <Dialog
+                open={verifyCallForTrainers}
+                disableScrollLock={true}
+                onClose={closeCallForTrainers}
+                PaperProps={{
+                    sx: {
+                        width: "auto",  
+                        height: "auto", 
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        borderRadius: "10px",
+                        padding: '20px',
+                    }
+                }}
+            >
+                <DialogTitle>{t("confirm_call_for_trainers")}?</DialogTitle>
+                <Box 
+                    sx={{
+                        width: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        gap: '20px',
+                    }}
+                >
+                    <FormControl variant="outlined" sx={{ 
+                            width: '100%',
+                        }}
+                    >
+                        <InputLabel required>{t("message")}</InputLabel>
+                        <OutlinedInput
+                            multiline
+                            value={callMessage}
+                            onChange={(e) => setCallMessage(e.target.value)}
+                            label="Message ................"
+                        />
+                    </FormControl>
+                    <Box 
+                        sx={{
+                            width: '100%',
+                            display: 'flex',
+                            flexDirection: 'row',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            gap: '20px',
+                        }}
+                    >
+                        <Button sx={{
+                            color: 'white',
+                            backgroundColor: '#EA9696',
+                            padding: '5px 10px',
+                            borderRadius: '10px',
+                            textDecoration: 'none',
+                            fontWeight: 'bold',
+                            width: '100px',
+                            height: '40px',
+                            marginTop: '10px',
+                            textTransform: "none",
+                            '&:hover': {
+                                backgroundColor: '#EAB8B8',
+                                color: 'white',
+                            },
+                        }} 
+                        onClick={closeCallForTrainers}>
+                            {t("no")}
+                        </Button>
+                        <Button sx={{
+                            color: 'white',
+                            backgroundColor: '#2CA8D5',
+                            padding: '5px 10px',
+                            borderRadius: '10px',
+                            textDecoration: 'none',
+                            fontWeight: 'bold',
+                            width: '100px',
+                            height: '40px',
+                            marginTop: '10px',
+                            textTransform: "none",
+                            '&:hover': {
+                                backgroundColor: '#76C5E1',
+                                color: 'white',
+                            },
+                        }} 
+                        onClick={() => sendCallForTrainers()}>
+                            {t("yes")}
+                        </Button>
+                    </Box>
+                </Box>
+            </Dialog>
+            <Snackbar open={showsVerificationAlert} autoHideDuration={3000} onClose={handleVerificationAlertClose}>
+                <Alert onClose={handleVerificationAlertClose} severity={verifyAlert} variant="filled">
+                    {t(verifyAlertMessage)}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 };
