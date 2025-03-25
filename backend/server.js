@@ -25,7 +25,6 @@ app.use(cors({ origin: "http://localhost:3000" }));
 
 connectDB();
 io.on('connection', (socket) => {
-  console.log('New client connected');
   socket.on('joinRoom', (trainerId) => {
     socket.join(trainerId); 
   });
@@ -74,6 +73,24 @@ app.post("/password-reset", async (req, res) => {
       from: process.env.EMAIL_USER,
       to: toEmail,
       subject: "Change Password",
+      text: `Message: ${message}`,
+    });
+
+    res.status(200).json({ success: true, message: "Email sent successfully!" });
+  } catch (error) {
+    console.error("Error sending email:", error);
+    res.status(500).json({ success: false, message: "Failed to send email." });
+  }
+});
+
+app.post("/call-for-trainers", async (req, res) => {
+  const { toEmail, message } = req.body;
+
+  try {
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: toEmail,
+      subject: "Call For Trainers",
       text: `Message: ${message}`,
     });
 

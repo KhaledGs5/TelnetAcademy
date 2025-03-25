@@ -213,7 +213,7 @@ const TraineeSession = () => {
         const response = await axios.get('http://localhost:5000/api/users');
         if (response.status === 200) {
           const trainers = response.data
-            .filter(user => user.role === "trainer")
+            .filter(user => (user.role === "trainer" || user.role === "trainee_trainer"))
             .map(user => ({ name: user.name, id: user._id }));
     
           setFilterTrainer([{ name: 'all', id: 0 }, ...trainers]);
@@ -386,94 +386,94 @@ const TraineeSession = () => {
               width: "100%",
               height: "100px",
             }}
-        >
-        <Typography
-            sx={{
-                fontSize: 34,
-                fontWeight: "bold",
-                textAlign: "center",
-                letterSpacing: 0.2,
-                lineHeight: 1,
-                userSelect: "none",
-                cursor: "pointer",
-                color: "#2CA8D5",
-                marginLeft: 5,
-            }}
-        >
-            {t("sessions")}
-        </Typography>
-        <Box
-            sx={{
-            position: 'absolute',
-            left: '30%',
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: '20px',
-            }}
-        >
-            <Button 
-                sx={buttonStyle}
-                onClick={() => setSelectedFiler("all")}
-            >
-            {selectedFilter === "all" && (
+                >
+                <Typography
+                    sx={{
+                        fontSize: 34,
+                        fontWeight: "bold",
+                        textAlign: "center",
+                        letterSpacing: 0.2,
+                        lineHeight: 1,
+                        userSelect: "none",
+                        cursor: "pointer",
+                        color: "#2CA8D5",
+                        marginLeft: 5,
+                    }}
+                >
+                    {t("sessions")}
+                </Typography>
                 <Box
-                sx={{
-                    width: 12,
-                    height: 12, 
-                    backgroundColor: "#2CA8D5", 
-                    borderRadius: "50%",
-                    position: "absolute",
-                    top: 10, 
-                    right: 10, 
-                    boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
-                }}
-                />
-            )}
-                {t("all")}
-            </Button>
-            <Button 
-                sx={{...buttonStyle, backgroundColor :"#C8E6C9"}}
-                onClick={() => setSelectedFiler("not_full")}
-            >
-            {selectedFilter === "not_full" && (
-                <Box
-                sx={{
-                    width: 12,
-                    height: 12, 
-                    backgroundColor: "#2CA8D5", 
-                    borderRadius: "50%",
-                    position: "absolute",
-                    top: 10, 
-                    right: 10, 
-                    boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
-                }}
-                />
-            )}
-                5<br/>{t("not_full")}
-            </Button>
-            <Button 
-                sx={{...buttonStyle, backgroundColor :"#FFCDD2"}}
-                onClick={() => setSelectedFiler("full")}
-            >
-            {selectedFilter === "full" && (
-                <Box
-                sx={{
-                    width: 12,
-                    height: 12, 
-                    backgroundColor: "#2CA8D5", 
-                    borderRadius: "50%",
-                    position: "absolute",
-                    top: 10, 
-                    right: 10, 
-                    boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
-                }}
-                />
-            )}
-                10<br/>{t("full")}
-            </Button>
-        </Box>
+                    sx={{
+                    position: 'absolute',
+                    left: '30%',
+                    display: "flex",
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: '20px',
+                    }}
+                >
+                    <Button 
+                        sx={buttonStyle}
+                        onClick={() => setSelectedFiler("all")}
+                    >
+                    {selectedFilter === "all" && (
+                        <Box
+                        sx={{
+                            width: 12,
+                            height: 12, 
+                            backgroundColor: "#2CA8D5", 
+                            borderRadius: "50%",
+                            position: "absolute",
+                            top: 10, 
+                            right: 10, 
+                            boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
+                        }}
+                        />
+                    )}
+                        {t("all")}
+                    </Button>
+                    <Button 
+                        sx={{...buttonStyle, backgroundColor :"#C8E6C9"}}
+                        onClick={() => setSelectedFiler("not_full")}
+                    >
+                    {selectedFilter === "not_full" && (
+                        <Box
+                        sx={{
+                            width: 12,
+                            height: 12, 
+                            backgroundColor: "#2CA8D5", 
+                            borderRadius: "50%",
+                            position: "absolute",
+                            top: 10, 
+                            right: 10, 
+                            boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
+                        }}
+                        />
+                    )}
+                        5<br/>{t("not_full")}
+                    </Button>
+                    <Button 
+                        sx={{...buttonStyle, backgroundColor :"#FFCDD2"}}
+                        onClick={() => setSelectedFiler("full")}
+                    >
+                    {selectedFilter === "full" && (
+                        <Box
+                        sx={{
+                            width: 12,
+                            height: 12, 
+                            backgroundColor: "#2CA8D5", 
+                            borderRadius: "50%",
+                            position: "absolute",
+                            top: 10, 
+                            right: 10, 
+                            boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
+                        }}
+                        />
+                    )}
+                        10<br/>{t("full")}
+                    </Button>
+                </Box>
             </Box>
             <Box
                 sx={{
@@ -868,18 +868,16 @@ const TraineeSession = () => {
                             />
                             {training.full ? 'Full' : 'Not Full'}
                         </Box>
-                        <TextField
-                            variant="outlined"
-                            required
-                            placeholder={t("title")}
-                            size="small"
-                            value={training.title}
-                            sx={{
-                            width: "100%",
-                            height: "auto",
-                            "& .MuiOutlinedInput-notchedOutline": { border: "none" },
-                            }}
-                        />
+                            <Typography 
+                                    sx={{ 
+                                        width: "100%",
+                                        display: "flex",
+                                        alignItems: "start",
+                                        justifyContent: "start",
+                                    }}
+                                >
+                                    {training.title || t("title")}
+                            </Typography>
                         </Box>
                         <Box
                         sx={{
@@ -894,48 +892,80 @@ const TraineeSession = () => {
                         {filterSessions(training).map((session) => (
                             <Box
                             key={session._id}
+                            variant="outlined" 
                             sx={{
                                 width: "100%",
+                                height: "60px",
                                 display: "flex",
                                 flexDirection: "row",
                                 justifyContent: "start",
                                 alignItems: 'center',
                                 gap: '5px',
+                                border: "1px solid #ccc", 
+                                borderRadius: "5px", 
+                                cursor: "pointer",
                             }}
                             >
-                            <TextField variant="outlined" required placeholder={t("Name")} value={session.name} sx={{width:"25%"}}/>
-                            <TextField
-                                sx={{ width: '25%' }}
-                                placeholder={t("date")}
-                                value={session.date ? dayjs(session.date).format("YYYY-MM-DD HH:mm") : ""}
-                            />
-                            <FormControl variant="outlined" sx={{width:"25%"}}>
-                                <OutlinedInput
-                                    value={session.duration}
-                                />
-                            </FormControl>
-                            <TextField
-                                value={session.location}
-                                sx={{
-                                    width: '25%',
+                            <Typography 
+                                sx={{ 
+                                    width: "25%",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
                                 }}
-                                SelectProps={{
-                                    MenuProps: {
-                                    disableScrollLock: true, 
-                                    }
+                            >
+                                {session.name || t("name")}
+                            </Typography>
+                            <Typography 
+                                sx={{ 
+                                    width: "25%",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
                                 }}
-                                >
-                            </TextField>
+                            >
+                                {session.date ? dayjs(session.date).format("YYYY-MM-DD HH:mm") : "" || t("date")}
+                            </Typography>
+                            <Typography 
+                                sx={{ 
+                                    width: "25%",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                }}
+                            >
+                                {session.duration || t("duration")}
+                            </Typography>
+                            <Typography 
+                                sx={{ 
+                                    width: "25%",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                }}
+                            >
+                                {session.location || t("location")}
+                            </Typography>
                           </Box>
                         ))}
                         </Box> 
-                        <FormControl variant="outlined" sx={{width:"15%"}}>
-                            <OutlinedInput
-                                value={training.nbOfParticipants}
-                            />
-                        </FormControl>
+                        <Typography 
+                        variant="outlined"
+                            sx={{ 
+                                border: "1px solid #ccc", 
+                                borderRadius: "5px", 
+                                cursor: "pointer",
+                                height: "60px",
+                                width: "15%",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                            }}
+                        >
+                            {training.nbOfParticipants|| t("numberOfParticipants")}
+                        </Typography>
                         <Box 
-                        sx={{width:'10%', display:"flex", flexDirection:"row", justifyContent:"end"}}
+                        sx={{width:'10%', display:"flex", flexDirection:"row", justifyContent:"end", paddingRight:"10px"}}
                         >
                             <Tooltip title={t("view_details")} arrow> 
                                 <IconButton sx={{color:"#76C5E1"}}  onClick={() => {showTrainingDetails(training._id);
@@ -943,45 +973,15 @@ const TraineeSession = () => {
                                     <RemoveRedEyeIcon/>
                                 </IconButton>
                             </Tooltip>
-                            <Tooltip title={t("enroll")} arrow>
-                                <IconButton sx={{color:"#76C5E1"}} onClick={() => showEnrollForm(training._id)}>
+                            <Tooltip title={t("register")} arrow> 
+                                <IconButton sx={{color:"#76C5E1"}} >
                                     <AppRegistrationIcon/>
-                                </IconButton>
-                            </Tooltip>
-                            <Tooltip title={!markedTrainingsIds?.includes(training._id) ? t("bookmark") : t("unmark")} arrow> 
-                                <IconButton sx={{color:"button.secondary"}} onClick={() => toggleAndUpdateTrainingMark(training._id)}>
-                                    {markedTrainingsIds?.includes(training._id) ? <StarIcon/> : <StarBorderIcon/>}
                                 </IconButton>
                             </Tooltip>
                         </Box>
                     </Box>
                 ))}
             </Box>
-            <Dialog
-                open={enrollForm}
-                disableScrollLock={true}
-                onClose={hideEnrollForm}
-                PaperProps={{
-                    sx: {
-                        minWidth: "50%",  
-                        height: "auto", 
-                        display: "flex",
-                        flexDirection: "column",
-                        justifyContent: "start",
-                        alignItems: "center",
-                        borderRadius: "10px",
-                        gap: "20px",
-                        padding: "20px",
-                        scrollbarWidth: "none",
-                        "&::-webkit-scrollbar": {
-                            display: "none"  
-                        }
-                    }
-                }}
-            >
-                <DialogTitle>{t("enroll_in_this_training")}</DialogTitle>
-
-            </Dialog>
             <Dialog
                 open={showTraining}
                 onClose={hideTrainingDetails}
@@ -1018,19 +1018,29 @@ const TraineeSession = () => {
                     <TextField
                         label={t("title")}
                         value={t(getTrainingById(selectedTrainingId)?.title)}
-                        sx={{
-                            width: '50%',
+                        sx={{ 
+                            width: "50%",
+                            cursor: "pointer", 
+                            "& .MuiInputBase-input": { cursor: "pointer" }, 
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" } 
                         }}
-                        >
-                    </TextField>
+                        InputProps={{
+                            readOnly: true, 
+                        }}
+                    />
                     <TextField
                         label={t("month")}
                         value={t(getTrainingById(selectedTrainingId)?.month)}
-                        sx={{
-                            width: '50%',
+                        sx={{ 
+                            width: "50%",
+                            cursor: "pointer", 
+                            "& .MuiInputBase-input": { cursor: "pointer" }, 
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" } 
                         }}
-                        >
-                    </TextField>
+                        InputProps={{
+                            readOnly: true, 
+                        }}
+                    />
                 </Box>
                 <Box
                     sx={{
@@ -1045,19 +1055,29 @@ const TraineeSession = () => {
                     <TextField
                         label={t("skill")}
                         value={t(getTrainingById(selectedTrainingId)?.skillType)}
-                        sx={{
-                            width: '50%',
+                        sx={{ 
+                            width: "50%",
+                            cursor: "pointer", 
+                            "& .MuiInputBase-input": { cursor: "pointer" }, 
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" } 
                         }}
-                        >
-                    </TextField>
+                        InputProps={{
+                            readOnly: true, 
+                        }}
+                    />
                     <TextField
                         label={t("date")}
-                        value={getTrainingById(selectedTrainingId)?.date}
-                        sx={{
-                            width: '50%',
+                        value={t(getTrainingById(selectedTrainingId)?.date)}
+                        sx={{ 
+                            width: "50%",
+                            cursor: "pointer", 
+                            "& .MuiInputBase-input": { cursor: "pointer" }, 
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" } 
                         }}
-                        >
-                    </TextField>
+                        InputProps={{
+                            readOnly: true, 
+                        }}
+                    />
                 </Box>
                 <Box
                     sx={{
@@ -1071,20 +1091,30 @@ const TraineeSession = () => {
                 >
                     <TextField
                         label={t("nbOfHours")}
-                        value={getTrainingById(selectedTrainingId)?.nbOfHours}
-                        sx={{
-                            width: '50%',
+                        value={t(getTrainingById(selectedTrainingId)?.nbOfHours)}
+                        sx={{ 
+                            width: "50%",
+                            cursor: "pointer", 
+                            "& .MuiInputBase-input": { cursor: "pointer" }, 
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" } 
                         }}
-                        >
-                    </TextField>
+                        InputProps={{
+                            readOnly: true, 
+                        }}
+                    />
                     <TextField
                         label={t("location")}
-                        value={getTrainingById(selectedTrainingId)?.location}
-                        sx={{
-                            width: '50%',
+                        value={t(getTrainingById(selectedTrainingId)?.location)}
+                        sx={{ 
+                            width: "50%",
+                            cursor: "pointer", 
+                            "& .MuiInputBase-input": { cursor: "pointer" }, 
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" } 
                         }}
-                        >
-                    </TextField>
+                        InputProps={{
+                            readOnly: true, 
+                        }}
+                    />
                 </Box>
                 <Box
                     sx={{
@@ -1099,19 +1129,29 @@ const TraineeSession = () => {
                     <TextField
                         label={t("mode")}
                         value={t(getTrainingById(selectedTrainingId)?.mode)}
-                        sx={{
-                            width: '50%',
+                        sx={{ 
+                            width: "50%",
+                            cursor: "pointer", 
+                            "& .MuiInputBase-input": { cursor: "pointer" }, 
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" } 
                         }}
-                        >
-                    </TextField>
+                        InputProps={{
+                            readOnly: true, 
+                        }}
+                    />
                     <TextField
                         label={t("type")}
                         value={t(getTrainingById(selectedTrainingId)?.type)}
-                        sx={{
-                            width: '50%',
+                        sx={{ 
+                            width: "50%",
+                            cursor: "pointer", 
+                            "& .MuiInputBase-input": { cursor: "pointer" }, 
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" } 
                         }}
-                        >
-                    </TextField>
+                        InputProps={{
+                            readOnly: true, 
+                        }}
+                    />
                 </Box>
                 <Box
                     sx={{
@@ -1125,22 +1165,30 @@ const TraineeSession = () => {
                 >   
                     <TextField
                         label={t("nbOfSessions")}
-                        value={getTrainingById(selectedTrainingId)?.nbOfSessions}
-                        sx={{
-                            width: '50%',
+                        value={t(getTrainingById(selectedTrainingId)?.nbOfSessions)}
+                        sx={{ 
+                            width: "50%",
+                            cursor: "pointer", 
+                            "& .MuiInputBase-input": { cursor: "pointer" }, 
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" } 
                         }}
-                        >
-                    </TextField>
-                    <TextField
-                        label={t("trainer")}
-                        value={
-                            TrainingTrainers.find(trainer => trainer.id === getTrainingById(selectedTrainingId)?.trainer)?.name || ""
-                        }
-                        sx={{
-                            width: '50%',
+                        InputProps={{
+                            readOnly: true, 
                         }}
                     />
-
+                    <TextField
+                        label={t("trainer")}
+                        value={TrainingTrainers.find(trainer => trainer.id === getTrainingById(selectedTrainingId)?.trainer)?.name || ""}
+                        sx={{ 
+                            width: "50%",
+                            cursor: "pointer", 
+                            "& .MuiInputBase-input": { cursor: "pointer" }, 
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" } 
+                        }}
+                        InputProps={{
+                            readOnly: true, 
+                        }}
+                    />
                 </Box>
                 <Box
                     sx={{
@@ -1154,20 +1202,30 @@ const TraineeSession = () => {
                 >
                     <TextField
                         label={t("nbOfParticipants")}
-                        value={getTrainingById(selectedTrainingId)?.nbOfParticipants}
-                        sx={{
-                            width: '50%',
+                        value={t(getTrainingById(selectedTrainingId)?.nbOfParticipants)}
+                        sx={{ 
+                            width: "50%",
+                            cursor: "pointer", 
+                            "& .MuiInputBase-input": { cursor: "pointer" }, 
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" } 
                         }}
-                        >
-                    </TextField>
+                        InputProps={{
+                            readOnly: true, 
+                        }}
+                    />
                     <TextField
                         label={t("description")}
-                        value={getTrainingById(selectedTrainingId)?.description}
-                        sx={{
-                            width: '50%',
+                        value={t(getTrainingById(selectedTrainingId)?.description)}
+                        sx={{ 
+                            width: "50%",
+                            cursor: "pointer", 
+                            "& .MuiInputBase-input": { cursor: "pointer" }, 
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" } 
                         }}
-                        >
-                    </TextField>
+                        InputProps={{
+                            readOnly: true, 
+                        }}
+                    />
                 </Box>
                 <Box 
                     sx={{
@@ -1210,24 +1268,30 @@ const TraineeSession = () => {
                             >
                                 <TextField
                                     label={t("name")}
-                                    value={
-                                        getTrainingById(selectedTrainingId)?.sessions[index]?.name
-                                    }
-                                    sx={{
-                                        width: '50%',
+                                    value={getTrainingById(selectedTrainingId)?.sessions[index]?.name}
+                                    sx={{ 
+                                        width: "50%",
+                                        cursor: "pointer", 
+                                        "& .MuiInputBase-input": { cursor: "pointer" }, 
+                                        "& .MuiOutlinedInput-root": { cursor: "pointer" } 
                                     }}
-                                    >
-                                </TextField>
+                                    InputProps={{
+                                        readOnly: true, 
+                                    }}
+                                />
                                 <TextField
                                     label={t("date")}
-                                    value={
-                                        getTrainingById(selectedTrainingId)?.sessions[index]?.date
-                                    }
-                                    sx={{
-                                        width: '50%',
+                                    value={getTrainingById(selectedTrainingId)?.sessions[index]?.date}
+                                    sx={{ 
+                                        width: "50%",
+                                        cursor: "pointer", 
+                                        "& .MuiInputBase-input": { cursor: "pointer" }, 
+                                        "& .MuiOutlinedInput-root": { cursor: "pointer" } 
                                     }}
-                                    >
-                                </TextField>
+                                    InputProps={{
+                                        readOnly: true, 
+                                    }}
+                                />
                             </Box>
                             <Box
                                 sx={{
@@ -1241,24 +1305,30 @@ const TraineeSession = () => {
                             >
                                 <TextField
                                     label={t("duration")}
-                                    value={
-                                        getTrainingById(selectedTrainingId)?.sessions[index]?.duration
-                                    }
-                                    sx={{
-                                        width: '50%',
+                                    value={getTrainingById(selectedTrainingId)?.sessions[index]?.duration}
+                                    sx={{ 
+                                        width: "50%",
+                                        cursor: "pointer", 
+                                        "& .MuiInputBase-input": { cursor: "pointer" }, 
+                                        "& .MuiOutlinedInput-root": { cursor: "pointer" } 
                                     }}
-                                >
-                                </TextField>
+                                    InputProps={{
+                                        readOnly: true, 
+                                    }}
+                                />
                                 <TextField
                                     label={t("location")}
-                                    value={
-                                        getTrainingById(selectedTrainingId)?.sessions[index]?.location
-                                    }
-                                    sx={{
-                                        width: '50%',
+                                    value={getTrainingById(selectedTrainingId)?.sessions[index]?.location}
+                                    sx={{ 
+                                        width: "50%",
+                                        cursor: "pointer", 
+                                        "& .MuiInputBase-input": { cursor: "pointer" }, 
+                                        "& .MuiOutlinedInput-root": { cursor: "pointer" } 
                                     }}
-                                >
-                                </TextField>
+                                    InputProps={{
+                                        readOnly: true, 
+                                    }}
+                                />
                             </Box>
                         </Box>
                     ))}
@@ -1292,29 +1362,32 @@ const TraineeSession = () => {
                 onClick={hideTrainingDetails}>
                     {t("close")}
                 </Button>
-                <Button sx={{
-                    color: 'white',
-                    backgroundColor: '#2CA8D5',
-                    padding: '5px 10px',
-                    borderRadius: '10px',
-                    textDecoration: 'none',
-                    fontWeight: 'bold',
-                    width: '100px',
-                    height: '40px',
-                    marginTop: '10px',
-                    textTransform: "none",
-                    '&:hover': {
-                        backgroundColor: '#76C5E1',
-                        color: 'white',
-                    },
-                }} 
-                onClick={() => {
-                    hideTrainingDetails();
-                    showEnrollForm(selectedTrainingId);
-                }}>
-                    {t("enroll")}
-                </Button>
                 </Box> 
+            </Dialog>
+            <Dialog
+                open={enrollForm}
+                disableScrollLock={true}
+                onClose={hideEnrollForm}
+                PaperProps={{
+                    sx: {
+                        minWidth: "50%",  
+                        height: "auto", 
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "start",
+                        alignItems: "center",
+                        borderRadius: "10px",
+                        gap: "20px",
+                        padding: "20px",
+                        scrollbarWidth: "none",
+                        "&::-webkit-scrollbar": {
+                            display: "none"  
+                        }
+                    }
+                }}
+            >
+                <DialogTitle>{t("enroll_in_this_training")}</DialogTitle>
+
             </Dialog>
             <Pagination
                 count={pageCount}

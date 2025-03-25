@@ -12,6 +12,8 @@ import Profile from './components/Profile.jsx';
 import Calendar from './components/Calendar.jsx';
 import TrainerRequest from './components/manage/TrainerRequest.jsx';
 import TrainerCalls from './components/TrainerCalls.jsx';
+import TrainerTraining from './components/TrainerTraining.jsx';
+import TraineeSession from './components/TraineeSession.jsx';
 import { getCookie } from './components/Cookies.jsx';
 import './index.css';
 
@@ -38,6 +40,8 @@ function App() {
             <Route path="/managesessions" element={<ManageSessions />} />
             <Route path="/trainerrequest" element={<TrainerRequest />} />
             <Route path="/trainersession" element={<TrainerSession />} />
+            <Route path="/trainertraining" element={<TrainerTraining />} />
+            <Route path="/traineesession" element={<TraineeSession />} />
             <Route path="/trainercall" element={<TrainerCalls />} />
             <Route path="/account" element={<Profile />} />
             <Route path="/calendar" element={<Calendar />} />

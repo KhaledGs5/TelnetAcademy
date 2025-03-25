@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { getCookie , setCookie} from './Cookies';
 import { Box, Link, Typography, Menu, MenuItem, Dialog, Button, DialogTitle, Badge, TableCell,TableRow,TableHead,TableContainer,Paper,TextField
-    ,Checkbox,FormControlLabel,TableBody,Table
+    ,Checkbox,FormControlLabel,TableBody,Table,Snackbar, Alert
 } from "@mui/material";
 import axios from 'axios';
-import io from "socket.io-client";
 import { useLanguage } from "../languagecontext";
 
 const TrainerCalls = () => {
@@ -13,6 +12,15 @@ const TrainerCalls = () => {
     const user = getCookie("User") ?? null;
     const [showForm, setShowForm] = useState(false);
     const [availableCall, setAvailableCall] = useState(false);
+
+    // Verify Sending Form...........
+
+    const [showsVerificationAlert, setShowsVerifificationAlert] = useState(false);
+    const [verifyAlertMessage, setVerifyAlertMessage] = useState("");
+    const [verifyAlert, setVerifyAlert] = useState("error");
+    const handleVerificationAlertClose = () => {
+        setShowsVerifificationAlert(false);
+    };
 
     // fetch available call
     const [callMessage, setCallMessage] = useState("");
@@ -32,7 +40,7 @@ const TrainerCalls = () => {
     const getCallMessage = () => {
         axios.get(`http://localhost:5000/api/users/availablenotif/${user._id}`)
            .then((res) => {
-                setCallMessage(res.data.notifications[res.data.notifications.length -1].message);
+                setCallMessage(res.data.notifications[res.data.notifications.length -1]?.message);
             })
            .catch((err) => {
                 console.error(err);
@@ -48,9 +56,9 @@ const TrainerCalls = () => {
     const [formData, setFormData] = useState({
         matricule: "",
         name: "",
-        fonction: "",
-        activite: "",
-        dateEmbauche: "",
+        position: "",
+        activity: "",
+        dateOfHire: "",
         domains: Array(4).fill({ description: "", expertise: "" }),
         hasExperience: false,
         exp: Array(2).fill({ theme: "", cadre: "", periode:""}),
@@ -74,13 +82,15 @@ const TrainerCalls = () => {
     const handleExpChange = (index, key, value) => {
         setFormData((prev) => ({
             ...prev,
-            epx: prev.exp.map((ex, i) =>
+            exp: prev.exp.map((ex, i) =>
                 i === index ? { ...ex, [key]: value } : ex
             ),
         }));
+        console.log(formData);
     };
 
     const handleRespondCall = () => {
+        console.log(formData);
         axios.delete(`http://localhost:5000/api/users/callnotif/${user._id}`)
            .then(() => {
                 setShowForm(false);
@@ -88,6 +98,9 @@ const TrainerCalls = () => {
         axios.post("http://localhost:5000/api/form", formData)
            .then((response) => {
               console.log(response.data);
+              setShowsVerifificationAlert(true);
+              setVerifyAlertMessage(t("form_submitted_successfully"));
+              setVerifyAlert("success");
            })
            .catch((error) => {
               console.error("Error sending form data:", error);
@@ -108,7 +121,7 @@ const TrainerCalls = () => {
         >
             <Box
                 sx={{
-                    width: '50%',
+                    width: '70%',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'center',
@@ -191,7 +204,7 @@ const TrainerCalls = () => {
                         }} 
                         onClick={() => setShowForm(true)}
                     >
-                        {t("add_suggestion")}
+                        {t("submit_form")}
                     </Button>
                 </Box>
                 :null}
@@ -199,7 +212,7 @@ const TrainerCalls = () => {
             {availableCall ? 
             <Box
             sx={{
-                width: '50%',
+                width: '70%',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'center',
@@ -263,17 +276,17 @@ const TrainerCalls = () => {
                 onChange={(e) => handleChange("name", e.target.value)} 
                 />
                 <TextField label={t("position")} variant="outlined" 
-                value={formData.fonction} 
-                onChange={(e) => handleChange("fonction", e.target.value)} 
+                value={formData.position} 
+                onChange={(e) => handleChange("position", e.target.value)} 
                 />
                 <TextField label={t("activity_department")} variant="outlined" 
-                value={formData.activite} 
-                onChange={(e) => handleChange("activite", e.target.value)} 
+                value={formData.activity} 
+                onChange={(e) => handleChange("activity", e.target.value)} 
                 />
                 <TextField label={t("date_of_hire")} type="date" variant="outlined" 
                 InputLabelProps={{ shrink: true }} 
-                value={formData.dateEmbauche} 
-                onChange={(e) => handleChange("dateEmbauche", e.target.value)} 
+                value={formData.dateOfHire} 
+                onChange={(e) => handleChange("dateOfHire", e.target.value)} 
                 />
             </Box>
             <Box sx={{
@@ -368,7 +381,7 @@ const TrainerCalls = () => {
                             <TableRow key={index}>
                                 <TableCell>
                                 <TextField value={row.expertise} 
-                                multiline
+                                    multiline
                                     onChange={(e) => handleExpChange(index, "theme", e.target.value)} />
                                 </TableCell>
                                 <TableCell>
@@ -452,6 +465,11 @@ const TrainerCalls = () => {
             </Box>
             </Box>
             :null}
+            <Snackbar open={showsVerificationAlert} autoHideDuration={3000} onClose={handleVerificationAlertClose}>
+                <Alert onClose={handleVerificationAlertClose} severity={verifyAlert} variant="filled">
+                    {t(verifyAlertMessage)}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 }

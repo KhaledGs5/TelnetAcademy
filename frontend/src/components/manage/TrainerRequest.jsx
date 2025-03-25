@@ -1,38 +1,241 @@
 import React, { useState, useEffect } from "react";
 import { getCookie , setCookie} from '../Cookies';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Box, Link, Typography, Menu, MenuItem, Dialog, Button, DialogTitle, Badge, TableCell,TableRow,TableHead,TableContainer,Paper,TextField
-    ,Checkbox,FormControlLabel,TableBody,Table
+import { Box, Link, Typography,Tooltip,IconButton, Menu, MenuItem, Dialog, Button, DialogTitle, Badge, TableCell,TableRow,TableHead,TableContainer,Paper,TextField
+    ,Checkbox,FormControlLabel,TableBody,Table,FormControl, InputLabel,OutlinedInput,InputAdornment, Popover, Autocomplete
 } from "@mui/material";
 import axios from 'axios';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import AddIcon from '@mui/icons-material/Add';
+import CloseIcon from '@mui/icons-material/Close';
 import io from "socket.io-client";
 import { useLanguage } from "../../languagecontext";
-
+import { StaticDatePicker, LocalizationProvider , DateTimePicker} from "@mui/x-date-pickers";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import dayjs from 'dayjs';
 
 const TrainerRequest = () => {
 
     const { t } = useLanguage();
 
     const location = useLocation();
+    const [selectedFormId, setSelectedFormId] = useState("");
 
     // Fetch All Forms
 
     const [forms, setForms] = useState([]);
 
     const fetchForms = () => {
-       axios.get("http://localhost:5000/api/form")
-        .then((response) => {
-            console.log(response.data);
-            setForms(response.data);
-        })
-        .catch((error) => {});
+        axios.get("http://localhost:5000/api/form")
+            .then((response) => {
+                const updatedForms = response.data
+                .filter(form => (form.status !== "rejected" && form.status !== "approved"))
+                .map(form => ({
+                    ...form,
+                    showDetails: false
+                }));
+                setForms(updatedForms);
+            })
+            .catch((error) => {
+                console.error("Error fetching forms:", error);
+            });
     };
+    
 
     useEffect(() => {
         fetchForms();
     }, []);
 
-    console.log(forms);
+
+     // Adding new Training
+
+    const [trainerInfo, setTrainerInfo] = useState({});
+
+    const [newTrainingTitle, setNewTrainingTitle] = useState("");
+    const [newTrainingMonth, setNewTrainingMonth] = useState("");
+    const [newTrainingSkillType, setNewTrainingSkillType] = useState("");
+    const [newTrainingDate,setNewTrainingDate]= useState("");
+    const [newTrainingNbOfHours, setNewTrainingNbOfHours] = useState(0);
+    const [newTrainingLocation, setNewTrainingLocation] = useState("");
+    const [newTrainingMode, setNewTrainingMode] = useState("");
+    const [newTrainingType, setNewTrainingType] = useState("");
+    const [newTrainingDescription, setNewTrainingDescription] = useState("");
+    const [newTrainingNbOfSessions, setNewTrainingNbOfSessions] = useState(0);
+    const [newTrainingNbOfParticipants, setNewTrainingNbOfParticipants ] = useState(0);
+    
+    
+    const [newSessionsNames, setNewSessionsNames] = useState([]);
+    const [newSessionsDates, setNewSessionsDates] = useState([]);
+    const [newSessionsDurations, setNewSessionsDurations] = useState([]);
+    const [newSessionsLocations, setNewSessionsLocations] = useState([]);
+    
+    const [newTraining, setNewTraining] = useState(false);
+    const [otherLocation, setOtherLocation] = useState(false);
+    const [otherSessionsLocations, setOtherSessionsLocations] = useState([]);
+
+    const TrainingMonths = [
+    "january", "february", "march", "april", "may", "june",
+    "july", "august", "september", "october", "november", "december"
+    ];
+    const getMonthDate = (monthName) => {
+    const monthIndex = TrainingMonths.indexOf(monthName);
+    if (monthIndex === -1) return dayjs(); 
+    return dayjs().month(monthIndex).startOf("month");
+    };
+
+    const [selectedDays, setSelectedDays] = useState([]);
+    const [dateAnchorEl, setDateAnchorEl] = useState(null);
+
+    const handleOpenDatePicker = (event) => {
+    setDateAnchorEl(event.currentTarget);
+    };
+
+    const handleCloseDatePicker = () => {
+    setDateAnchorEl(null);
+    };
+
+    const handleDateChange = (newValue) => {
+    const selectedDay = newValue.date(); 
+
+    setSelectedDays((prevDays) => {
+        let updatedDays;
+        if (prevDays.includes(selectedDay)) {
+        updatedDays = prevDays.filter((day) => day !== selectedDay);
+        } else {
+        updatedDays = [...prevDays, selectedDay].sort((a, b) => a - b);
+        }
+
+        setNewTrainingDate(updatedDays.join(" "));
+        return updatedDays;
+    });
+    };
+
+    const TrainingSkillTypes = ["soft_skill", "technical_skill"];
+    const TrainingModes = ["online", "face_to_face", "hybrid"];
+    const TrainingLocations = ['Telnet Sfax', 'Telnet Tunis Lac', 'Telnet Tunis CDS', 'Microsoft Teams'];
+    const TrainingTypes = ["internal", "external"];
+
+    const getTrainer = async (formId) => {
+        const trainerId = forms.find(form => form._id === formId)?.trainer || "";
+        try {
+        const response = await axios.get(`http://localhost:5000/api/users/${trainerId}`);
+        if (response.status === 200) {
+            setTrainerInfo(response.data);
+        }
+        } catch (error) {
+        console.error("Error fetching trainers:", error);
+        }
+    };  
+    
+    const showNewTrainingForm = (formId) => {
+        setSelectedFormId(formId);
+        getTrainer(formId);
+        setNewTraining(true);
+    };
+
+    const hideNewTrainingForm = () => {
+        setNewTraining(false);
+    };
+
+    const handleAddTraining = () => {
+        const newTraining = {
+            title: newTrainingTitle,
+            month: newTrainingMonth,
+            skillType: newTrainingSkillType,
+            date: newTrainingDate,
+            nbOfHours: newTrainingNbOfHours,
+            location: newTrainingLocation,
+            mode: newTrainingMode,
+            type: newTrainingType,
+            description: newTrainingDescription,
+            nbOfSessions: newTrainingNbOfSessions,
+            nbOfParticipants: newTrainingNbOfParticipants,
+            trainer: trainerInfo._id,
+        };
+        axios.post("http://localhost:5000/api/trainings", newTraining)
+        .then((response) => {
+            hideNewTrainingForm();
+            addSessions(response.data._id);
+            axios.put(`http://localhost:5000/api/form/status/${selectedFormId}`, { status:"approved" })
+        })
+        .catch((error) => {
+            console.error("Error adding training:", error);
+        });
+        
+        const addSessions = (trainingId) => {
+        for (let i = 0; i < newTrainingNbOfSessions; i++) {
+            const newSession = {
+            name: newSessionsNames[i],
+            date: newSessionsDates[i],
+            duration: newSessionsDurations[i],
+            location: newSessionsLocations[i],
+            training: trainingId, 
+            };
+        
+            axios.post("http://localhost:5000/api/sessions", newSession)
+            .then(() => {
+            })
+            .catch((error) => {
+            });
+        }
+        };
+    };
+
+
+    // Delete Request
+    const [verifyReject, setVerifyReject] = useState(false);
+
+    const showVerifyRejectDialog = (formId) => {
+        setSelectedFormId(formId);
+        setVerifyReject(true);
+    };
+
+    const hideVerifyRejectDialog = () => {
+        setVerifyReject(false);
+    };
+
+    const handleDeleteRequest = () => {
+        console.log("here");
+        axios.put(`http://localhost:5000/api/form/status/${selectedFormId}`, { status:"rejected" })
+        .then(() => {
+            hideVerifyRejectDialog();
+            fetchForms();
+        })
+        .catch((error) => {
+            console.error("Error deleting form:", error);
+        });
+    };
+
+    // Order ........................
+    const [orderState, setOrderState] = useState('Down');
+    const [selectedOrder, setSelectedOrder] = useState("createdAt");
+
+    const handleChangeOrder = (sel) => {
+        setOrderState(orderState === 'Up' ? 'Down' : 'Up');
+        setSelectedOrder(sel);
+    };
+
+    // Handle Form Changes
+
+    const toggleShowDetails = (formId) => {
+        setForms((prevForms) =>
+            prevForms.map((form) =>
+                form._id === formId ? { ...form, showDetails: !form.showDetails } : form
+            )
+        );
+    };
+
+    const showDetails = (formId) => {
+        setForms((prevForms) =>
+            prevForms.map((form) =>
+                form._id === formId ? { ...form, showDetails: true } : form
+            )
+        );
+    };
+    
+
 
     // Styles .........
 
@@ -50,6 +253,11 @@ const TrainerRequest = () => {
           color: 'white',
         },
     });
+
+    const orderStyle = {
+        color: "text.primary",
+        textTransform: "none",
+    };
 
 
     return (
@@ -101,21 +309,986 @@ const TrainerRequest = () => {
                     gap: "10px",
                 }}
             >
+                <Box
+                    sx={{
+                        width: '100%',
+                        height: '40px',
+                        border: '1px solid lightgrey',
+                        borderRadius: '5px',
+                        display: 'flex',
+                        justifyContent: "start",
+                        alignItems: 'start',
+                        gap: '5px',
+
+                    }}
+                >
+                    <Button
+                        sx={{...orderStyle, width: '20%'}}
+                        onClick={() => handleChangeOrder("Name")}
+                    >
+                        <Typography>
+                            {t("name")}
+                        </Typography>
+                        {selectedOrder === "Name" ? (orderState === "Up" ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />) : null}
+                    </Button>
+                    <Button
+                        sx={{...orderStyle, width: '20%'}}
+                        onClick={() => handleChangeOrder("Fonction")}
+                    >
+                        <Typography>
+                            {t("position")}
+                        </Typography>
+                        {selectedOrder === "Fonction" ? (orderState === "Up" ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />) : null}
+                    </Button>
+                    <Button
+                        sx={{...orderStyle, width: '20%'}}
+                        onClick={() => handleChangeOrder("Activity")}
+                    >
+                        <Typography>
+                            {t("activity")}
+                        </Typography>
+                        {selectedOrder === "Activity" ? (orderState === "Up" ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />) : null}
+                    </Button>
+                    <Button
+                        sx={{...orderStyle, width: '20%'}}
+                        onClick={() => handleChangeOrder("DateEmbauche")}
+                    >
+                        <Typography>
+                            {t("date_of_hire")}
+                        </Typography>
+                        {selectedOrder === "DateEmbauche" ? (orderState === "Up" ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />) : null}
+                    </Button>
+                    <Button
+                        sx={{...orderStyle, width: '20%'}}
+                        onClick={() => handleChangeOrder("createdAt")}
+                    >
+                        <Typography>
+                            {t("date")}
+                        </Typography>
+                        {selectedOrder === "createdAt" ? (orderState === "Up" ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />) : null}
+                    </Button>
+                </Box>
                 {forms.map((form) => (
                     <Box
                         key={form._id}
                         sx={{
                             width: '100%',
                             display: 'flex',
-                            flexDirection: 'row',
+                            flexDirection: 'column',
                             justifyContent: 'space-between',
+                            alignItems: 'center',
+                            gap: '20px',
+                            backgroundColor: "button.tertiary",
+                            paddingTop: '20px',
+                            borderRadius: '5px',
+                            cursor: 'pointer',
+                            maxHeight: form.showDetails ? '2000px' : '80px', 
+                            transition: "all 0.3s ease-in-out",
+                        }}
+                    >
+                        <Box
+                            sx={{
+                                width: '100%',
+                                display: 'flex',
+                                flexDirection: 'row',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                gap: '5px',
+                            }}
+                        >
+                            <Typography
+                                sx={{
+                                    width:"20%",
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}
+                            >
+                                {form.name}
+                            </Typography>
+                            <Typography
+                                sx={{
+                                    width:"20%",
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}
+                            >
+                                {form.position}
+                            </Typography>
+                            <Typography
+                                sx={{
+                                    width:"20%",
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}
+                            >
+                                {form.activity}
+                            </Typography>
+                            <Typography
+                                sx={{
+                                    width:"20%",
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}
+                            >
+                                {dayjs(form.dateOfHire).format('YYYY-MM-DD')}
+                            </Typography>
+                            <Box sx={{width:'20%', paddingRight: "20px",display:"flex", flexDirection:"row", justifyContent:"end"}}>
+                                <Tooltip title={t("add_training")} arrow> 
+                                    <IconButton sx={{color:"#76C5E1"}} onClick={() => {showNewTrainingForm(form._id);
+                                        showDetails(form._id);
+                                    }}>
+                                        <AddIcon/>
+                                    </IconButton>
+                                </Tooltip>
+                                <Tooltip title={t("reject")} arrow>
+                                    <IconButton sx={{color:"#EA9696"}} onClick={() => showVerifyRejectDialog(form._id)}>
+                                        <CloseIcon/>
+                                    </IconButton>
+                                </Tooltip>
+                                <Tooltip title={!form.showDetails ? t("view_details") : t("hide_details")} arrow> 
+                                    <IconButton sx={{color:"#76C5E1"}} onClick={() => toggleShowDetails(form._id)}>
+                                        {!form.showDetails ? <KeyboardArrowDownIcon/> : <KeyboardArrowUpIcon/>}
+                                    </IconButton>
+                                </Tooltip>
+                            </Box>
+                        </Box>
+                        <Box
+                            sx={{
+                                opacity: form.showDetails ? 1 : 0,
+                                transition: "all 0.5s ease-in-out",
+                                overflow: "hidden",
+                                pointerEvents: form.showDetails ? "auto" : "none",
+                                width: "100%",
+                                display: "flex",
+                                flexDirection: "row",
+                                justifyContent: 'start',
+                                alignItems: 'center',
+                                gap: "20px",
+                            }}
+                        >
+                            <Box
+                                sx={{
+                                    overflow: "hidden",
+                                    pointerEvents: form.showDetails ? "auto" : "none",
+                                    width: newTraining ? "50%" : "100%",
+                                    display: "flex",
+                                    flexDirection: newTraining ? "column" : "row",
+                                    justifyContent: 'start',
+                                    alignItems: 'start',
+                                    gap: "20px",
+                                    padding: "20px",
+                                }}
+                            >
+                                <TableContainer component={Paper} sx={{ width: newTraining ? "100%" : "50%", }}>
+                                    <Table>
+                                        <TableHead>
+                                            <TableRow>
+                                                <TableCell sx={{ backgroundColor: "button.primary", color: "white", fontWeight: "bold", fontWeight: "bold" }}>
+                                                    {t("domains")}
+                                                </TableCell>
+                                                <TableCell sx={{ backgroundColor: "button.primary", color: "white", fontWeight: "bold" }}>
+                                                    {t("description")}
+                                                </TableCell>
+                                                <TableCell sx={{ backgroundColor: "button.primary", color: "white", fontWeight: "bold" }}>
+                                                    {t("references_related_to_expertise")}
+                                                </TableCell>
+                                            </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                            {form.domains.map((row, index) => (
+                                                <TableRow key={index}>
+                                                    <TableCell sx={{ width: "10%" }}>
+                                                        <Typography>{index + 1}</Typography>
+                                                    </TableCell>
+                                                    <TableCell sx={{ width: "45%" }}>
+                                                        <Typography>{row.description}</Typography>
+                                                    </TableCell>
+                                                    <TableCell sx={{ width: "45%" }}>
+                                                        <Typography>{row.expertise}</Typography>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </TableContainer>
+                                <Box
+                                    sx={{
+                                        width: newTraining ? "100%" : "50%",
+                                        display: "flex",
+                                        flexDirection: 'column',
+                                        justifyContent: 'start',
+                                        alignItems: 'start',
+                                        gap: "20px",
+                                    }}
+                                >
+                                    {form.hasExperience?
+                                    <Box
+                                        sx={{ 
+                                            width: "100%",
+                                            display: "flex",
+                                            flexDirection: 'column',
+                                            justifyContent: 'start',
+                                            alignItems: 'start',
+                                            gap: "20px",
+                                        }}
+                                    >
+                                        <Typography
+                                            sx={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                fontWeight: "bold",
+                                                color: "button.primary",
+                                            }}
+                                        >
+                                            {t("experience")}
+                                        </Typography>
+                                        <TableContainer component={Paper}
+                                        sx={{ width: "100%" }}
+                                        >
+                                            <Table>
+                                                <TableHead>
+                                                    <TableRow>
+                                                    <TableCell sx={{ backgroundColor: "button.primary", color: "white", fontWeight: "bold" }}>{t("training_theme")}</TableCell>
+                                                    <TableCell sx={{ backgroundColor: "button.primary", color: "white", fontWeight: "bold" }}>{t("in_what_context")}</TableCell>
+                                                    <TableCell sx={{ backgroundColor: "button.primary", color: "white", fontWeight: "bold" }}>{t("period")}</TableCell>
+                                                    </TableRow>
+                                                </TableHead>
+                                                <TableBody>
+                                                    {form.exp.map((row, index) => (
+                                                    <TableRow key={index}>
+                                                        <TableCell sx={{ width: "30%" }}>
+                                                        <Typography>{row.theme}</Typography>
+                                                        </TableCell>
+                                                        <TableCell sx={{ width: "35%" }}>
+                                                        <Typography>{row.cadre}</Typography>
+                                                        </TableCell>
+                                                        <TableCell sx={{ width: "35%" }}>
+                                                        <Typography>{row.periode}</Typography>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                        </TableContainer>
+                                    </Box>:null
+                                    } 
+                                    <Typography
+                                        sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontWeight: "bold",
+                                            color: "button.primary",
+                                        }}
+                                    >
+                                        {t("motivation")}
+                                    </Typography>
+                                    <Typography
+                                        sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                        }}
+                                    >
+                                        {form.motivation}
+                                    </Typography>
+                                </Box>
+                            </Box>
+                            
+                            <Box
+                                sx={{
+                                    opacity: newTraining ? 1 : 0,
+                                    maxHeight: newTraining ? "auto" : "0px",
+                                    transition: "all 0.5s ease-in-out",
+                                    overflow: "hidden",
+                                    pointerEvents: newTraining ? "auto" : "none",
+                                    width: newTraining ? "50%" : "0px",  
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    justifyContent: "start",
+                                    alignItems: "center",
+                                    borderRadius: "10px",
+                                    gap: "20px",
+                                    padding: "20px",
+                                    scrollbarWidth: "none",
+                                    "&::-webkit-scrollbar": {
+                                        display: "none"  
+                                    }
+                                }}
+                            >
+                                <Box
+                                    sx={{
+                                        width: "100%",
+                                        display: "flex",
+                                        flexDirection: "row",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        gap: "20px",
+                                    }}
+                                >
+                                    <FormControl variant="outlined" sx={{ 
+                                    width: '50%',
+                                    }}
+                                    >
+                                        <InputLabel required>{t("title")}</InputLabel>
+                                        <OutlinedInput
+                                            value={newTrainingTitle}
+                                            onChange={(e) => setNewTrainingTitle(e.target.value)}
+                                            label="Title......."
+                                        />
+                                    </FormControl>
+                                    <TextField
+                                        select
+                                        label={t("month")}
+                                        value={newTrainingMonth}
+                                        onChange={(e) => setNewTrainingMonth(e.target.value)}
+                                        sx={{
+                                            width: '50%',
+                                        }}
+                                        >
+                                        {TrainingMonths.map((month) => (
+                                            <MenuItem key={month} value={month}>
+                                                {t(month)}
+                                            </MenuItem>
+                                        ))}
+                                    </TextField>
+                                </Box>
+                                <Box
+                                    sx={{
+                                        width: "100%",
+                                        display: "flex",
+                                        flexDirection: "row",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        gap: "20px",
+                                    }}
+                                >
+                                    <TextField
+                                        select
+                                        label={t("skill")}
+                                        value={newTrainingSkillType}
+                                        onChange={(e) => setNewTrainingSkillType(e.target.value)}
+                                        sx={{
+                                            width: '50%',
+                                        }}
+                                        >
+                                        {TrainingSkillTypes.map((skillType) => (
+                                            <MenuItem key={skillType} value={skillType}>
+                                                {t(skillType)}
+                                            </MenuItem>
+                                        ))}
+                                    </TextField>
+                                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                    <FormControl variant="outlined" sx={{ width: "50%" }}>
+                                        <InputLabel required>{t("date")}</InputLabel>
+                                        <OutlinedInput
+                                        readOnly
+                                        value={newTrainingDate}
+                                        onChange={(e) => setNewTrainingDate(e.target.value)}
+                                        label="Date......."
+                                        endAdornment={
+                                            <InputAdornment position="end">
+                                            <IconButton onClick={handleOpenDatePicker} edge="end">
+                                                <CalendarTodayIcon />
+                                            </IconButton>
+                                            </InputAdornment>
+                                        }
+                                        />
+                                    </FormControl>
+                                    <Popover
+                                        open={Boolean(dateAnchorEl)}
+                                        anchorEl={dateAnchorEl}
+                                        onClose={handleCloseDatePicker}
+                                        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+                                    >
+                                        <StaticDatePicker
+                                        displayStaticWrapperAs="desktop"
+                                        views={["day"]}
+                                        minDate={dayjs(getMonthDate(newTrainingMonth)).startOf("month")}
+                                        maxDate={dayjs(getMonthDate(newTrainingMonth)).endOf("month")}
+                                        onChange={handleDateChange}
+                                        sx={{
+                                            "& .MuiPickersDay-root": {
+                                            backgroundColor: "transparent !important",
+                                            "&.Mui-selected": {
+                                                backgroundColor: "transparent !important",
+                                                color: "inherit",
+                                            },
+                                            "&:hover": {
+                                                backgroundColor: "#f0f0f0 !important",
+                                            },
+                                            },
+                                        }}
+                                        />
+                                    </Popover>
+                                    </LocalizationProvider>
+                                </Box>
+                                <Box
+                                    sx={{
+                                        width: "100%",
+                                        display: "flex",
+                                        flexDirection: "row",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        gap: "20px",
+                                    }}
+                                >
+                                    <FormControl variant="outlined" 
+                                    sx={{ 
+                                        width: '50%',
+                                    }}
+                                    >
+                                        <InputLabel required>{t("nbOfHours")}</InputLabel>
+                                        <OutlinedInput
+                                        type="number"
+                                            value={newTrainingNbOfHours}
+                                            onChange={(e) => {
+                                            const value = e.target.value;
+                                            if (value === "" || (Number(value) >= 0 && Number.isInteger(Number(value)))) {
+                                                setNewTrainingNbOfHours(value);
+                                            }
+                                            }}
+                                            label="Number Of Hours......."
+                                        />
+                                    </FormControl>
+                                    <TextField
+                                        select={!otherLocation  && (TrainingLocations.includes(newTrainingLocation) || newTrainingLocation === "")}
+                                        label={t("location")}
+                                        value={newTrainingLocation}
+                                        onChange={(e) => setNewTrainingLocation(e.target.value)}
+                                        sx={{
+                                            width: '50%',
+                                        }}
+                                        >
+                                        {TrainingLocations.map((location) => (
+                                            <MenuItem key={location} value={location}>
+                                                {t(location)}
+                                            </MenuItem>
+                                        ))}
+                                        <Button 
+                                            sx={{
+                                                width: "100%",
+                                                textTransform: "none",
+                                                color: "black",
+                                            }}
+                                            onClick={() => 
+                                                setOtherLocation(true)}
+                                        >
+                                            {t("other")}...
+                                        </Button>
+                                    </TextField>
+                                    <Dialog
+                                        open={otherLocation}
+                                        onClose={() => setOtherLocation(false)}
+                                        disableScrollLock={true}
+                                        PaperProps={{
+                                            sx: {
+                                                width: "auto",  
+                                                height: "auto", 
+                                                display: "flex",
+                                                flexDirection: "column",
+                                                justifyContent: "center",
+                                                alignItems: "center",
+                                                borderRadius: "10px",
+                                                padding: '20px',
+                                            }
+                                        }}
+                                    >
+                                        <FormControl variant="outlined" sx={{ 
+                                                width: '200px',
+                                            }}
+                                        >
+                                            <InputLabel required>{t("location")}</InputLabel>
+                                            <OutlinedInput
+                                                value={newTrainingLocation}
+                                                onChange={(e) => setNewTrainingLocation(e.target.value)
+                                                    }
+                                                label="Activity  ................"
+                                            />
+                                        </FormControl>
+                                        <Button
+                                            sx={{
+                                                color: 'white',
+                                                backgroundColor: '#2CA8D5',
+                                                padding: '5px 10px',
+                                                borderRadius: '10px',
+                                                textDecoration: 'none',
+                                                fontWeight: 'bold',
+                                                width: '100px',
+                                                height: '40px',
+                                                marginTop: '10px',
+                                                textTransform: "none",
+                                                '&:hover': {
+                                                    backgroundColor: '#76C5E1',
+                                                    color: 'white',
+                                                },
+                                            }}
+                                            onClick={() => {
+                                                setOtherLocation(false);
+                                            }}
+                                        >
+                                            {t("save")}
+                                        </Button>
+                                    </Dialog>
+                                </Box>
+                                <Box
+                                    sx={{
+                                        width: "100%",
+                                        display: "flex",
+                                        flexDirection: "row",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        gap: "20px",
+                                    }}
+                                >
+                                    <TextField
+                                        select
+                                        label={t("mode")}
+                                        value={newTrainingMode}
+                                        onChange={(e) => setNewTrainingMode(e.target.value)}
+                                        sx={{
+                                            width: '50%',
+                                        }}
+                                        >
+                                        {TrainingModes.map((mode) => (
+                                            <MenuItem key={mode} value={mode}>
+                                                {t(mode)}
+                                            </MenuItem>
+                                        ))}
+                                    </TextField>
+                                    <TextField
+                                        select
+                                        label={t("type")}
+                                        value={newTrainingType}
+                                        onChange={(e) => setNewTrainingType(e.target.value)}
+                                        sx={{
+                                            width: '50%',
+                                        }}
+                                        >
+                                        {TrainingTypes.map((type) => (
+                                            <MenuItem key={type} value={type}>
+                                                {t(type)}
+                                            </MenuItem>
+                                        ))}
+                                    </TextField>
+                                </Box>
+                                <Box
+                                    sx={{
+                                        display: "flex",
+                                        flexDirection: "row",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        width: '100%',
+                                        gap: '20px',
+                                    }}
+                                >   
+                                    <FormControl variant="outlined" 
+                                    sx={{ 
+                                        width: '50%',
+                                    }}
+                                    >
+                                        <InputLabel required>{t("nbOfSessions")}</InputLabel>
+                                        <OutlinedInput
+                                        type="number"
+                                            value={newTrainingNbOfSessions}
+                                            onChange={(e) => {
+                                            const value = e.target.value;
+                                            if (value === "" || (Number(value) >= 0 && Number.isInteger(Number(value)))) {
+                                                setNewTrainingNbOfSessions(value);
+                                            };
+                                            setOtherSessionsLocations(Array.from({ length: Number(value) }, () => false));
+                                            }}
+                                            label="Number Of Sessions......."
+                                        />
+                                    </FormControl>
+                                    <FormControl variant="outlined" sx={{ width: '50%' }}>
+                                        <InputLabel required shrink={!!trainerInfo?.name}>
+                                            {t("trainer")}
+                                        </InputLabel>
+                                        <OutlinedInput
+                                            value={trainerInfo?.name || ""}
+                                            label={t("trainer")}
+                                            readOnly
+                                        />
+                                    </FormControl>
+                                </Box>
+                                <Box
+                                    sx={{
+                                        width: "100%",
+                                        display: "flex",
+                                        flexDirection: "row",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        gap: "20px",
+                                    }}
+                                >
+                                <FormControl variant="outlined" 
+                                    sx={{ 
+                                    width: '50%',
+                                    }}
+                                >
+                                    <InputLabel required>{t("nbOfParticipants")}</InputLabel>
+                                    <OutlinedInput
+                                    type="number"
+                                    value={newTrainingNbOfParticipants}
+                                    onChange={(e) => setNewTrainingNbOfParticipants(e.target.value)}
+                                    label="Number Of Participants......."
+                                    />
+                                </FormControl>
+                                <FormControl variant="outlined" 
+                                    sx={{ 
+                                    width: '50%',
+                                    }}
+                                >
+                                    <InputLabel required>{t("description")}</InputLabel>
+                                    <OutlinedInput
+                                    multiline
+                                    type="text"
+                                    value={newTrainingDescription}
+                                    onChange={(e) => setNewTrainingDescription(e.target.value)}
+                                    label="Description......."
+                                    />
+                                </FormControl>
+                                </Box>
+                                <Box 
+                                    sx={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    width: '100%',
+                                    gap: '10px',
+                                    flexWrap: "wrap",
+                                    
+                                }}
+                                >
+                                    {Array.from({ length: newTrainingNbOfSessions }, (_, index) => (
+                                        <Box 
+                                            key={index} 
+                                            sx={{ 
+                                            width: "100%", 
+                                            height: "auto",
+                                            borderRadius: '10px',
+                                            backgroundColor: 'background.noBigDiff',
+                                            padding: '10px',
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            justifyContent: "center",
+                                            alignItems: "start",
+                                            gap: '10px',
+                                            }}
+                                        >
+                                            {t("session")} {index + 1}
+                                            <Box
+                                                sx={{
+                                                    width: "100%",
+                                                    display: "flex",
+                                                    flexDirection: "row",
+                                                    justifyContent: "center",
+                                                    alignItems: "center",
+                                                    gap: "20px",
+                                                }}
+                                            >
+                                                <FormControl variant="outlined" 
+                                                sx={{ 
+                                                width: '50%',
+                                                }}
+                                                >
+                                                    <InputLabel required>{t("name")}</InputLabel>
+                                                    <OutlinedInput
+                                                    value={newSessionsNames[index]}
+                                                    onChange={(e) =>
+                                                        setNewSessionsNames((prevSessions) => {
+                                                            const updatedSessions = [...prevSessions]; 
+                                                            updatedSessions[index] = e.target.value; 
+                                                            return updatedSessions; 
+                                                        })
+                                                    }
+                                                    label="Name......."
+                                                    />
+                                                </FormControl>
+                                                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                                <DateTimePicker
+                                                    sx={{ 
+                                                    width: '50%',
+                                                    }}
+                                                    disableScrollLock={true}
+                                                    shouldDisableDate={(date) => {
+                                                    const dayOfMonth = date.date();
+                                                    return !selectedDays.includes(dayOfMonth); 
+                                                    }}
+                                                    minDate={dayjs(getMonthDate(newTrainingMonth)).startOf("month")}
+                                                    maxDate={dayjs(getMonthDate(newTrainingMonth)).endOf("month")}
+                                                    label={t("date")}
+                                                    value={newSessionsDates[index] ? dayjs(newSessionsDates[index]) : null}
+                                                    onChange={(dateTime) => {
+                                                    if (dateTime) {
+                                                        setNewSessionsDates((prevDates) => {
+                                                        const updatedDates = [...prevDates];
+                                                        updatedDates[index] = dateTime.format("YYYY-MM-DD HH:mm");
+                                                        return updatedDates;
+                                                        });
+                                                    }
+                                                    }}
+                                                />
+                                                </LocalizationProvider>
+                                            </Box>
+                                            <Box
+                                                sx={{
+                                                    width: "100%",
+                                                    display: "flex",
+                                                    flexDirection: "row",
+                                                    justifyContent: "center",
+                                                    alignItems: "center",
+                                                    gap: "20px",
+                                                }}
+                                            >
+                                                <FormControl variant="outlined" 
+                                                sx={{ 
+                                                width: '50%',
+                                                }}
+                                                >
+                                                <InputLabel required>{t("duration")}</InputLabel>
+                                                <OutlinedInput
+                                                    type="number"
+                                                    value={newSessionsDurations[index]}
+                                                    onChange={(e) =>
+                                                        setNewSessionsDurations((prevSessions) => {
+                                                            const updatedSessions = [...prevSessions]; 
+                                                            updatedSessions[index] = e.target.value; 
+                                                            return updatedSessions; 
+                                                        })
+                                                    }
+                                                    label="Duration......."
+                                                />
+                                                </FormControl>
+                                                <TextField
+                                                    select={!otherSessionsLocations[index] && (TrainingLocations.includes(newSessionsLocations[index]) || !newSessionsLocations[index])}
+                                                    label={t("location")}
+                                                    value={newSessionsLocations[index]}
+                                                    onChange={(e) => setNewSessionsLocations((prevSessions) => {
+                                                        const updatedSessions = [...prevSessions]; 
+                                                        updatedSessions[index] = e.target.value; 
+                                                        return updatedSessions; 
+                                                    })}
+                                                    sx={{
+                                                        width: '50%',
+                                                    }}
+                                                    >
+                                                    {TrainingLocations.map((location) => (
+                                                        <MenuItem key={location} value={location}>
+                                                            {t(location)}
+                                                        </MenuItem>
+                                                    ))}
+                                                <Button
+                                                    sx={{
+                                                        width: "100%",
+                                                        textTransform: "none",
+                                                        color: "black",
+                                                    }}
+                                                    onClick={() => 
+                                                        setOtherSessionsLocations((prevLocations) => {
+                                                            const updatedLocations = [...prevLocations];
+                                                            updatedLocations[index] = true; 
+                                                            return updatedLocations;
+                                                        })
+                                                    }
+                                                >
+                                                    {t("other")}...
+                                                </Button>
+                                                </TextField>
+                                                <Dialog
+                                                    open={Boolean(otherSessionsLocations[index])}
+                                                    onClose={() => 
+                                                        setOtherSessionsLocations((prevLocations) => {
+                                                            const updatedLocations = [...prevLocations];
+                                                            updatedLocations[index] = false; 
+                                                            return updatedLocations;
+                                                        })
+                                                    }
+                                                    disableScrollLock={true}
+                                                    PaperProps={{
+                                                        sx: {
+                                                            width: "auto",  
+                                                            height: "auto", 
+                                                            display: "flex",
+                                                            flexDirection: "column",
+                                                            justifyContent: "center",
+                                                            alignItems: "center",
+                                                            borderRadius: "10px",
+                                                            padding: '20px',
+                                                        }
+                                                    }}
+                                                >
+                                                    <FormControl variant="outlined" sx={{ width: '200px' }}>
+                                                        <InputLabel required>{t("location")}</InputLabel>
+                                                        <OutlinedInput
+                                                            value={newSessionsLocations[index] || ""} 
+                                                            onChange={(e) => setNewSessionsLocations((prevSessions) => {
+                                                                const updatedSessions = [...prevSessions]; 
+                                                                updatedSessions[index] = e.target.value; 
+                                                                return updatedSessions; 
+                                                            })}
+                                                            label="Activity ................"
+                                                        />
+                                                    </FormControl>
+                                                    <Button
+                                                        sx={{
+                                                            color: 'white',
+                                                            backgroundColor: '#2CA8D5',
+                                                            padding: '5px 10px',
+                                                            borderRadius: '10px',
+                                                            textDecoration: 'none',
+                                                            fontWeight: 'bold',
+                                                            width: '100px',
+                                                            height: '40px',
+                                                            marginTop: '10px',
+                                                            textTransform: "none",
+                                                            '&:hover': {
+                                                                backgroundColor: '#76C5E1',
+                                                                color: 'white',
+                                                            },
+                                                        }}
+                                                        onClick={() => 
+                                                            setOtherSessionsLocations((prevLocations) => {
+                                                                const updatedLocations = [...prevLocations];
+                                                                updatedLocations[index] = false; 
+                                                                return updatedLocations;
+                                                            })
+                                                        }
+                                                    >
+                                                        {t("save")}
+                                                    </Button>
+                                                </Dialog>
+                                            </Box>
+                                        </Box>
+                                    ))}
+                                </Box>
+                                <Box 
+                                    sx={{
+                                        width: '100%',
+                                        display: 'flex',
+                                        flexDirection: 'row',
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                        gap: '20px',
+                                    }}
+                                >
+                                <Button sx={{
+                                    color: 'white',
+                                    backgroundColor: '#EA9696',
+                                    padding: '5px 10px',
+                                    borderRadius: '10px',
+                                    textDecoration: 'none',
+                                    fontWeight: 'bold',
+                                    width: '100px',
+                                    height: '40px',
+                                    marginTop: '10px',
+                                    textTransform: "none",
+                                    '&:hover': {
+                                        backgroundColor: '#EAB8B8',
+                                        color: 'white',
+                                    },
+                                }} 
+                                onClick={hideNewTrainingForm}>
+                                    {t("cancel")}
+                                </Button>
+                                <Button sx={{
+                                    color: 'white',
+                                    backgroundColor: '#2CA8D5',
+                                    padding: '5px 10px',
+                                    borderRadius: '10px',
+                                    textDecoration: 'none',
+                                    fontWeight: 'bold',
+                                    width: '100px',
+                                    height: '40px',
+                                    marginTop: '10px',
+                                    textTransform: "none",
+                                    '&:hover': {
+                                        backgroundColor: '#76C5E1',
+                                        color: 'white',
+                                    },
+                                }} 
+                                onClick={handleAddTraining}>
+                                    {t("add")}
+                                </Button>
+                                </Box>
+                            </Box>
+                        </Box>
+                    </Box>
+                ))}
+                <Dialog
+                    open={verifyReject}
+                    disableScrollLock={true}
+                    onClose={hideVerifyRejectDialog}
+                    PaperProps={{
+                        sx: {
+                            width: "auto",  
+                            height: "auto", 
+                            display: "flex",
+                            flexDirection: "column",
+                            justifyContent: "",
+                            alignItems: "center",
+                            borderRadius: "10px",
+                            padding: '20px',
+                        }
+                    }}
+                >
+                    <DialogTitle>{t("confirm_reject_request")}?</DialogTitle>
+                    <Box 
+                        sx={{
+                            width: '100%',
+                            display: 'flex',
+                            flexDirection: 'row',
+                            justifyContent: 'center',
                             alignItems: 'center',
                             gap: '20px',
                         }}
                     >
-                        Here
+                        <Button sx={{
+                            color: 'white',
+                            backgroundColor: '#EA9696',
+                            borderRadius: '10px',
+                            textDecoration: 'none',
+                            fontWeight: 'bold',
+                            width: '100px',
+                            height: '40px',
+                            marginTop: '10px',
+                            textTransform: "none",
+                            '&:hover': {
+                                backgroundColor: '#EAB8B8',
+                                color: 'white',
+                            },
+                        }} 
+                        onClick={hideVerifyRejectDialog}>
+                            {t("no")}
+                        </Button>
+                        <Button sx={{
+                            color: 'white',
+                            backgroundColor: '#2CA8D5',
+                            borderRadius: '10px',
+                            textDecoration: 'none',
+                            fontWeight: 'bold',
+                            width: '100px',
+                            height: '40px',
+                            marginTop: '10px',
+                            textTransform: "none",
+                            '&:hover': {
+                                backgroundColor: '#76C5E1',
+                                color: 'white',
+                            },
+                        }} 
+                        onClick={handleDeleteRequest}
+                        >
+                            {t("yes")}
+                        </Button>
                     </Box>
-                ))}
+                </Dialog>
             </Box>
         </Box>
     );

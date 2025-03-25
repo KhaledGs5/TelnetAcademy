@@ -5,9 +5,7 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import ClearIcon from '@mui/icons-material/Clear';
 import SearchIcon from '@mui/icons-material/Search';
-import UploadFileIcon from '@mui/icons-material/UploadFile';
 import MenuItem from '@mui/material/MenuItem';
-import CheckIcon from '@mui/icons-material/Check';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
 import FilterAltOffIcon from '@mui/icons-material/FilterAltOff';
@@ -963,160 +961,160 @@ const ManageSessions = () => {
               width: "100%",
               height: "100px",
             }}
-        >
-        <Typography
-            sx={{
-                fontSize: 34,
-                fontWeight: "bold",
-                textAlign: "center",
-                letterSpacing: 0.2,
-                lineHeight: 1,
-                userSelect: "none",
-                cursor: "pointer",
-                color: "#2CA8D5",
-                marginLeft: 5,
-            }}
-        >
-            {t("manage_sessions")}
-        </Typography>
-        <Box
-            sx={{
-            position: 'absolute',
-            left: '30%',
-            display: "flex",
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-            gap: '20px',
-            }}
-        >
-            <Button 
-                sx={buttonStyle}
-                onClick={() => setSelectedFiler("all")}
             >
-            {selectedFilter === "all" && (
-                <Box
+            <Typography
                 sx={{
-                    width: 12,
-                    height: 12, 
-                    backgroundColor: "#2CA8D5", 
-                    borderRadius: "50%",
-                    position: "absolute",
-                    top: 10, 
-                    right: 10, 
-                    boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
+                    fontSize: 34,
+                    fontWeight: "bold",
+                    textAlign: "center",
+                    letterSpacing: 0.2,
+                    lineHeight: 1,
+                    userSelect: "none",
+                    cursor: "pointer",
+                    color: "#2CA8D5",
+                    marginLeft: 5,
                 }}
-                />
-            )}
-                {t("all")}
-            </Button>
-            <Button 
-                sx={{...buttonStyle, backgroundColor : "#E0E0E0"}}
-                onClick={() => setSelectedFiler("scheduled")}
             >
-            {selectedFilter === "scheduled" && (
-                <Box
+                {t("manage_sessions")}
+            </Typography>
+            <Box
                 sx={{
-                    width: 12,
-                    height: 12, 
-                    backgroundColor: "#2CA8D5", 
-                    borderRadius: "50%",
-                    position: "absolute",
-                    top: 10, 
-                    right: 10, 
-                    boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
+                position: 'absolute',
+                left: '30%',
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                gap: '20px',
                 }}
-                />
-            )}
-                15<br/>{t("scheduled")}
-            </Button>
-            <Button 
-            sx={{
-                ...buttonStyle,
-                backgroundColor: "#90CAF9",
-                position: "relative",
-            }}
-            onClick={() => setSelectedFiler("in_progress")}
             >
-            {selectedFilter === "in_progress" && (
-                <Box
+                <Button 
+                    sx={buttonStyle}
+                    onClick={() => setSelectedFiler("all")}
+                >
+                {selectedFilter === "all" && (
+                    <Box
+                    sx={{
+                        width: 12,
+                        height: 12, 
+                        backgroundColor: "#2CA8D5", 
+                        borderRadius: "50%",
+                        position: "absolute",
+                        top: 10, 
+                        right: 10, 
+                        boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
+                    }}
+                    />
+                )}
+                    {t("all")}
+                </Button>
+                <Button 
+                    sx={{...buttonStyle, backgroundColor : "#E0E0E0"}}
+                    onClick={() => setSelectedFiler("scheduled")}
+                >
+                {selectedFilter === "scheduled" && (
+                    <Box
+                    sx={{
+                        width: 12,
+                        height: 12, 
+                        backgroundColor: "#2CA8D5", 
+                        borderRadius: "50%",
+                        position: "absolute",
+                        top: 10, 
+                        right: 10, 
+                        boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
+                    }}
+                    />
+                )}
+                    15<br/>{t("scheduled")}
+                </Button>
+                <Button 
                 sx={{
-                    width: 12,
-                    height: 12, 
-                    backgroundColor: "#2CA8D5", 
-                    borderRadius: "50%",
-                    position: "absolute",
-                    top: 10, 
-                    right: 10, 
-                    boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
+                    ...buttonStyle,
+                    backgroundColor: "#90CAF9",
+                    position: "relative",
                 }}
-                />
-            )}
-            11
-            <br />
-            {t("in_progress")}{selectedFilter === "in_progress" ? "." : null}
-            </Button>
-            <Button 
-                sx={{...buttonStyle, backgroundColor:"#A5D6A7"}}
-                onClick={() => setSelectedFiler("completed")}
-            >
-            {selectedFilter === "completed" && (
-                <Box
-                sx={{
-                    width: 12,
-                    height: 12, 
-                    backgroundColor: "#2CA8D5", 
-                    borderRadius: "50%",
-                    position: "absolute",
-                    top: 10, 
-                    right: 10, 
-                    boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
-                }}
-                />
-            )}
-                40<br/>{t("completed")}
-            </Button>
-            <Button 
-                sx={{...buttonStyle, backgroundColor :"#C8E6C9"}}
-                onClick={() => setSelectedFiler("not_full")}
-            >
-            {selectedFilter === "not_full" && (
-                <Box
-                sx={{
-                    width: 12,
-                    height: 12, 
-                    backgroundColor: "#2CA8D5", 
-                    borderRadius: "50%",
-                    position: "absolute",
-                    top: 10, 
-                    right: 10, 
-                    boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
-                }}
-                />
-            )}
-                5<br/>{t("not_full")}
-            </Button>
-            <Button 
-                sx={{...buttonStyle, backgroundColor :"#FFCDD2"}}
-                onClick={() => setSelectedFiler("full")}
-            >
-            {selectedFilter === "full" && (
-                <Box
-                sx={{
-                    width: 12,
-                    height: 12, 
-                    backgroundColor: "#2CA8D5", 
-                    borderRadius: "50%",
-                    position: "absolute",
-                    top: 10, 
-                    right: 10, 
-                    boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
-                }}
-                />
-            )}
-                10<br/>{t("full")}
-            </Button>
-        </Box>
+                onClick={() => setSelectedFiler("in_progress")}
+                >
+                {selectedFilter === "in_progress" && (
+                    <Box
+                    sx={{
+                        width: 12,
+                        height: 12, 
+                        backgroundColor: "#2CA8D5", 
+                        borderRadius: "50%",
+                        position: "absolute",
+                        top: 10, 
+                        right: 10, 
+                        boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
+                    }}
+                    />
+                )}
+                11
+                <br />
+                {t("in_progress")}{selectedFilter === "in_progress" ? "." : null}
+                </Button>
+                <Button 
+                    sx={{...buttonStyle, backgroundColor:"#A5D6A7"}}
+                    onClick={() => setSelectedFiler("completed")}
+                >
+                {selectedFilter === "completed" && (
+                    <Box
+                    sx={{
+                        width: 12,
+                        height: 12, 
+                        backgroundColor: "#2CA8D5", 
+                        borderRadius: "50%",
+                        position: "absolute",
+                        top: 10, 
+                        right: 10, 
+                        boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
+                    }}
+                    />
+                )}
+                    40<br/>{t("completed")}
+                </Button>
+                <Button 
+                    sx={{...buttonStyle, backgroundColor :"#C8E6C9"}}
+                    onClick={() => setSelectedFiler("not_full")}
+                >
+                {selectedFilter === "not_full" && (
+                    <Box
+                    sx={{
+                        width: 12,
+                        height: 12, 
+                        backgroundColor: "#2CA8D5", 
+                        borderRadius: "50%",
+                        position: "absolute",
+                        top: 10, 
+                        right: 10, 
+                        boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
+                    }}
+                    />
+                )}
+                    5<br/>{t("not_full")}
+                </Button>
+                <Button 
+                    sx={{...buttonStyle, backgroundColor :"#FFCDD2"}}
+                    onClick={() => setSelectedFiler("full")}
+                >
+                {selectedFilter === "full" && (
+                    <Box
+                    sx={{
+                        width: 12,
+                        height: 12, 
+                        backgroundColor: "#2CA8D5", 
+                        borderRadius: "50%",
+                        position: "absolute",
+                        top: 10, 
+                        right: 10, 
+                        boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
+                    }}
+                    />
+                )}
+                    10<br/>{t("full")}
+                </Button>
+            </Box>
             </Box>
             <Box
                 sx={{

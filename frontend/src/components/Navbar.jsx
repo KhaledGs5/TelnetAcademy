@@ -49,25 +49,24 @@ const Navbar = () => {
     };
 
     //SubMenu .................
-    const [submenuZindex, setSubmenuZindex] = useState(1);
     const [submenuAnchorEl, setSubmenuAnchorEl] = useState(null);
-    const [submenuOpen, setSubmenuOpen] = useState(false);
-    const handleOpenSubmenu = () => {
-        setSubmenuOpen(true);
+    const handleOpenSubmenu = (e) => {
+        setSubmenuAnchorEl(e.currentTarget);
     };
     const handleCloseSubmenu = () => {
-        setSubmenuOpen(false);
-        setSubmenuZindex(1);
-    };
-    const handleSubMenuAnchorEl = (event) => {
-        setSubmenuAnchorEl(event.currentTarget);
-    }
-    const UserRoles = ["trainer", "trainee"];
-    const [selectedRole, setSelectedRole] = useState("trainer");
-    const handleRoleChange = (role) => {
-        setSelectedRole(role);
         setSubmenuAnchorEl(null);
     };
+
+    const UserRoles = ["trainer", "trainee"];
+    const [selectedRole, setSelectedRole] = useState(getCookie("Role") || "trainer");
+    const handleRoleChange = (role) => {
+        setSelectedRole(role);
+        setCookie("Role", role , 1000);
+        setSubmenuAnchorEl(null);
+        window.location.href = role === "trainee" ? '/traineesession' : '/trainersession';
+    };
+    const chosenRole = getCookie("Role") || "trainer";
+    console.log(chosenRole);
 
     const toggleLanguage = () => {
         const newLanguage = choosedLanguage === "en" ? "fr" : "en";
@@ -103,14 +102,28 @@ const Navbar = () => {
     const fetchNotifications = async () => {
         try {
             const response = await axios.get(`http://localhost:5000/api/users/callnotif/${user._id}`);
-            console.log("fetched notification");
-            console.log("unread notifications number :", response.data.count);
             setNumberOfCalls(response.data.count);
-            console.log(numberOfCalls);
         } catch (error) {
             console.error("Error fetching notifications", error);
         }
     };
+    const [trainersEmails, setTrainersEmails] = useState("");
+
+    const fetchTrainersEmails = async () => {
+        try {
+            const response = await axios.get("http://localhost:5000/api/users");
+            const trainerEmails = response.data
+            .filter(user => user.role === "trainer" || user.role === "trainee_trainer")
+            .map(user => user.email)
+            .join(",");
+        setTrainersEmails(trainerEmails);
+        } catch (error) {
+            console.error("Error fetching trainer emails", error);
+        }
+    }
+    useEffect(() => {
+        fetchTrainersEmails();
+    }, []);
 
     useEffect(() => {
         if (!user) return; 
@@ -121,7 +134,6 @@ const Navbar = () => {
     
         fetchNotifications();
         socket.emit("joinRoom", user._id);
-        console.log("request sent to join room");
     
         socket.on("newNotification", () => {
             fetchNotifications();
@@ -135,12 +147,11 @@ const Navbar = () => {
             socket.off("newNotification");
             socket.off("readNotifications");
         };
-    }, [user?._id]);
+    }, []);
     
     const handleOpenNotifications = async () => {
         try {
           await axios.put(`http://localhost:5000/api/users/callnotif/${user._id}`);
-
           setNumberOfCalls(0); 
         } catch (error) {
           console.error("Error marking notifications as read", error);
@@ -166,14 +177,22 @@ const Navbar = () => {
     
             if (response.data.success) {
                 setVerifyAlert("success");
-                setVerifyAlertMessage("Call sent successfully !");
+                setVerifyAlertMessage("Call sent successfully!");
                 setShowsVerifificationAlert(true);
                 closeCallForTrainers();
+                
+                
+                await axios.post("http://localhost:5000/call-for-trainers", {
+                    toEmail : trainersEmails,
+                    message: callMessage,
+                });
+    
             }
         } catch (error) {
             console.error("Error sending call for trainers:", error);
         }
     };
+    
 
     //Styles................................
 
@@ -220,6 +239,20 @@ const Navbar = () => {
         marginRight: '10px',
     };
 
+    const roleStyle = (role) => ({
+        color: "text.primary",
+        backgroundColor: role === chosenRole? "#2CA8D5" : "background.primary",
+        textDecoration: 'none',
+        padding: '5px',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: "100px",
+        '&:hover': {
+            backgroundColor: "#76C5E1",
+        },
+    });
+
     return (
         <Box
             sx={{
@@ -259,11 +292,12 @@ const Navbar = () => {
                 }}
             >
                 <Link href="/dashboard" sx={linkStyle('/dashboard')}>{t("dashboard")}</Link>
-                <Link href={(user.role === "trainer" || user.role === "trainee_trainer") ? '/trainersession' : user.role === "trainee" ? '/traineesession' : user.role === 'manager' ? '/managesessions' : ''} 
-                sx={linkStyle(user.role === "trainer" || user.role === "trainee_trainer" ? '/trainersession' : user.role === "trainee" ? '/traineesession' : user.role === 'manager' ? '/managesessions' : '')}>{t("sessions")}</Link>
+                <Link href={(user.role === "trainer" || user.role === "trainee_trainer" && chosenRole === "trainer") ? '/trainersession' : (user.role === "trainee" || user.role === "trainee_trainer" && chosenRole === "trainee") ? '/traineesession' : user.role === 'manager' ? '/managesessions' : ''} 
+                sx={linkStyle((user.role === "trainer" || user.role === "trainee_trainer"&& chosenRole === "trainer") ? '/trainersession' : (user.role === "trainee" || user.role === "trainee_trainer" && chosenRole === "trainee") ? '/traineesession' : user.role === 'manager' ? '/managesessions' : '')}>{t("sessions")}</Link>
                 {!(user.role) ?  <Link href="/manageusers" sx={linkStyle('/manageusers')}>{t("users")}</Link> : (user.role === "manager")? 
-                            <Link href="/trainerrequest" sx={linkStyle('/trainerrequest')}>{t("requests")}</Link> : 
-                             <Link href="/enrolled" sx={linkStyle('/enrolled')}>{t("enrolled")}</Link>   }
+                            <Link href="/trainerrequest" sx={linkStyle('/trainerrequest')}>{t("requests")}</Link> : (user.role === "trainer" || user.role === "trainee_trainer" && chosenRole === "trainer")?
+                             <Link href="/trainertraining" sx={linkStyle('/trainertraining')}>{t("trainings")}</Link> :
+                             <Link href="/enrolledtrainee" sx={linkStyle('/enrolledtrainee')}>{t("enrolled")}</Link>  }
                 <Link href="/calendar" sx={linkStyle('/calendar')}>{t("calendar")}</Link>
                 <Link href="/contact" sx={linkStyle('/contact')}>{t("contact")}</Link>
                 <Link href="/about" sx={linkStyle('/about')}>{t("about")}</Link>
@@ -371,11 +405,11 @@ const Navbar = () => {
                 <Link href="/account" sx={{...buttonStyle,
                     color: menuOpen ? "white" : location.pathname === "/account" ? "white" : "text.secondary",
                     backgroundColor: menuOpen? "#76C5E1" : location.pathname === "/account" ? "#2CA8D5" : "background.paper",
+                    width:'auto'
                 }} 
                 onMouseEnter={(event) => {
                     handleMenuAnchorEl(event);
                     handleOpenMenu();
-                    handleCloseSubmenu();
                 }}              
                 >
                     <Badge badgeContent={numberOfCalls} color="primary"
@@ -399,10 +433,6 @@ const Navbar = () => {
                     </Typography>
                 </Link>
                 <Menu anchorEl={menuAnchorEl} open={menuOpen} onClose={handleCloseMenu}
-                sx={{ zIndex : 2}}
-                MenuListProps={{
-                    onMouseLeave: (!submenuOpen ? handleCloseMenu : null),
-                }}
                 disableScrollLock={true}
                 >
                     <MenuItem sx={{ ...menuStyle(""), height: "60px", display: "flex", flexDirection: "column", alignItems: "start" }} onMouseEnter={handleCloseSubmenu}>
@@ -410,42 +440,40 @@ const Navbar = () => {
                         <Typography variant="caption" color="text.secondary">{user.role ? t(user.role) : t("admin")}</Typography>
                     </MenuItem>
                     {!(user.role) ? <MenuItem onClick={() => window.location.href = "/manageusers"} sx={menuStyle("/manageusers")}><ManageAccountsIcon sx={{marginRight:'10px'}}/>{t("manage")}</MenuItem> : null}
-                    {(user.role === "trainee_trainer") ? <MenuItem 
-                        onMouseEnter={(event) => {
-                            handleSubMenuAnchorEl(event);
-                            handleOpenSubmenu();
+                    {(user.role === "trainee_trainer") ? 
+                    <MenuItem 
+                        onClick={(e) => {
+                            handleOpenSubmenu(e)
                         }}
-                        onMouseLeave={() => setSubmenuZindex(2)} 
                      sx={menuStyle("")}>
                     <ChangeCircleIcon sx={{marginRight:'5px'}}/>{t("change_space")}
-                        <Menu
-                            sx={{ zIndex : submenuZindex}}
-                            anchorEl={submenuAnchorEl}
-                            open={submenuOpen}
-                            onClose={handleCloseSubmenu}
-                            MenuListProps={{
-                                onMouseLeave: () => {
-                                    handleCloseSubmenu();                         
-                                },
-                            }}
-                            onClick={handleCloseSubmenu}
-                            disableScrollLock={true}
-                            anchorOrigin={{
-                                vertical: "top",
-                                horizontal: "left",
-                            }}
-                            transformOrigin={{
-                                vertical: "top",
-                                horizontal: "right",
-                            }}
-                        >
-                            {UserRoles.map((role) => (
-                                <MenuItem key={role} value={role} onClick={() => handleRoleChange(role)}>
-                                    {t(role)} 
-                                </MenuItem>
-                            ))}
-                        </Menu>
                     </MenuItem> : null}
+                    <Menu
+                        anchorEl={submenuAnchorEl}
+                        open={Boolean(submenuAnchorEl)}
+                        onClose={handleCloseSubmenu}
+                        disableScrollLock={true}
+                        MenuListProps={{
+                            'aria-labelledby': 'basic-button',
+                            }}
+                        anchorOrigin={{
+                            vertical: "top",
+                            horizontal: "left",
+                        }}
+                        transformOrigin={{
+                            vertical: "top",
+                            horizontal: "right",
+                        }}
+                    >
+                        <MenuItem >
+                            {t("role")} 
+                        </MenuItem>
+                        {UserRoles.map((role) => (
+                            <MenuItem key={role} value={role} sx={roleStyle(role)} onClick={() => handleRoleChange(role)}>
+                                {t(role)} 
+                            </MenuItem>
+                        ))}
+                    </Menu>
                     {(user.role === "trainer") || (user.role === "trainee_trainer" && selectedRole === "trainer") ? 
                     <MenuItem onClick={() => {
                         handleOpenNotifications();

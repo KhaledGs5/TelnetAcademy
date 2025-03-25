@@ -20,12 +20,6 @@ const userSchema = new mongoose.Schema({
   gender: { type: String, required: true },
   grade: { type: String, required: true },
   type: { type: String, required: function () { return this.role === "trainer"; }, default: "internal" }, 
-  listOfMarkedTrainings: {
-    type: [mongoose.Schema.Types.ObjectId],
-    ref: "Training",
-    required: function () { return this.role === "trainer"; },
-    default: [],
-  }, 
 }, { collection: 'users', timestamps: true });
 
 const User = mongoose.model("User", userSchema);

@@ -3,9 +3,9 @@ const mongoose = require("mongoose");
 const formSchema = new mongoose.Schema({
     matricule: {type: String,required: true},
     name: {type: String,required: true},
-    fonction: {type: String,required: true},
-    activite: {type: String,required: true},
-    dateEmbauche: {type: Date,required: true},
+    position: {type: String,required: true},
+    activity: {type: String,required: true},
+    dateOfHire: {type: Date,required: true},
     domains: [
         {
             description: { type: String, required: false },
@@ -22,6 +22,7 @@ const formSchema = new mongoose.Schema({
     ],
     motivation: {type: String, required: false},
     trainer: { type: mongoose.Schema.Types.ObjectId, ref: "users" },
+    status: { type: String, enum: ["pending","approved", "rejected"], default: "pending" },
 }, { collection: "form" ,timestamps: true });
 
 const Form = mongoose.model("Form", formSchema);
