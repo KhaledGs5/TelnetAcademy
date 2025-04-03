@@ -50,7 +50,7 @@ app.use("/api", trainingRoutes);
 const sessionRoutes = require("./app/routes/session.routes");
 app.use("/api", sessionRoutes);
 
-const callnotificationRoutes = require("./app/routes/callnotification.routes");
+const callnotificationRoutes = require("./app/routes/notification.routes");
 app.use("/api", callnotificationRoutes);
 
 const callFormRoutes = require("./app/routes/form.routes");
@@ -91,6 +91,24 @@ app.post("/call-for-trainers", async (req, res) => {
       from: process.env.EMAIL_USER,
       to: toEmail,
       subject: "Call For Trainers",
+      text: `Message: ${message}`,
+    });
+
+    res.status(200).json({ success: true, message: "Email sent successfully!" });
+  } catch (error) {
+    console.error("Error sending email:", error);
+    res.status(500).json({ success: false, message: "Failed to send email." });
+  }
+});
+
+app.post("/reject-request", async (req, res) => {
+  const { toEmail, message } = req.body;
+
+  try {
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: toEmail,
+      subject: "Request Rejected",
       text: `Message: ${message}`,
     });
 

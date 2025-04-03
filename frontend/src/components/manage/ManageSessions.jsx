@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from "react";
 import { useLanguage } from "../../languagecontext";
-import { Box, TextField , Typography, Button,Input,IconButton, InputAdornment, Tooltip, OutlinedInput, FormControl, InputLabel, Pagination,Radio, Alert, Snackbar , Autocomplete, Popover  } from "@mui/material";
+import { Box, TextField , Typography, Button,Input,IconButton, InputAdornment, Tooltip,
+     OutlinedInput, FormControl, InputLabel, Pagination,Radio, Alert, Snackbar , Autocomplete, Popover  } from "@mui/material";
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import ClearIcon from '@mui/icons-material/Clear';
 import SearchIcon from '@mui/icons-material/Search';
 import MenuItem from '@mui/material/MenuItem';
 import AddIcon from '@mui/icons-material/Add';
-import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
+import CloseIcon from '@mui/icons-material/Close';
+import ModeIcon from '@mui/icons-material/Mode';
 import FilterAltOffIcon from '@mui/icons-material/FilterAltOff';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -19,7 +21,8 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import dayjs from 'dayjs';
 import axios from "axios";
-import * as XLSX from 'xlsx';
+
+
 
 const ManageSessions = () => {
 
@@ -196,6 +199,9 @@ const ManageSessions = () => {
           fetchTrainings();
           hideNewTrainingForm();
           addSessions(response.data._id);
+          setVerifyAlertMessage("training_added_successfully");
+          setVerifyAlert("success");
+          setShowsVerifificationAlert(true);
         })
         .catch((error) => {
           console.error("Error adding training:", error);
@@ -263,7 +269,6 @@ const ManageSessions = () => {
     };
 
     const [verifyUpdate, setVerifyUpdate] = useState(false);
-    const [selectedTrainingNbOfSessions, setSelectedTrainingNbOfSessions] = useState(0);
 
     const showVerifyUpdateDialog = (trainingId) => {
         setSelectedTrainingId(trainingId);
@@ -277,13 +282,15 @@ const ManageSessions = () => {
     const handleUpdateTraining = (trainingId) => {
       const updatedTraining = Object.values(trainings).find(training => training._id === trainingId);
       console.log(updatedTraining);
-      
       if (!updatedTraining) return;
   
       axios.put(`http://localhost:5000/api/trainings/${trainingId}`, updatedTraining)
           .then(() => { 
               hideVerifyUpdateDialog();
               setVerifyAlert("success");
+              setVerifyAlertMessage("training_updated_successfully");
+              setShowsVerifificationAlert(true);
+              fetchTrainings();
           })
           .catch((error) => {
               setVerifyAlertMessage(error.response?.data?.error || "An error occurred");
@@ -291,28 +298,13 @@ const ManageSessions = () => {
               setShowsVerifificationAlert(true);
           });
 
-    updatedTraining.sessions.forEach(session => {
-        axios.put(`http://localhost:5000/api/sessions/${session._id}`, session)
-            .catch(error => {});
-    });
+        updatedTraining.sessions.forEach(session => {
+            axios.put(`http://localhost:5000/api/sessions/${session._id}`, session)
+                .catch(error => {});
+        });
+        
+        fetchTrainings();
 
-    for (let i = selectedTrainingNbOfSessions; i < getTrainingById(selectedTrainingId)?.nbOfSessions; i++) {
-        const newSession = {
-          name: newSessionsNames[i],
-          date: newSessionsDates[i],
-          duration: newSessionsDurations[i],
-          location: newSessionsLocations[i],
-          training: selectedTrainingId, 
-        };
-    
-        axios.post("http://localhost:5000/api/sessions", newSession)
-          .then(() => {
-          })
-          .catch((error) => {
-          });
-      }
-      fetchTrainings();
-  
       setTrainings((prevTrainings) => ({
           ...prevTrainings,
           [Object.keys(prevTrainings).find(key => prevTrainings[key]._id === trainingId)]: {
@@ -320,6 +312,7 @@ const ManageSessions = () => {
               modified: false
           }
       }));
+      
   };
   
 
@@ -343,7 +336,7 @@ const ManageSessions = () => {
         hideVerifyUpdateAllDialog();
     }; 
 
-    // Deleting user by Id..............
+    // Delete training by Id..............
     const [verifyDelete, setVerifyDelete] = useState(false);
 
     const showVerifyDeleteDialog = (trainingId) => {
@@ -393,6 +386,78 @@ const ManageSessions = () => {
         hideVerifyDeleteAllDialog();
     };
 
+    // Add  new Session .............
+
+    const handleAddSession = (trainingId) => {
+        axios.post("http://localhost:5000/api/sessions", { training: trainingId })
+            .then(() => {
+                setTrainings(prevTrainings => {
+                    const trainingKey = Object.keys(prevTrainings).find(key => prevTrainings[key]._id === trainingId);
+                    if (!trainingKey) return prevTrainings;
+    
+                    const updatedTraining = {
+                        ...prevTrainings,
+                        [trainingKey]: {
+                            ...prevTrainings[trainingKey],
+                            nbOfSessions: (prevTrainings[trainingKey].nbOfSessions || 0) + 1,
+                            modified: true,
+                        },
+                    };
+    
+                    console.log(updatedTraining[trainingKey]); 
+    
+                    axios.put(`http://localhost:5000/api/trainings/${trainingId}`, updatedTraining[trainingKey])
+                        .then(() => {
+                            fetchTrainings();
+                        })
+                        .catch((error) => {
+                            setVerifyAlertMessage(error.response?.data?.error || "An error occurred");
+                            setVerifyAlert("error");
+                            setShowsVerifificationAlert(true);
+                        });
+    
+                    return updatedTraining;
+                });
+            })
+            .catch((error) => {
+                console.error("Error adding session:", error);
+                setVerifyAlertMessage(error.response?.data?.message || "An error occurred");
+                setVerifyAlert("error");
+                setShowsVerifificationAlert(true);
+            });
+    };
+    
+
+    // Delete Session by Id ............
+
+    const [verifyDeleteSession, setVerifyDeleteSession] = useState(false);
+    const [selectedSessionId, setSelectedSessionId] = useState(null); 
+
+    const showVerifyDeleteSessionDialog = (sessionId) => {
+        setSelectedSessionId(sessionId);
+        setVerifyDeleteSession(true);
+    };
+
+    const hideVerifyDeleteSessionDialog = () => {
+        setVerifyDeleteSession(false);
+    };
+
+    const handleDeleteSession = () => {
+        axios.delete(`http://localhost:5000/api/sessions/${selectedSessionId}`)
+            .then((response) => {
+                setVerifyAlert("success");
+                setVerifyAlertMessage("session_deleted");
+                setShowsVerifificationAlert(true);
+                fetchTrainings();
+                hideVerifyDeleteSessionDialog();
+            })
+            .catch((error) => {
+                console.error("Error deleting session:", error);
+            });
+        
+        fetchTrainings();
+    }
+
     // Order ........................
     const [orderState, setOrderState] = useState('Down');
     const [trainingOrderState, setTrainingOrderState]= useState('Down');  
@@ -414,14 +479,12 @@ const ManageSessions = () => {
         "scheduled": "#E0E0E0",
         "in_progress": "#90CAF9",
         "completed": "#A5D6A7",
-        "full": "#FFCDD2",
-        "not_full": "#C8E6C9",
     }
 
     const getSessionColor = (session, time) => {
         if (isNaN(session.duration)) {
             console.error('Invalid session duration');
-            return "";
+            return FilterColors.scheduled;
         }
 
         let hours = Math.floor(session.duration);
@@ -430,7 +493,7 @@ const ManageSessions = () => {
         let startDate = dayjs(session.date, 'YYYY-MM-DD hh:mm A');
         if (!startDate.isValid()) {
             console.error('Invalid session date');
-            return "";
+            return FilterColors.scheduled;
         }
 
         let endDate = startDate.add(hours, 'hour').add(minutes, 'minute');
@@ -438,7 +501,7 @@ const ManageSessions = () => {
         let currentTime = dayjs(time, 'YYYY-MM-DD hh:mm A');
         if (!currentTime.isValid()) {
             console.error('Invalid time');
-            return "";
+            return FilterColors.scheduled;
         }
         let col = "";
 
@@ -488,7 +551,7 @@ const ManageSessions = () => {
         const response = await axios.get('http://localhost:5000/api/users');
         if (response.status === 200) {
           const trainers = response.data
-            .filter(user => user.role === "trainer")
+            .filter(user => user.role === "trainer" || user.role === "trainee_trainer")
             .map(user => ({ name: user.name, id: user._id }));
     
           setFilterTrainer([{ name: 'all', id: 0 }, ...trainers]);
@@ -556,7 +619,7 @@ const ManageSessions = () => {
             (selectedTrainer === training.trainer || selectedTrainer === 0)
         ))
     &&
-    ((selectedFilter === "full" && training.full) || (selectedFilter === "not_full" && !training.full) || (selectedFilter === "all")
+    ((selectedFilter === "all")
        || (selectedFilter === "completed") || (selectedFilter === "in_progress") || (selectedFilter === "scheduled"))
       && filterSessions(training).length > 0
      ).sort((ftraining, straining) => {
@@ -600,175 +663,22 @@ const ManageSessions = () => {
         return Object.values(trainings).find(training => training._id === id) || null;
     };
 
-    const handleTitleChange = (e, id) => {
-      setTrainings((prevTranings) => {
-        const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === id);
-        if (!trainingKey) return prevTranings;     
-        return {
-            ...prevTranings,
-            [trainingKey]: {
-                ...prevTranings[trainingKey],
-                title: e.target.value,
-                modified: true,
-            },
-        };
-      });
-    };
-    const handleMonthChange = (e, id) => {
+    const handleTrainingChange = (value, id, topic) => {
         setTrainings((prevTranings) => {
-          const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === id);
-          if (!trainingKey) return prevTranings;     
-          return {
-              ...prevTranings,
-              [trainingKey]: {
-                  ...prevTranings[trainingKey],
-                  month: e.target.value,
-                  modified: true,
-              },
-          };
+            const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === id);
+            if (!trainingKey) return prevTranings;     
+            return {
+                ...prevTranings,
+                [trainingKey]: {
+                    ...prevTranings[trainingKey],
+                    [topic]: value,
+                    modified: true,
+                },
+            };
         });
     };
-    const handleSkillTypeChange = (e, id) => {
-    setTrainings((prevTranings) => {
-        const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === id);
-        if (!trainingKey) return prevTranings;     
-        return {
-            ...prevTranings,
-            [trainingKey]: {
-                ...prevTranings[trainingKey],
-                skillType: e.target.value,
-                modified: true,
-            },
-        };
-    });
-    };
-    const handleTrainingDateChange = (e, id) => {
-    setTrainings((prevTranings) => {
-        const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === id);
-        if (!trainingKey) return prevTranings;     
-        return {
-            ...prevTranings,
-            [trainingKey]: {
-                ...prevTranings[trainingKey],
-                date: e.target.value,
-                modified: true,
-            },
-        };
-    });
-    };
-    const handleNbOfHoursChange = (e, id) => {
-        setTrainings((prevTranings) => {
-          const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === id);
-          if (!trainingKey) return prevTranings;     
-          return {
-              ...prevTranings,
-              [trainingKey]: {
-                  ...prevTranings[trainingKey],
-                  nbOfHours: parseInt(e.target.value),
-                  modified: true,
-              },
-          };
-        });
-    };
-    const handleLocationChange = (e, id) => {
-        setTrainings((prevTranings) => {
-          const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === id);
-          if (!trainingKey) return prevTranings;     
-          return {
-              ...prevTranings,
-              [trainingKey]: {
-                  ...prevTranings[trainingKey],
-                  location: e.target.value,
-                  modified: true,
-              },
-          };
-        });
-    };
-    const handleModeChange = (e, id) => {
-        setTrainings((prevTranings) => {
-          const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === id);
-          if (!trainingKey) return prevTranings;     
-          return {
-              ...prevTranings,
-              [trainingKey]: {
-                  ...prevTranings[trainingKey],
-                  mode: e.target.value,
-                  modified: true,
-              },
-          };
-        });
-    };
-    const handleTypeChange = (e, id) => {
-    setTrainings((prevTranings) => {
-        const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === id);
-        if (!trainingKey) return prevTranings;     
-        return {
-            ...prevTranings,
-            [trainingKey]: {
-                ...prevTranings[trainingKey],
-                type: e.target.value,
-                modified: true,
-            },
-        };
-    });
-    };
-    const handleNbOfSessionsChange = (e, id) => {
-        setTrainings((prevTranings) => {
-          const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === id);
-          if (!trainingKey) return prevTranings;     
-          return {
-              ...prevTranings,
-              [trainingKey]: {
-                  ...prevTranings[trainingKey],
-                  nbOfSessions: parseInt(e.target.value),
-                  modified: true,
-              },
-          };
-        });
-    };
-    const handleTrainerChange = (value, id) => {
-        setTrainings((prevTranings) => {
-          const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === id);
-          if (!trainingKey) return prevTranings;     
-          return {
-              ...prevTranings,
-              [trainingKey]: {
-                  ...prevTranings[trainingKey],
-                  trainer: value,
-                  modified: true,
-              },
-          };
-        });
-    };
-     const handleDescriptionChange = (e, id) => {
-        setTrainings((prevTranings) => {
-          const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === id);
-          if (!trainingKey) return prevTranings;     
-          return {
-              ...prevTranings,
-              [trainingKey]: {
-                  ...prevTranings[trainingKey],
-                  description: e.target.value,
-                  modified: true,
-              },
-          };
-        });
-    };
-    const handleNbOfParticipantsChange = (e, id) => {
-        setTrainings((prevTranings) => {
-          const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === id);
-          if (!trainingKey) return prevTranings;     
-          return {
-              ...prevTranings,
-              [trainingKey]: {
-                  ...prevTranings[trainingKey],
-                  nbOfParticipants: parseInt(e.target.value),
-                  modified: true,
-              },
-          };
-        });
-    };
-    const handleSessionNameChange = (e, tid, sid) => {
+
+    const handleSessionChange = (value, tid, sid, topic) => {
       setTrainings((prevTranings) => {
         const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === tid);
         if (!trainingKey) return prevTranings;
@@ -780,7 +690,7 @@ const ManageSessions = () => {
                     if (session._id === sid) {
                         return {
                             ...session,
-                            name: e.target.value,
+                            [topic]: value,
                         };
                     }
                     return session;
@@ -790,72 +700,7 @@ const ManageSessions = () => {
         };
       });
     };
-    const handleSessionDateChange = (e, tid, sid) => {
-        setTrainings((prevTranings) => {
-          const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === tid);
-          if (!trainingKey) return prevTranings;
-          return {
-              ...prevTranings,
-              [trainingKey]: {
-                  ...prevTranings[trainingKey],
-                  sessions: prevTranings[trainingKey].sessions.map((session) => {
-                      if (session._id === sid) {
-                          return {
-                              ...session,
-                              date: e?.toISOString() || "",
-                          };
-                      }
-                      return session;
-                  }),
-                  modified: true,
-              },
-          };
-        });
-    };
-    const handleSessionDurationChange = (e, tid, sid) => {
-    setTrainings((prevTranings) => {
-        const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === tid);
-        if (!trainingKey) return prevTranings;
-        return {
-            ...prevTranings,
-            [trainingKey]: {
-                ...prevTranings[trainingKey],
-                sessions: prevTranings[trainingKey].sessions.map((session) => {
-                    if (session._id === sid) {
-                        return {
-                            ...session,
-                            duration: parseInt(e.target.value),
-                        };
-                    }
-                    return session;
-                }),
-                modified: true,
-            },
-        };
-    });
-    };
-    const handleSessionLocationChange = (e, tid, sid) => {
-    setTrainings((prevTranings) => {
-        const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === tid);
-        if (!trainingKey) return prevTranings;
-        return {
-            ...prevTranings,
-            [trainingKey]: {
-                ...prevTranings[trainingKey],
-                sessions: prevTranings[trainingKey].sessions.map((session) => {
-                    if (session._id === sid) {
-                        return {
-                            ...session,
-                            location: e.target.value,
-                        };
-                    }
-                    return session;
-                }),
-                modified: true,
-            },
-        };
-    });
-    };
+
     const openSessionOtherLocation = (e, tid, sid) => {
         setTrainings((prevTranings) => {
             const trainingKey = Object.keys(prevTranings).find(key => prevTranings[key]._id === tid);
@@ -953,30 +798,30 @@ const ManageSessions = () => {
         }}
         >
             <Box
-            sx={{
-              display: "flex",
-              flexDirection: "row",
-              justifyContent: "start",
-              alignItems: "center",
-              width: "100%",
-              height: "100px",
-            }}
-            >
-            <Typography
                 sx={{
-                    fontSize: 34,
-                    fontWeight: "bold",
-                    textAlign: "center",
-                    letterSpacing: 0.2,
-                    lineHeight: 1,
-                    userSelect: "none",
-                    cursor: "pointer",
-                    color: "#2CA8D5",
-                    marginLeft: 5,
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "start",
+                alignItems: "center",
+                width: "100%",
+                height: "100px",
                 }}
-            >
-                {t("manage_sessions")}
-            </Typography>
+                >
+                <Typography
+                    sx={{
+                        fontSize: 34,
+                        fontWeight: "bold",
+                        textAlign: "center",
+                        letterSpacing: 0.2,
+                        lineHeight: 1,
+                        userSelect: "none",
+                        cursor: "pointer",
+                        color: "#2CA8D5",
+                        marginLeft: 5,
+                    }}
+                >
+                    {t("manage_sessions")}
+                </Typography>
             <Box
                 sx={{
                 position: 'absolute',
@@ -1073,46 +918,6 @@ const ManageSessions = () => {
                     />
                 )}
                     40<br/>{t("completed")}
-                </Button>
-                <Button 
-                    sx={{...buttonStyle, backgroundColor :"#C8E6C9"}}
-                    onClick={() => setSelectedFiler("not_full")}
-                >
-                {selectedFilter === "not_full" && (
-                    <Box
-                    sx={{
-                        width: 12,
-                        height: 12, 
-                        backgroundColor: "#2CA8D5", 
-                        borderRadius: "50%",
-                        position: "absolute",
-                        top: 10, 
-                        right: 10, 
-                        boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
-                    }}
-                    />
-                )}
-                    5<br/>{t("not_full")}
-                </Button>
-                <Button 
-                    sx={{...buttonStyle, backgroundColor :"#FFCDD2"}}
-                    onClick={() => setSelectedFiler("full")}
-                >
-                {selectedFilter === "full" && (
-                    <Box
-                    sx={{
-                        width: 12,
-                        height: 12, 
-                        backgroundColor: "#2CA8D5", 
-                        borderRadius: "50%",
-                        position: "absolute",
-                        top: 10, 
-                        right: 10, 
-                        boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
-                    }}
-                    />
-                )}
-                    10<br/>{t("full")}
                 </Button>
             </Box>
             </Box>
@@ -2268,7 +2073,8 @@ const ManageSessions = () => {
                             justifyContent: "start",
                             alignItems: 'center',
                             boxSizing: 'border-box',
-                            backgroundColor: "button.tertiary",
+                            backgroundColor: "background.paper",
+                            boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.25)",
                             borderRadius: "10px",
                             paddingTop: "10px",
                             paddingBottom: "10px",
@@ -2290,25 +2096,7 @@ const ManageSessions = () => {
                             borderRight: '1px solid rgb(192, 192, 192)',
                             padding: 2,
                         }}
-                        ><Box
-                            sx={{
-                                display: "flex",
-                                flexDirection: "row",
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                            }}
                         >
-                            <Box
-                                sx={{
-                                width: '20px',
-                                height: '20px',
-                                borderRadius: '50%',
-                                backgroundColor: training.full ? FilterColors.full : FilterColors.not_full,
-                                marginRight: "10px",
-                                }}
-                            />
-                            {training.full ? 'Full' : 'Not Full'}
-                        </Box>
                         <TextField
                             variant="outlined"
                             required
@@ -2320,7 +2108,7 @@ const ManageSessions = () => {
                             height: "auto",
                             "& .MuiOutlinedInput-notchedOutline": { border: "none" },
                             }}
-                            onChange={(e) => handleTitleChange(e, training._id)}
+                            onChange={(e) => handleTrainingChange(e.target.value, training._id, "title")}
                         />
                         </Box>
                         <Box
@@ -2346,7 +2134,7 @@ const ManageSessions = () => {
                             }}
                             >
                             <TextField variant="outlined" required placeholder={t("Name")} value={session.name} sx={{width:"25%"}} 
-                            onChange={(e) => handleSessionNameChange(e, training._id, session._id)}
+                            onChange={(e) => handleSessionChange(e.target.value, training._id, session._id, "name")}
                             />
                             <LocalizationProvider dateAdapter={AdapterDayjs}>
                                 <DateTimePicker
@@ -2356,20 +2144,20 @@ const ManageSessions = () => {
                                 disableScrollLock={true}
                                 label={t("date")}
                                 value={dayjs(session.date)}
-                                onChange={(e) => handleSessionDateChange(e, training._id, session._id)}
+                                onChange={(e) => handleSessionChange(e, training._id, session._id, "date")}
                                 />
                             </LocalizationProvider>
                             <FormControl variant="outlined" sx={{width:"25%"}}>
                                 <OutlinedInput
                                     type='Number'
                                     value={session.duration}
-                                    onChange={(e) => handleSessionDurationChange(e, training._id , session._id)}
+                                    onChange={(e) => handleSessionChange(e.target.value, training._id , session._id, "duration")}
                                 />
                             </FormControl>
                             <TextField
                                 select={!session.otherSessionLocation && (TrainingLocations.includes(session.location) || !session.location)}
                                 value={session.location}
-                                onChange={(e) => handleSessionLocationChange(e, training._id , session._id)}
+                                onChange={(e) => handleSessionChange(e.target.value, training._id , session._id, "location")}
                                 sx={{
                                     width: '25%',
                                 }}
@@ -2418,7 +2206,7 @@ const ManageSessions = () => {
                                     <InputLabel required>{t("location")}</InputLabel>
                                     <OutlinedInput
                                         value={session.location}
-                                        onChange={(e) => handleSessionLocationChange(e, training._id , session._id)}
+                                        onChange={(e) => handleSessionChange(e.target.value, training._id , session._id, "location")}
                                         label="Activity ................"
                                     />
                                 </FormControl>
@@ -2462,17 +2250,16 @@ const ManageSessions = () => {
                             <OutlinedInput
                                 type='Number'
                                 value={training.nbOfParticipants}
-                                onChange={(e) => handleNbOfParticipantsChange(e, training._id)}
+                                onChange={(e) => handleTrainingChange(e.target.value, training._id, "nbOfParticipants")}
                             />
                         </FormControl>
                         <Box 
                         sx={{width:'10%', display:"flex", flexDirection:"row", justifyContent:"end"}}
                         >
-                            <Tooltip title={t("view_details")} arrow> 
+                            <Tooltip title={t("edit_training")} arrow> 
                                 <IconButton sx={{color:"#76C5E1"}}  onClick={() => {showUpdateTrainingForm(training._id);
-                                    setSelectedTrainingNbOfSessions(getTrainingById(training._id)?.nbOfSessions || 0);
                                 }}>
-                                    <RemoveRedEyeIcon/>
+                                    <ModeIcon/>
                                 </IconButton>
                             </Tooltip>
                             <Tooltip title={t("save")} arrow>
@@ -2645,7 +2432,7 @@ const ManageSessions = () => {
                     }
                 }}
             >
-                <DialogTitle>{t("update_training")}</DialogTitle>
+                <DialogTitle>{t("edit_training")}</DialogTitle>
                 <Box
                     sx={{
                         width: "100%",
@@ -2663,7 +2450,7 @@ const ManageSessions = () => {
                         <InputLabel required>{t("title")}</InputLabel>
                         <OutlinedInput
                             value={getTrainingById(selectedTrainingId)?.title}
-                            onChange={(e) => handleTitleChange(e, selectedTrainingId)}
+                            onChange={(e) => handleTrainingChange(e.target.value, selectedTrainingId, "title")}
                             label="Title......."
                         />
                     </FormControl>
@@ -2671,7 +2458,7 @@ const ManageSessions = () => {
                         select
                         label={t("month")}
                         value={getTrainingById(selectedTrainingId)?.month}
-                        onChange={(e) => handleMonthChange(e, selectedTrainingId)}
+                        onChange={(e) => handleTrainingChange(e.target.value, selectedTrainingId, "month")}
                         sx={{
                             width: '50%',
                         }}
@@ -2698,7 +2485,7 @@ const ManageSessions = () => {
                         select
                         label={t("skill")}
                         value={getTrainingById(selectedTrainingId)?.skillType}
-                        onChange={(e) => handleSkillTypeChange(e, selectedTrainingId)}
+                        onChange={(e) => handleTrainingChange(e.target.value, selectedTrainingId, "skillType")}
                         sx={{
                             width: '50%',
                         }}
@@ -2715,7 +2502,6 @@ const ManageSessions = () => {
                         <OutlinedInput
                         readOnly
                         value={getTrainingById(selectedTrainingId)?.date}
-                        onChange={(e) => handleTrainingDateChange(e, selectedTrainingId)}
                         label="Date......."
                         endAdornment={
                             <InputAdornment position="end">
@@ -2776,7 +2562,7 @@ const ManageSessions = () => {
                             onChange={(e) => {
                             const value = e.target.value;
                             if (value === "" || (Number(value) >= 0 && Number.isInteger(Number(value)))) {
-                                handleNbOfHoursChange(e, selectedTrainingId);
+                                handleTrainingChange(e.target.value, selectedTrainingId, "nbOfHours");
                             }
                             }}
                             label="Number Of Hours......."
@@ -2786,7 +2572,7 @@ const ManageSessions = () => {
                         select={!otherUpdateLocation  && (TrainingLocations.includes(getTrainingById(selectedTrainingId)?.location) || getTrainingById(selectedTrainingId)?.location === "")}
                         label={t("location")}
                         value={getTrainingById(selectedTrainingId)?.location}
-                        onChange={(e) => handleLocationChange(e, selectedTrainingId)}
+                        onChange={(e) => handleTrainingChange(e.target.value, selectedTrainingId, "location")}
                         sx={{
                             width: '50%',
                         }}
@@ -2832,7 +2618,7 @@ const ManageSessions = () => {
                             <InputLabel required>{t("location")}</InputLabel>
                             <OutlinedInput
                                 value={getTrainingById(selectedTrainingId)?.location}
-                                onChange={(e) => handleLocationChange(e, selectedTrainingId)}
+                                onChange={(e) => handleTrainingChange(e.target.value, selectedTrainingId, "location")}
                                 label="Activity  ................"
                             />
                         </FormControl>
@@ -2875,7 +2661,7 @@ const ManageSessions = () => {
                         select
                         label={t("mode")}
                         value={getTrainingById(selectedTrainingId)?.mode}
-                        onChange={(e) => handleModeChange(e, selectedTrainingId)}
+                        onChange={(e) => handleTrainingChange(e.target.value, selectedTrainingId, "mode")}
                         sx={{
                             width: '50%',
                         }}
@@ -2890,7 +2676,7 @@ const ManageSessions = () => {
                         select
                         label={t("type")}
                         value={getTrainingById(selectedTrainingId)?.type}
-                        onChange={(e) => handleTypeChange(e, selectedTrainingId)}
+                        onChange={(e) => handleTrainingChange(e.target.value, selectedTrainingId, "type")}
                         sx={{
                             width: '50%',
                         }}
@@ -2919,31 +2705,25 @@ const ManageSessions = () => {
                     >
                         <InputLabel required>{t("nbOfSessions")}</InputLabel>
                         <OutlinedInput
-                        type="number"
+                            readOnly
                             value={getTrainingById(selectedTrainingId)?.nbOfSessions}
-                            onChange={(e) => {
-                            const value = e.target.value;
-                            if (value === "" || (Number(value) >= 0 && Number.isInteger(Number(value)))) {
-                                handleNbOfSessionsChange(e, selectedTrainingId)
-                            };
-                            }}
                             label="Number Of Sessions......."
                         />
                     </FormControl>
                     <Autocomplete
-                    sx={{ width: '50%',}}
-                    options={TrainingTrainers}
-                    getOptionLabel={(option) => option.name}
-                    value={TrainingTrainers.find(trainer => trainer.id === getTrainingById(selectedTrainingId)?.trainer) || null}
-                    onChange={(event, newValue) => handleTrainerChange(newValue ? newValue.id : "",selectedTrainingId)}
-                    renderInput={(params) => (
-                        <TextField 
-                        {...params} 
-                        label={t("trainer")} 
-                        variant="outlined"
-                        sx={{ width: "100%" }} 
-                        />
-                    )}
+                        sx={{ width: '50%',}}
+                        options={TrainingTrainers}
+                        getOptionLabel={(option) => option.name}
+                        value={TrainingTrainers.find(trainer => trainer.id === getTrainingById(selectedTrainingId)?.trainer) || null}
+                        onChange={(event, newValue) => handleTrainingChange(newValue ? newValue.id : "",selectedTrainingId, "trainer")}
+                        renderInput={(params) => (
+                            <TextField 
+                            {...params} 
+                            label={t("trainer")} 
+                            variant="outlined"
+                            sx={{ width: "100%" }} 
+                            />
+                        )}
                     />
                 </Box>
                 <Box
@@ -2968,7 +2748,7 @@ const ManageSessions = () => {
                     onChange={(e) => {
                         const value = e.target.value;
                         if (value === "" || (Number(value) >= 0 && Number.isInteger(Number(value)))) {
-                            handleNbOfParticipantsChange(e, selectedTrainingId)
+                            handleTrainingChange(e.target.value, selectedTrainingId, "nbOfParticipants")
                         };
                     }}
                     label="Number Of Participants......."
@@ -2984,7 +2764,7 @@ const ManageSessions = () => {
                     multiline
                     type="text"
                     value={getTrainingById(selectedTrainingId)?.description}
-                    onChange={(e) => handleDescriptionChange(e, selectedTrainingId)}
+                    onChange={(e) => handleTrainingChange(e.target.value, selectedTrainingId, "description")}
                     label="Description......."
                     />
                 </FormControl>
@@ -3044,7 +2824,7 @@ const ManageSessions = () => {
                                         const session = training?.sessions[index];
                                     
                                         if (session) {
-                                        handleSessionNameChange(e, selectedTrainingId, session._id);
+                                        handleSessionChange(e.target.value, selectedTrainingId, session._id, "name");
                                         } else {
                                         setNewSessionsNames((prevSessions) => {
                                             const updatedSessions = [...prevSessions];
@@ -3078,7 +2858,7 @@ const ManageSessions = () => {
                                         const session = training?.sessions[index];
                                       
                                         if (session) {
-                                          handleSessionDateChange(dateTime, selectedTrainingId, session._id);
+                                            handleSessionChange(dateTime, selectedTrainingId, session._id, "date");
                                         } else {
                                           setNewSessionsDates((prevDates) => {
                                             const updatedDates = [...prevDates];
@@ -3118,7 +2898,7 @@ const ManageSessions = () => {
                                         const session = training?.sessions[index];
                                       
                                         if (session) {
-                                          handleSessionDurationChange(e, selectedTrainingId, session._id);
+                                            handleSessionChange(e.target.value, selectedTrainingId, session._id, "duration");
                                         } else {
                                           setNewSessionsDurations((prevDurations) => {
                                             const updatedDurations = [...prevDurations];
@@ -3143,7 +2923,7 @@ const ManageSessions = () => {
                                         const session = training?.sessions[index];
                                       
                                         if (session) {
-                                          handleSessionLocationChange(e, selectedTrainingId, session._id);
+                                            handleSessionChange(e.target.value, selectedTrainingId, session._id, "location");
                                         } else {
                                           setNewSessionsLocations((prevLocations) => {
                                             const updatedLocations = [...prevLocations];
@@ -3205,7 +2985,7 @@ const ManageSessions = () => {
                                         <InputLabel required>{t("location")}</InputLabel>
                                         <OutlinedInput
                                             value={getTrainingById(selectedTrainingId)?.sessions[index]?.location}
-                                            onChange={(e) => handleSessionLocationChange(e, selectedTrainingId, getTrainingById(selectedTrainingId)?.sessions[index]?._id)}
+                                            onChange={(e) => handleSessionChange(e.target.value, selectedTrainingId, getTrainingById(selectedTrainingId)?.sessions[index]?._id, "location")}
                                             label="Activity ................"
                                         />
                                     </FormControl>
@@ -3237,6 +3017,37 @@ const ManageSessions = () => {
                                         {t("save")}
                                     </Button>
                                 </Dialog>
+                            </Box>
+                            <Box
+                                sx={{
+                                    width: "100%",
+                                    display: "flex",
+                                    flexDirection: "row",
+                                    justifyContent: "center",
+                                    alignItems: "center",
+                                    gap: "20px",
+                                }}> 
+                                {getTrainingById(selectedTrainingId)?.nbOfSessions === index+1 ?
+                                    <Tooltip title={t("add_session")} arrow> 
+                                        <IconButton sx={{ color: "#76C5E1" }}
+                                        onClick={(e) => {
+                                                handleAddSession(selectedTrainingId);
+                                            }}
+                                        >
+                                            <AddIcon />
+                                        </IconButton>
+                                    </Tooltip>:null
+                                }
+                                <Tooltip title={t("delete_session")} arrow> 
+                                    <IconButton sx={{color:"#EA9696"}} onClick={() => 
+                                        {
+                                            const training = getTrainingById(selectedTrainingId);
+                                            const session = training?.sessions[index];
+                                            showVerifyDeleteSessionDialog(session._id)
+                                        }}>
+                                        <DeleteIcon/>
+                                    </IconButton>
+                                </Tooltip>
                             </Box>
                         </Box>
                     ))}
@@ -3293,6 +3104,73 @@ const ManageSessions = () => {
                     {t("save")}
                 </Button>
                 </Box> 
+            </Dialog>
+            <Dialog
+                open={verifyDeleteSession}
+                disableScrollLock={true}
+                onClose={hideVerifyDeleteSessionDialog}
+                PaperProps={{
+                    sx: {
+                        width: "auto",  
+                        height: "auto", 
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "",
+                        alignItems: "center",
+                        borderRadius: "10px",
+                        padding: '20px',
+                    }
+                }}
+            >
+                <DialogTitle>{t("confirm_delete_session")}?</DialogTitle>
+                <Box 
+                    sx={{
+                        width: '100%',
+                        display: 'flex',
+                        flexDirection: 'row',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        gap: '20px',
+                    }}
+                >
+                    <Button sx={{
+                        color: 'white',
+                        backgroundColor: '#EA9696',
+                        borderRadius: '10px',
+                        textDecoration: 'none',
+                        fontWeight: 'bold',
+                        width: '100px',
+                        height: '40px',
+                        marginTop: '10px',
+                        textTransform: "none",
+                        '&:hover': {
+                            backgroundColor: '#EAB8B8',
+                            color: 'white',
+                        },
+                    }} 
+                    onClick={hideVerifyDeleteSessionDialog}>
+                        {t("no")}
+                    </Button>
+                    <Button sx={{
+                        color: 'white',
+                        backgroundColor: '#2CA8D5',
+                        borderRadius: '10px',
+                        textDecoration: 'none',
+                        fontWeight: 'bold',
+                        width: '100px',
+                        height: '40px',
+                        marginTop: '10px',
+                        textTransform: "none",
+                        '&:hover': {
+                            backgroundColor: '#76C5E1',
+                            color: 'white',
+                        },
+                    }} 
+                    onClick={handleDeleteSession}
+                    >
+                        {t("yes")}
+                    </Button>
+                </Box>
             </Dialog>
             <Pagination
                 count={pageCount}

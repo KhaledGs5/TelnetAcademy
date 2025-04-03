@@ -10,11 +10,15 @@ const getFormByTrainerId = async (req, res) => {
     }
 }
 
+const { notifyManagers } = require("../controllers/notification.controllers");
+
 const createForm = async (req, res) => {
     try {
-        
         const form = new Form(req.body);
         await form.save();
+
+        notifyManagers(req, `New training request: ${training._id}`);
+
         res.status(201).json(form);
     } catch (err) {
         console.log(err);

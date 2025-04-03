@@ -76,6 +76,11 @@ const ManageUsers = () => {
     const UserActivities = ["enablers", "mechanical", "formation_systems", "databox", "telecom", "quality", "e-paysys", "media&energy", "electronics", "space"];
     const [otherActivity, setOtherActivity]= useState(false);
     const UserGrades = ["F1", "F2", "F3", "F4", "M1", "M2", "M3", "M4", "M5", "M6"]
+    const UserJobTitles = ["associate_engineer","engineer","team_leader","technical_leader","senior_team_leader","senior_technical_leader","project_manager",
+        "consulting_manager","senior_project_manager","expert","program_manager","senior_expert","senior_program_manager","architect","program_director",
+        "senior_architect"
+    ];
+    const [otherJobTitle, setOtherJobTitle] = useState(false);
     
     const showNewUserForm = () => {
         setNewUser(true);
@@ -778,17 +783,84 @@ const ManageUsers = () => {
                                     {t("save")}
                                 </Button>
                             </Dialog>
-                            <FormControl variant="outlined" sx={{ 
+                            <TextField
+                                select={!otherJobTitle  && (UserJobTitles.includes(newUserJobtitle) || newUserJobtitle === "")}
+                                required
+                                label={t("jobtitle")}
+                                value={newUserJobtitle}
+                                onChange={(e) => setNewUserJobtitle(e.target.value)}
+                                sx={{
                                     width: '50%',
                                 }}
                             >
-                                <InputLabel required>{t("jobtitle")}</InputLabel>
-                                <OutlinedInput
-                                    value={newUserJobtitle}
-                                    onChange={(e) => setNewUserJobtitle(e.target.value)}
-                                    label="Job Title................"
-                                />
-                            </FormControl>
+                                {UserJobTitles.map((jobtitle) => (
+                                    <MenuItem key={jobtitle} value={jobtitle}>
+                                        {t(jobtitle)}
+                                    </MenuItem>
+                                ))}
+                                <Button 
+                                    sx={{
+                                        width: "100%",
+                                        textTransform: "none",
+                                        color: "black",
+                                    }}
+                                    onClick={() => setOtherJobTitle(true)}
+                                >
+                                    {t("other")}...
+                                </Button>
+                            </TextField>
+                            <Dialog
+                                open={otherJobTitle}
+                                onClose={() => setOtherJobTitle(false)}
+                                disableScrollLock={true}
+                                PaperProps={{
+                                    sx: {
+                                        width: "auto",  
+                                        height: "auto", 
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        justifyContent: "center",
+                                        alignItems: "center",
+                                        borderRadius: "10px",
+                                        padding: '20px',
+                                    }
+                                }}
+                            >
+                                <FormControl variant="outlined" sx={{ 
+                                        width: '200px',
+                                    }}
+                                >
+                                    <InputLabel required>{t("jobtitle")}</InputLabel>
+                                    <OutlinedInput
+                                        value={newUserJobtitle}
+                                        onChange={(e) => setNewUserJobtitle(e.target.value)}
+                                        label="jobtitle  ................"
+                                    />
+                                </FormControl>
+                                <Button
+                                    sx={{
+                                        color: 'white',
+                                        backgroundColor: '#2CA8D5',
+                                        padding: '5px 10px',
+                                        borderRadius: '10px',
+                                        textDecoration: 'none',
+                                        fontWeight: 'bold',
+                                        width: '100px',
+                                        height: '40px',
+                                        marginTop: '10px',
+                                        textTransform: "none",
+                                        '&:hover': {
+                                            backgroundColor: '#76C5E1',
+                                            color: 'white',
+                                        },
+                                    }}
+                                    onClick={() => {
+                                        setOtherJobTitle(false);
+                                    }}
+                                >
+                                    {t("save")}
+                                </Button>
+                            </Dialog>
                         </Box>
                         <Box
                             sx={{

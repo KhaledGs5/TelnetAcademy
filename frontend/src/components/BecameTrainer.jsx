@@ -10,7 +10,7 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import dayjs from 'dayjs';
 
-const TrainerTraining = () => {
+const BecameTrainer = () => {
 
     const user = getCookie("User");
     const { t } = useLanguage();
@@ -811,4 +811,4 @@ const TrainerTraining = () => {
     );
 }
 
-export default TrainerTraining;
+export default BecameTrainer;

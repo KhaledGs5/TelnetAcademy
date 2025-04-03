@@ -14,7 +14,11 @@ import TrainerRequest from './components/manage/TrainerRequest.jsx';
 import TrainerCalls from './components/TrainerCalls.jsx';
 import TrainerTraining from './components/TrainerTraining.jsx';
 import TraineeSession from './components/TraineeSession.jsx';
+import BecameTrainer from './components/BecameTrainer.jsx';
+import ManageTrainings from './components/manage/ManageTrainings.jsx';
+import EnrolledTraineeSessions from './components/EnrolledTraineeSessions.jsx';
 import { getCookie } from './components/Cookies.jsx';
+import TraineeRequest from './components/manage/TraineeRequest.jsx';
 import './index.css';
 
 
@@ -38,10 +42,15 @@ function App() {
             <Route path="/manageusers" element={<ManageUsers />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/managesessions" element={<ManageSessions />} />
-            <Route path="/trainerrequest" element={<TrainerRequest />} />
+            <Route path="/managetrainings" element={<ManageTrainings />} />
             <Route path="/trainersession" element={<TrainerSession />} />
             <Route path="/trainertraining" element={<TrainerTraining />} />
             <Route path="/traineesession" element={<TraineeSession />} />
+            <Route path="/enrolledtrainee" element={<EnrolledTraineeSessions />} />
+            <Route path="/becametrainer" element={<BecameTrainer />} />
+            <Route path="/requests" element={<Navigate to="/requests/trainer" replace />} />
+            <Route path="/requests/trainee" element={<TraineeRequest />} />
+            <Route path="/requests/trainer" element={<TrainerRequest />} />
             <Route path="/trainercall" element={<TrainerCalls />} />
             <Route path="/account" element={<Profile />} />
             <Route path="/calendar" element={<Calendar />} />

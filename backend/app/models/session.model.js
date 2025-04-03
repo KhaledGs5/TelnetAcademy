@@ -7,10 +7,10 @@ dayjs.extend(isBetween);
 
 
 const sessionSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  date: { type: Date, required: true },
-  duration: { type: Number, required: true },
-  location: { type: String, required: true },
+  name: { type: String },
+  date: { type: Date },
+  duration: { type: Number },
+  location: { type: String },
   status: { type: String, enum: ["scheduled", "in_progress", "completed"] },
   attendanceList: [{ type: mongoose.Schema.Types.ObjectId , ref: "users"}],
   training: { type: mongoose.Schema.Types.ObjectId, required: true,ref: "trainings" },
@@ -21,6 +21,10 @@ const sessionSchema = new mongoose.Schema({
 sessionSchema.index({ date: 1, training: 1 }, { unique: true });
 
 sessionSchema.pre('save', function(next) {
+  if (!this.date) {
+    return next();
+  }
+
   const currentTime = dayjs();
   const sessionDate = dayjs(this.date);
   const endDate = sessionDate.add(this.duration, 'hour');
@@ -35,6 +39,7 @@ sessionSchema.pre('save', function(next) {
 
   next();
 });
+
 
 sessionSchema.set('toJSON', {
     transform: (doc, ret) => {

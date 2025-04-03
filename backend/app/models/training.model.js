@@ -8,8 +8,8 @@ const trainingSchema = new mongoose.Schema({
   date: { type: String, required: true },
   location: { type: String, required: true },
   nbOfHours: { type: Number, required: true },
-  nbOfReceivedRequests: { type: Number },
-  nbOfAcceptedRequests: { type: Number, default: 10 },
+  nbOfReceivedRequests: { type: Number , default: 0 },
+  nbOfAcceptedRequests: { type: Number },
   nbOfParticipants: { type: Number, required: true },
   nbOfAttendees: { type: Number},
   nbOfAttendeesCompleted: { type: Number},
@@ -25,7 +25,12 @@ const trainingSchema = new mongoose.Schema({
   comment: {type: String},
   type: {type: String, required: true},
   description: {type: String, required: true},
-  trainer: { type: mongoose.Schema.Types.ObjectId,ref: "users" }
+  trainer: { type: mongoose.Schema.Types.ObjectId,ref: "users" },
+  traineesrequests: [{
+    trainee: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    date: { type: Date }
+}],
+  acceptedtrainees: [{ type: mongoose.Schema.Types.ObjectId, ref: "users" }],
 }, { collection: 'trainings', timestamps: true });
 
 const Training = mongoose.model("Training", trainingSchema);

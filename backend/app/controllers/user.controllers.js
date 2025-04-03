@@ -1,5 +1,5 @@
 const User = require("../models/user.model");
-const Notification = require("../models/callnotification.model");
+const Notification = require("../models/notification.model");
 
 const getUsers = async (req, res) => {
   try {
@@ -146,7 +146,6 @@ const getNotif = async (req, res) => {
   try {
     const { id: _id } = req.params;
     const unreadNotifications = await Notification.find({ recipient: _id, isRead: false });
-    console.log(unreadNotifications);
     res.status(200).json({ count: unreadNotifications.length, notifications: unreadNotifications });
   } catch (error) {
     res.status(500).json({ message: "Error fetching notifications" });

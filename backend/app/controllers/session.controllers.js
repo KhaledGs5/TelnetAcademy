@@ -1,5 +1,5 @@
 const Session = require("../models/session.model");
-
+const Training = require("../models/training.model");
 
 const getSessions = async (req, res) => {
     try {
@@ -34,6 +34,14 @@ const getSessionById = async (req, res) => {
 
 const createSession = async (req, res) => {
   try {
+    const { date, training } = req.body;
+    const existingSession = await Session.findOne({ date, training });
+
+    if (existingSession) {
+      return res.status(400).json({ message: "same_session_date" });
+    }
+
+    // Create and save the session
     const session = new Session(req.body);
     await session.save();
     res.status(201).json(session);
@@ -41,6 +49,7 @@ const createSession = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
+
 
 
 const updateSessionById = async (req, res) => {
@@ -53,5 +62,25 @@ const updateSessionById = async (req, res) => {
       }
 };
 
+const deleteSessionById = async (req, res) => {
+  try {
+    const { id: _id } = req.params;
+    const session = await Session.findById(_id);
+    if (!session) return res.status(404).json({ message: "Session not found" });
 
-module.exports = {getSessions, getSessionById, createSession, getSessionByTrainingId, updateSessionById}
+    const trainingId = session.training; 
+
+    await Session.findByIdAndDelete(_id);
+
+    if (trainingId) {
+      await Training.findByIdAndUpdate(trainingId, { $inc: { nbOfSessions: -1 } });
+    }
+
+    res.json({ message: "Session deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
+module.exports = {getSessions, getSessionById, createSession, getSessionByTrainingId, updateSessionById, deleteSessionById}

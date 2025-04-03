@@ -12,6 +12,7 @@ import Logo from "../assets/Telnet.png";
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import ChangeCircleIcon from '@mui/icons-material/ChangeCircle';
 import GroupAddIcon from '@mui/icons-material/GroupAdd';
+import PersonIcon from '@mui/icons-material/Person';
 import EditIcon from '@mui/icons-material/Edit';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
@@ -98,22 +99,25 @@ const Navbar = () => {
     const socket = io("http://localhost:5000"); 
     const [numberOfCalls, setNumberOfCalls] = useState(0);
     const [callMessage, setCallMessage] = useState("");
+    const [numberOfRequests, setNumberOfRequests] = useState(0);
 
     const fetchNotifications = async () => {
         try {
-            const response = await axios.get(`http://localhost:5000/api/users/callnotif/${user._id}`);
-            setNumberOfCalls(response.data.count);
+            const response = await axios.get(`http://localhost:5000/api/users/notif/${user._id}`);
+            if(user.role !== "manager")setNumberOfCalls(response.data.count);
+            setNumberOfRequests(response.data.count);
         } catch (error) {
             console.error("Error fetching notifications", error);
         }
     };
+
     const [trainersEmails, setTrainersEmails] = useState("");
 
     const fetchTrainersEmails = async () => {
         try {
             const response = await axios.get("http://localhost:5000/api/users");
             const trainerEmails = response.data
-            .filter(user => user.role === "trainer" || user.role === "trainee_trainer")
+            .filter(user => user.role !== "manager")
             .map(user => user.email)
             .join(",");
         setTrainersEmails(trainerEmails);
@@ -151,7 +155,7 @@ const Navbar = () => {
     
     const handleOpenNotifications = async () => {
         try {
-          await axios.put(`http://localhost:5000/api/users/callnotif/${user._id}`);
+          await axios.put(`http://localhost:5000/api/users/notif/${user._id}`);
           setNumberOfCalls(0); 
         } catch (error) {
           console.error("Error marking notifications as read", error);
@@ -294,8 +298,21 @@ const Navbar = () => {
                 <Link href="/dashboard" sx={linkStyle('/dashboard')}>{t("dashboard")}</Link>
                 <Link href={(user.role === "trainer" || user.role === "trainee_trainer" && chosenRole === "trainer") ? '/trainersession' : (user.role === "trainee" || user.role === "trainee_trainer" && chosenRole === "trainee") ? '/traineesession' : user.role === 'manager' ? '/managesessions' : ''} 
                 sx={linkStyle((user.role === "trainer" || user.role === "trainee_trainer"&& chosenRole === "trainer") ? '/trainersession' : (user.role === "trainee" || user.role === "trainee_trainer" && chosenRole === "trainee") ? '/traineesession' : user.role === 'manager' ? '/managesessions' : '')}>{t("sessions")}</Link>
+                {user.role === "manager" ? <Link href="/managetrainings" sx={linkStyle('/managetrainings')}>{t("trainings")}</Link>:null}
                 {!(user.role) ?  <Link href="/manageusers" sx={linkStyle('/manageusers')}>{t("users")}</Link> : (user.role === "manager")? 
-                            <Link href="/trainerrequest" sx={linkStyle('/trainerrequest')}>{t("requests")}</Link> : (user.role === "trainer" || user.role === "trainee_trainer" && chosenRole === "trainer")?
+                <Badge badgeContent={numberOfRequests} color="primary"
+                sx={{ 
+                    "& .MuiBadge-badge": { 
+                    fontSize: "10px", 
+                    height: "16px", 
+                    minWidth: "16px", 
+                    padding: "2px",
+                    position: "absolute",
+                    right: "10px",
+                    } 
+                }}
+                > <Link href="/requests" sx={linkStyle('/requests')}>{t("requests")}</Link>
+                </Badge> : (user.role === "trainer" || user.role === "trainee_trainer" && chosenRole === "trainer")?
                              <Link href="/trainertraining" sx={linkStyle('/trainertraining')}>{t("trainings")}</Link> :
                              <Link href="/enrolledtrainee" sx={linkStyle('/enrolledtrainee')}>{t("enrolled")}</Link>  }
                 <Link href="/calendar" sx={linkStyle('/calendar')}>{t("calendar")}</Link>
@@ -474,7 +491,7 @@ const Navbar = () => {
                             </MenuItem>
                         ))}
                     </Menu>
-                    {(user.role === "trainer") || (user.role === "trainee_trainer" && selectedRole === "trainer") ? 
+                    {(user.role !== "manager") ? 
                     <MenuItem onClick={() => {
                         handleOpenNotifications();
                         window.location.href = "/trainercall";}}
@@ -495,6 +512,7 @@ const Navbar = () => {
                     {t("training_calls")}
                     </MenuItem>
                     : null}
+                    {user.role === "trainee" ? <MenuItem onClick={() => window.location.href = "/becametrainer"} sx={menuStyle("/becametrainer")}><PersonIcon sx={{marginRight:'10px'}}/>{t("became_trainer")}</MenuItem> : null}
                     {user.role === 'manager' ? <MenuItem onClick={() => openCallForTrainers()} sx={menuStyle("/callfortrainers")}><GroupAddIcon sx={{marginRight:'10px'}}/>{t("call_for_trainers")}</MenuItem> : null}
                     <MenuItem sx={menuStyle("")} onClick={toggleTheme}  onMouseEnter={handleCloseSubmenu}>
                         {darkMode ? <Brightness7Icon sx={{marginRight:'10px'}}/> : <Brightness4Icon sx={{marginRight:'10px'}}/>}

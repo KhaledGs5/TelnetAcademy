@@ -12,9 +12,9 @@ router.post("/users", createUser);
 router.put("/users/:id", updateUser);
 router.put("/users/marked_trainings/:id", updateMarkedTrainings);
 router.delete("/users/:id", deleteUser);
-router.get("/users/callnotif/:id", getNotif);
+router.get("/users/notif/:id", getNotif);
 router.get("/users/availablenotif/:id", getAvailableNotif);
-router.put("/users/callnotif/:id", markRead);
-router.delete("/users/callnotif/:id", deleteNotif);
+router.put("/users/notif/:id", markRead);
+router.delete("/users/notif/:id", deleteNotif);
 
 module.exports = router;

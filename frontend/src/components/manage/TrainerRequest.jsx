@@ -2,13 +2,15 @@ import React, { useState, useEffect } from "react";
 import { getCookie , setCookie} from '../Cookies';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Box, Link, Typography,Tooltip,IconButton, Menu, MenuItem, Dialog, Button, DialogTitle, Badge, TableCell,TableRow,TableHead,TableContainer,Paper,TextField
-    ,Checkbox,FormControlLabel,TableBody,Table,FormControl, InputLabel,OutlinedInput,InputAdornment, Popover, Autocomplete
+    ,Checkbox,FormControlLabel,TableBody,Table,FormControl, InputLabel,OutlinedInput,InputAdornment, Popover, Snackbar, Alert,Input
 } from "@mui/material";
 import axios from 'axios';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
+import ClearIcon from '@mui/icons-material/Clear';
+import SearchIcon from '@mui/icons-material/Search';
 import io from "socket.io-client";
 import { useLanguage } from "../../languagecontext";
 import { StaticDatePicker, LocalizationProvider , DateTimePicker} from "@mui/x-date-pickers";
@@ -23,6 +25,15 @@ const TrainerRequest = () => {
     const location = useLocation();
     const [selectedFormId, setSelectedFormId] = useState("");
 
+    // Verify Create Training...........
+
+    const [showsVerificationAlert, setShowsVerifificationAlert] = useState(false);
+    const [verifyAlertMessage, setVerifyAlertMessage] = useState("");
+    const [verifyAlert, setVerifyAlert] = useState("error");
+    const handleVerificationAlertClose = () => {
+        setShowsVerifificationAlert(false);
+    };
+
     // Fetch All Forms
 
     const [forms, setForms] = useState([]);
@@ -31,7 +42,7 @@ const TrainerRequest = () => {
         axios.get("http://localhost:5000/api/form")
             .then((response) => {
                 const updatedForms = response.data
-                .filter(form => (form.status !== "rejected" && form.status !== "approved"))
+                .filter(form => form.status === "pending" || form.status === "approved")
                 .map(form => ({
                     ...form,
                     showDetails: false
@@ -159,6 +170,13 @@ const TrainerRequest = () => {
             hideNewTrainingForm();
             addSessions(response.data._id);
             axios.put(`http://localhost:5000/api/form/status/${selectedFormId}`, { status:"approved" })
+            if(trainerInfo.role === "trainee"){
+                axios.put(`http://localhost:5000/api/users/${trainerInfo._id}`, {role : "trainee_trainer"})
+            }
+            setVerifyAlertMessage("training_added_successfully");
+            setVerifyAlert("success");
+            setShowsVerifificationAlert(true);
+            fetchForms();
         })
         .catch((error) => {
             console.error("Error adding training:", error);
@@ -201,6 +219,9 @@ const TrainerRequest = () => {
         axios.put(`http://localhost:5000/api/form/status/${selectedFormId}`, { status:"rejected" })
         .then(() => {
             hideVerifyRejectDialog();
+            setVerifyAlertMessage("training_rejected");
+            setVerifyAlert("success");
+            setShowsVerifificationAlert(true);
             fetchForms();
         })
         .catch((error) => {
@@ -235,6 +256,22 @@ const TrainerRequest = () => {
         );
     };
     
+    // Filters ..............
+    const [searchedName, setSearchedName] = useState('');
+
+    const handleSearchChange = (e) => {
+        setSearchedName(e.target.value);
+    };
+
+    const handleClearSearch = () =>{
+        setSearchedName(''); 
+    };
+
+    const filteredForms = Object.entries(forms)
+    .filter(([_, form]) => form && 
+        form.name.toLowerCase().includes(searchedName.toLowerCase())
+    )
+    .map(([key, form]) => ({ id: key, ...form })); 
 
 
     // Styles .........
@@ -283,13 +320,13 @@ const TrainerRequest = () => {
                 }}  
             >
                 <Link
-                href="/trainerrequest"
-                sx={linkStyle("/trainerrequest")}>
+                href="/requests/trainer"
+                sx={linkStyle("/requests/trainer")}>
                     {t("trainer_requests")}
                 </Link>
                 <Link
-                href="/traineerequest"
-                sx={linkStyle("/traineerequest")}>
+                href="/requests/trainee"
+                sx={linkStyle("/requests/trainee")}>
                     {t("trainee_requests")}
                 </Link>
             </Box>
@@ -312,18 +349,54 @@ const TrainerRequest = () => {
                 <Box
                     sx={{
                         width: '100%',
+                        height: 'auto',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        gap: '10px',
+                    }}
+                >
+                    <Input
+                        placeholder={t("search_by_name")}
+                        value={searchedName}
+                        onChange={handleSearchChange}
+                        sx={{
+                            width: '20%'
+                        }}
+                        startAdornment={
+                            <InputAdornment position="start">
+                                <IconButton size="small">
+                                    <SearchIcon />
+                                </IconButton>
+                            </InputAdornment>
+                        }
+                        endAdornment={
+                            searchedName && (
+                                <InputAdornment position="end">
+                                    <IconButton onClick={handleClearSearch} size="small">
+                                        <ClearIcon />
+                                    </IconButton>
+                                </InputAdornment>
+                            )
+                        }
+                    >
+                    </Input>
+                </Box>
+                <Box
+                    sx={{
+                        width: '100%',
                         height: '40px',
                         border: '1px solid lightgrey',
                         borderRadius: '5px',
                         display: 'flex',
                         justifyContent: "start",
                         alignItems: 'start',
-                        gap: '5px',
+                        gap: '10px',
 
                     }}
                 >
                     <Button
-                        sx={{...orderStyle, width: '20%'}}
+                        sx={{...orderStyle, width: '16%'}}
                         onClick={() => handleChangeOrder("Name")}
                     >
                         <Typography>
@@ -332,7 +405,16 @@ const TrainerRequest = () => {
                         {selectedOrder === "Name" ? (orderState === "Up" ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />) : null}
                     </Button>
                     <Button
-                        sx={{...orderStyle, width: '20%'}}
+                        sx={{...orderStyle, width: '16%'}}
+                        onClick={() => handleChangeOrder("Matricule")}
+                    >
+                        <Typography>
+                            {t("registration_number")}
+                        </Typography>
+                        {selectedOrder === "Matricule" ? (orderState === "Up" ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />) : null}
+                    </Button>
+                    <Button
+                        sx={{...orderStyle, width: '16%'}}
                         onClick={() => handleChangeOrder("Fonction")}
                     >
                         <Typography>
@@ -341,7 +423,7 @@ const TrainerRequest = () => {
                         {selectedOrder === "Fonction" ? (orderState === "Up" ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />) : null}
                     </Button>
                     <Button
-                        sx={{...orderStyle, width: '20%'}}
+                        sx={{...orderStyle, width: '16%'}}
                         onClick={() => handleChangeOrder("Activity")}
                     >
                         <Typography>
@@ -350,7 +432,7 @@ const TrainerRequest = () => {
                         {selectedOrder === "Activity" ? (orderState === "Up" ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />) : null}
                     </Button>
                     <Button
-                        sx={{...orderStyle, width: '20%'}}
+                        sx={{...orderStyle, width: '16%'}}
                         onClick={() => handleChangeOrder("DateEmbauche")}
                     >
                         <Typography>
@@ -358,31 +440,22 @@ const TrainerRequest = () => {
                         </Typography>
                         {selectedOrder === "DateEmbauche" ? (orderState === "Up" ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />) : null}
                     </Button>
-                    <Button
-                        sx={{...orderStyle, width: '20%'}}
-                        onClick={() => handleChangeOrder("createdAt")}
-                    >
-                        <Typography>
-                            {t("date")}
-                        </Typography>
-                        {selectedOrder === "createdAt" ? (orderState === "Up" ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />) : null}
-                    </Button>
                 </Box>
-                {forms.map((form) => (
+                {filteredForms.map((form) => (
                     <Box
                         key={form._id}
                         sx={{
                             width: '100%',
                             display: 'flex',
                             flexDirection: 'column',
-                            justifyContent: 'space-between',
+                            justifyContent: 'start',
                             alignItems: 'center',
-                            gap: '20px',
-                            backgroundColor: "button.tertiary",
-                            paddingTop: '20px',
-                            borderRadius: '5px',
+                            gap: '10px',
+                            backgroundColor: "background.paper",
+                            boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.25)",
+                            borderRadius: '10px',
                             cursor: 'pointer',
-                            maxHeight: form.showDetails ? '2000px' : '80px', 
+                            maxHeight: form.showDetails ? '3000px' : '70px', 
                             transition: "all 0.3s ease-in-out",
                         }}
                     >
@@ -391,14 +464,15 @@ const TrainerRequest = () => {
                                 width: '100%',
                                 display: 'flex',
                                 flexDirection: 'row',
-                                justifyContent: 'center',
+                                justifyContent: 'start',
                                 alignItems: 'center',
-                                gap: '5px',
+                                gap: '10px',
+                                minHeight: '70px',
                             }}
                         >
                             <Typography
                                 sx={{
-                                    width:"20%",
+                                    width:"16%",
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
@@ -408,7 +482,17 @@ const TrainerRequest = () => {
                             </Typography>
                             <Typography
                                 sx={{
-                                    width:"20%",
+                                    width:"16%",
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                }}
+                            >
+                                {form.matricule}
+                            </Typography>
+                            <Typography
+                                sx={{
+                                    width:"16%",
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
@@ -418,7 +502,7 @@ const TrainerRequest = () => {
                             </Typography>
                             <Typography
                                 sx={{
-                                    width:"20%",
+                                    width:"16%",
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
@@ -428,7 +512,7 @@ const TrainerRequest = () => {
                             </Typography>
                             <Typography
                                 sx={{
-                                    width:"20%",
+                                    width:"16%",
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
@@ -436,7 +520,7 @@ const TrainerRequest = () => {
                             >
                                 {dayjs(form.dateOfHire).format('YYYY-MM-DD')}
                             </Typography>
-                            <Box sx={{width:'20%', paddingRight: "20px",display:"flex", flexDirection:"row", justifyContent:"end"}}>
+                            <Box sx={{width:'16%', paddingRight: "20px",display:"flex", flexDirection:"row", justifyContent:"end"}}>
                                 <Tooltip title={t("add_training")} arrow> 
                                     <IconButton sx={{color:"#76C5E1"}} onClick={() => {showNewTrainingForm(form._id);
                                         showDetails(form._id);
@@ -444,7 +528,7 @@ const TrainerRequest = () => {
                                         <AddIcon/>
                                     </IconButton>
                                 </Tooltip>
-                                <Tooltip title={t("reject")} arrow>
+                                <Tooltip title={t("delete")} arrow>
                                     <IconButton sx={{color:"#EA9696"}} onClick={() => showVerifyRejectDialog(form._id)}>
                                         <CloseIcon/>
                                     </IconButton>
@@ -598,16 +682,15 @@ const TrainerRequest = () => {
                                         {form.motivation}
                                     </Typography>
                                 </Box>
-                            </Box>
-                            
+                            </Box>          
                             <Box
                                 sx={{
                                     opacity: newTraining ? 1 : 0,
-                                    maxHeight: newTraining ? "auto" : "0px",
-                                    transition: "all 0.5s ease-in-out",
-                                    overflow: "hidden",
-                                    pointerEvents: newTraining ? "auto" : "none",
-                                    width: newTraining ? "50%" : "0px",  
+                                    maxHeight: newTraining ? "3000px" : "0px", 
+                                    transition: "all 0.3s ease", 
+                                    overflow: "hidden", 
+                                    pointerEvents: newTraining ? "auto" : "none", 
+                                    width: newTraining ? "50%" : "0px", 
                                     display: "flex",
                                     flexDirection: "column",
                                     justifyContent: "start",
@@ -1290,6 +1373,11 @@ const TrainerRequest = () => {
                     </Box>
                 </Dialog>
             </Box>
+            <Snackbar open={showsVerificationAlert} autoHideDuration={3000} onClose={handleVerificationAlertClose}>
+                <Alert onClose={handleVerificationAlertClose} severity={verifyAlert} variant="filled">
+                    {t(verifyAlertMessage)}
+                </Alert>
+            </Snackbar>
         </Box>
     );
 };

@@ -134,19 +134,36 @@ const TraineeSession = () => {
         });
     };
     
-    
-    
-    //show training enroll form
-    const [enrollForm, setEnrollForm] = useState(false);
+    // Register in training
 
-    const showEnrollForm = (trainingId) => {
-        setEnrollForm(true);
+    const [registerForm, setRegisterForm] = useState(false);
+
+    const showRegisterForm = (trainingId) => {
+        setRegisterForm(true);
         setSelectedTrainingId(trainingId);
     };
 
-    const hideEnrollForm = () => {
-        setEnrollForm(false);
+    const hideRegisterForm = () => {
+        setRegisterForm(false);
     };
+
+    const registerInTraining = (trainingId) => {
+        const reqData = {trainee : user._id, date: time};
+        console.log(reqData);
+        axios.put(`http://localhost:5000/api/trainings/register/${trainingId}`, reqData)
+            .then((response) => {
+                setShowsVerifificationAlert(true);
+                setVerifyAlertMessage("registration_successful");
+                setVerifyAlert("success");
+                hideRegisterForm();
+            })
+            .catch((error) => {
+                setShowsVerifificationAlert(true);
+                setVerifyAlertMessage(error.response.data.error);
+                setVerifyAlert("error");
+            });
+    };
+    
 
     // show training details by Id............
     const [showTraining, setShowTraining] = useState(false);
@@ -722,6 +739,26 @@ const TraineeSession = () => {
                             </MenuItem>
                         ))}
                     </TextField>
+                    <TextField
+                        select
+                        label={t("trainer")}
+                        value={selectedTrainer}
+                        onChange={(e) => setSelectedTrainer(e.target.value)}
+                        sx={{
+                            width: '15%'
+                        }}
+                        SelectProps={{
+                            MenuProps: {
+                                disableScrollLock: true, 
+                            }
+                        }}
+                        >
+                        {FilterTrainer.map((trainer) => (
+                            <MenuItem key={trainer.id} value={trainer.id}>
+                                {t(trainer.name)}
+                            </MenuItem>
+                        ))}
+                    </TextField>
                 </Box>
                 <Box
                     sx={{
@@ -827,7 +864,8 @@ const TraineeSession = () => {
                             justifyContent: "start",
                             alignItems: 'center',
                             boxSizing: 'border-box',
-                            backgroundColor: "button.tertiary",
+                            backgroundColor: "background.paper",
+                            boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.25)",
                             borderRadius: "10px",
                             paddingTop: "10px",
                             paddingBottom: "10px",
@@ -974,7 +1012,7 @@ const TraineeSession = () => {
                                 </IconButton>
                             </Tooltip>
                             <Tooltip title={t("register")} arrow> 
-                                <IconButton sx={{color:"#76C5E1"}} >
+                                <IconButton sx={{color:"#76C5E1"}} onClick={() => showRegisterForm(training._id)}>
                                     <AppRegistrationIcon/>
                                 </IconButton>
                             </Tooltip>
@@ -1362,15 +1400,34 @@ const TraineeSession = () => {
                 onClick={hideTrainingDetails}>
                     {t("close")}
                 </Button>
+                <Button sx={{
+                    color: 'white',
+                    backgroundColor: '#2CA8D5',
+                    padding: '5px 10px',
+                    borderRadius: '10px',
+                    textDecoration: 'none',
+                    fontWeight: 'bold',
+                    width: '100px',
+                    height: '40px',
+                    marginTop: '10px',
+                    textTransform: "none",
+                    '&:hover': {
+                        backgroundColor: '#76C5E1',
+                        color: 'white',
+                    },
+                }} 
+                onClick={() => showRegisterForm(selectedTrainingId)}
+                >
+                    {t("register")}
+                </Button>
                 </Box> 
             </Dialog>
             <Dialog
-                open={enrollForm}
+                open={registerForm}
                 disableScrollLock={true}
-                onClose={hideEnrollForm}
+                onClose={hideRegisterForm}
                 PaperProps={{
-                    sx: {
-                        minWidth: "50%",  
+                    sx: { 
                         height: "auto", 
                         display: "flex",
                         flexDirection: "column",
@@ -1387,7 +1444,56 @@ const TraineeSession = () => {
                 }}
             >
                 <DialogTitle>{t("enroll_in_this_training")}</DialogTitle>
-
+                <Box 
+                    sx={{
+                        width: '100%',
+                        display: 'flex',
+                        flexDirection: 'row',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        gap: '20px',
+                    }}
+                >
+                <Button sx={{
+                    color: 'white',
+                    backgroundColor: '#EA9696',
+                    padding: '5px 10px',
+                    borderRadius: '10px',
+                    textDecoration: 'none',
+                    fontWeight: 'bold',
+                    width: '100px',
+                    height: '40px',
+                    marginTop: '10px',
+                    textTransform: "none",
+                    '&:hover': {
+                        backgroundColor: '#EAB8B8',
+                        color: 'white',
+                    },
+                }} 
+                onClick={hideRegisterForm}>
+                    {t("no")}
+                </Button>
+                <Button sx={{
+                    color: 'white',
+                    backgroundColor: '#2CA8D5',
+                    padding: '5px 10px',
+                    borderRadius: '10px',
+                    textDecoration: 'none',
+                    fontWeight: 'bold',
+                    width: '100px',
+                    height: '40px',
+                    marginTop: '10px',
+                    textTransform: "none",
+                    '&:hover': {
+                        backgroundColor: '#76C5E1',
+                        color: 'white',
+                    },
+                }} 
+                onClick={() => registerInTraining(selectedTrainingId)}
+                >
+                    {t("yes")}
+                </Button>
+                </Box> 
             </Dialog>
             <Pagination
                 count={pageCount}
