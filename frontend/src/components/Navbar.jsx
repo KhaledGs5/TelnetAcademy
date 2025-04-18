@@ -4,7 +4,7 @@ import { useContext } from 'react';
 import { ThemeContext } from '../themecontext';
 import { getCookie , setCookie} from './Cookies';
 import { Box, Link, Typography, Menu, MenuItem, Dialog, Button, DialogTitle, Badge, Snackbar, Alert,
-    OutlinedInput,InputLabel,FormControl
+    OutlinedInput,InputLabel,FormControl,Tooltip,IconButton
 } from "@mui/material";
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -14,12 +14,18 @@ import ChangeCircleIcon from '@mui/icons-material/ChangeCircle';
 import GroupAddIcon from '@mui/icons-material/GroupAdd';
 import PersonIcon from '@mui/icons-material/Person';
 import EditIcon from '@mui/icons-material/Edit';
+import AddchartIcon from '@mui/icons-material/Addchart';
+import FeedbackIcon from '@mui/icons-material/Feedback';
+import ChecklistIcon from '@mui/icons-material/Checklist';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import LogoutIcon from '@mui/icons-material/Logout';
+import AddIcon from '@mui/icons-material/Add';
+import CloseIcon from '@mui/icons-material/Close';
 import LanguageIcon from '@mui/icons-material/Language';
 import axios from 'axios';
+import { useNavbar } from '../NavbarContext';
 import io from "socket.io-client";
 import { useLanguage } from "../languagecontext";
 
@@ -67,7 +73,6 @@ const Navbar = () => {
         window.location.href = role === "trainee" ? '/traineesession' : '/trainersession';
     };
     const chosenRole = getCookie("Role") || "trainer";
-    console.log(chosenRole);
 
     const toggleLanguage = () => {
         const newLanguage = choosedLanguage === "en" ? "fr" : "en";
@@ -84,28 +89,91 @@ const Navbar = () => {
         navigate("/dashboard");
     };
 
-    const handleLogout = () => {
-        setSignedIn(false);
-        setCookie("SignedIn",false,5);
-        window.location.href = "/";
-    };
-
     const user = getCookie("User") ?? null;
 
 
     const location = useLocation();
 
-    // Call For Trainers
+    // Notfications
     const socket = io("http://localhost:5000"); 
-    const [numberOfCalls, setNumberOfCalls] = useState(0);
     const [callMessage, setCallMessage] = useState("");
-    const [numberOfRequests, setNumberOfRequests] = useState(0);
+    const [numberOfCalls, setNumberOfCalls] = useState(0);
+    const {numberOfTrainingsStatus, setNumberOfTrainingsStatus} = useNavbar();
+    const {numberOfTrainingRequests, setNumberOfTrainingRequests} = useNavbar();
+    const {numberOfTraineeRequests, setNumberOfTraineeRequests} = useNavbar();
+    const [numberOfConfirmAttendance, setNumberOfConfirmAttendance] = useState(0);
+    const [confirmedTrainees, setConfirmedTrainees] = useState([]);
+    const [numberOfRoleChanged, setNumberOfRoleChanged] = useState(0);
+    const {numberOfDeletedTrainee, setNumberOfDeletedTrainee} = useNavbar();
+    const {numberOfRequestsReponses, setNumberOfRequestsReponses} = useNavbar();
+    const { numberOfNewFeedbacks, setNumberOfNewFeedbacks } = useNavbar();
+    const { numberOfNewFeedbacksReq ,setNumberOfNewFeedbacksReq } = useNavbar();
+    const [numberOfRequestRoleTrainee, setNumberOfRequestRoleTrainee] = useState(0);
+    const [listOfRequests, setListOfRequests] = useState([]);
+    const {numberOfQuizFromTrainer, setNumberOfQuizFromTrainer}= useNavbar();
+    const {numberOfQuizFromTrainee, setNumberOfQuizFromTrainee}= useNavbar();
 
     const fetchNotifications = async () => {
         try {
-            const response = await axios.get(`http://localhost:5000/api/users/notif/${user._id}`);
-            if(user.role !== "manager")setNumberOfCalls(response.data.count);
-            setNumberOfRequests(response.data.count);
+            const response = await axios.post("http://localhost:5000/api/notifications/noread", {rec : user._id });
+            const callForTrainersNotif = response.data.notifications.filter(notification => notification.type === "Call_For_Trainers");
+            const confirmAttendanceNotfi = response.data.notifications.filter(notification => notification.type === "Trainee_Confirmed_Attendance");
+            const trainingRequestNotif = response.data.notifications.filter(notification => notification.type === "New_Training_Request");
+            const trainingStatusNotif = response.data.notifications.filter(notification => notification.type === "New_Training_Status");
+            const traineeRequestNotif = response.data.notifications.filter(notification => notification.type === "New_Trainee_Request");
+            const feedbackNotif = response.data.notifications.filter(notification => notification.type === "New_Feedback");
+            const roleChangeNotif = response.data.notifications.filter(notification => notification.type === "Role_Changed");
+            const deletedTraineeNotif = response.data.notifications.filter(notification => notification.type === "Deleted_Trainee_From_Training");
+            const requestTraineeRole = response.data.notifications.filter(notification => notification.type === "Request_Become_Trainee");
+            const quizFromTrainer = response.data.notifications.filter(notification => notification.type === "Quiz_Uploaded_From_Trainer");
+            const quizFromTrainee = response.data.notifications.filter(notification => notification.type === "Quiz_Uploaded_From_Trainee");
+            const requestResponseNotif = response.data.notifications.filter(notification => notification.type === "Request_Accepted" || notification.type === "Request_Rejected");
+            const feedbackReqNotif = response.data.notifications.filter(notification => notification.type === "Request_Cold_Feedback" || notification.type === "Request_Hot_Feedback");
+            setNumberOfCalls(callForTrainersNotif.length);
+            setNumberOfConfirmAttendance(confirmAttendanceNotfi.length);
+            setNumberOfTrainingRequests(trainingRequestNotif.length);
+            setNumberOfTraineeRequests(traineeRequestNotif.length);
+            setNumberOfNewFeedbacks(feedbackNotif.length);
+            setNumberOfNewFeedbacksReq(feedbackReqNotif.length);
+            setNumberOfTrainingsStatus(trainingStatusNotif.length);
+            setNumberOfRoleChanged(roleChangeNotif.length);
+            setNumberOfRequestsReponses(requestResponseNotif.length);
+            setNumberOfDeletedTrainee(deletedTraineeNotif.length);
+            setNumberOfRequestRoleTrainee(requestTraineeRole.length);
+            setNumberOfQuizFromTrainee(quizFromTrainee.length);
+            setNumberOfQuizFromTrainer(quizFromTrainer.length);
+
+            const availableAttendanceConfirmations = await axios.post("http://localhost:5000/api/notifications/withtype", {rec : user._id, tp : "Trainee_Confirmed_Attendance"});
+            availableAttendanceConfirmations.data.notifications.forEach(notification => {
+                axios.get(`http://localhost:5000/api/users/${notification.sender}`)
+                    .then(response => {
+                        const trainee = response.data;
+                        trainee.new = !notification.isRead;
+                        axios.get(`http://localhost:5000/api/trainings/${notification.message}`)
+                            .then(response => {
+                                const training = response.data;
+                                trainee.trainingTitle = training.title;
+                                setConfirmedTrainees((prevConfirmedTrainees) => [...prevConfirmedTrainees, trainee]);
+                            })
+                    })
+                    .catch(error => {
+                        console.error("Error fetching trainee", error);
+                    });
+            });
+            setListOfRequests([]);
+            const availableRequests = await axios.post("http://localhost:5000/api/notifications/withtype", {rec : user._id, tp : "Request_Become_Trainee"});
+            availableRequests.data.notifications.forEach(notification => {
+                axios.get(`http://localhost:5000/api/users/${notification.sender}`)
+                    .then(response => {
+                        const trainer = response.data;
+                        trainer.new = !notification.isRead;
+                        trainer.message = notification.message;
+                        setListOfRequests((prevListOfRequests) => [...prevListOfRequests, trainer]);
+                    })
+                    .catch(error => {
+                        console.error("Error fetching trainee", error);
+                    });
+            });
         } catch (error) {
             console.error("Error fetching notifications", error);
         }
@@ -143,25 +211,91 @@ const Navbar = () => {
             fetchNotifications();
         });
     
-        socket.on("readNotifications", () => {
+        socket.on("readCallNotifications", () => {
             setNumberOfCalls(0);
         });
     
+        socket.on("readTrainingRequestNotifications", () => {
+            setNumberOfTrainingRequests(0);
+        });
+
+        socket.on("readTraineeRequestNotifications", () => {
+            setNumberOfTraineeRequests(0);
+        });
+
+
+        socket.on("readConfirmNotifications", () => {
+            setNumberOfConfirmAttendance(0);
+        });
+
+        socket.on("readFeedbackNotifications", () => {
+            setNumberOfNewFeedbacks(0);
+        });
+
+        socket.on("readFeedbackReqNotifications", () => {
+            setNumberOfNewFeedbacksReq(0);
+        });
+
+        socket.on("readTrainingsStatusNotifications", () => {
+            setNumberOfTrainingsStatus(0);
+        });
+
+        socket.on("readRequestsResponsesNotifications", () => {
+            setNumberOfTrainingsStatus(0);
+        });
+
+        socket.on("readRequestTraineeNotifications", () => {
+            setNumberOfRequestRoleTrainee(0);
+        });
+
+        socket.on("readTrainerQuizNotifications", () => {
+            setNumberOfQuizFromTrainer(0);
+        });
+
         return () => {
             socket.off("newNotification");
             socket.off("readNotifications");
         };
     }, []);
     
-    const handleOpenNotifications = async () => {
+    const handleOpenCallNotifications = async () => {
         try {
-          await axios.put(`http://localhost:5000/api/users/notif/${user._id}`);
+          await axios.put("http://localhost:5000/api/notifications/markread", {rec : user._id, tp : "Call_For_Trainers", rtp : "readCallNotifications"});
           setNumberOfCalls(0); 
         } catch (error) {
           console.error("Error marking notifications as read", error);
         }
     };
-    
+
+    const handleOpenFeedbackNotification = async () => {
+        try {
+          await axios.delete("http://localhost:5000/api/notifications", { data : {rec : user._id, tp : "New_Feedback"}});
+          setNumberOfNewFeedbacks(0);
+        } catch (error) {
+          console.error("Error marking notifications as read", error);
+        }
+    };
+
+
+    const [showListOfConfirmedTrainees, setShowListOfConfirmedTrainees] = useState(false);
+
+    const openListOfConfirmedTrainees = () => {
+        setShowListOfConfirmedTrainees(true);
+    };
+
+    const closeListOfConfirmedTrainees = () => {
+        setShowListOfConfirmedTrainees(false);
+        handleOpenConfirmAttendanceNotifications();
+    }
+
+    const handleOpenConfirmAttendanceNotifications = async () => {
+        try {
+          await axios.put("http://localhost:5000/api/notifications/markread", {rec : user._id, tp : "Trainee_Confirmed_Attendance", rtp : "readConfirmNotifications"});
+          setNumberOfConfirmAttendance(0);
+        } catch (error) {
+          console.error("Error marking notifications as read", error);
+        }
+    };
 
     const [verifyCallForTrainers, setVerifyCallForTrainers] = useState(false);
 
@@ -175,8 +309,10 @@ const Navbar = () => {
 
     const sendCallForTrainers = async () => {
         try {
-            const response = await axios.post("http://localhost:5000/api/callnotification", {
-                message: callMessage,
+            const response = await axios.post("http://localhost:5000/api/users/callfortrainers", {
+                sen: user._id,
+                tp:"Call_For_Trainers",
+                msg:callMessage,
             });
     
             if (response.data.success) {
@@ -190,11 +326,113 @@ const Navbar = () => {
                     toEmail : trainersEmails,
                     message: callMessage,
                 });
-    
             }
         } catch (error) {
             console.error("Error sending call for trainers:", error);
         }
+    };
+
+    //Became Trainee
+
+    const [becomeTraineeConfirm, setBecomeTraineeConfirm] = useState(false);
+    const [becomeTraineeMessage, setBecomeTraineeMessage] = useState("");
+    const [showListOfRequests, setShowListOfRequests] = useState(false);
+
+    const openListOfRequests = () => {
+        setShowListOfRequests(true);
+    };
+
+    const closeListOfRequests = async () => {
+        setShowListOfRequests(false);
+        try {
+            await axios.put("http://localhost:5000/api/notifications/markread", {rec : user._id, tp : "Request_Become_Trainee", rtp : "readRequestTraineeNotifications"});
+            setNumberOfRequestRoleTrainee(0);
+          } catch (error) {
+            console.error("Error marking notifications as read", error);
+          }
+    };
+
+    const deleteRequestToBecomeTrainee = async (userId) => {
+        await axios.delete("http://localhost:5000/api/notifications", {
+            data: {
+              rec : user._id,
+              sen : userId,
+              tp : "Request_Become_Trainee",
+            }
+        }).then(() => {
+            fetchNotifications();
+        })
+    }
+
+    const notifyRoleChangeToTrainee = async (userId) => {
+        try {
+            await axios.post("http://localhost:5000/api/notifications/rolechange", {rec: userId, sen:user._id,tp:"Role_Changed", msg:"your_role_updated_to_trainee_trainer" });
+        } catch (error) {
+            console.error("Error sending request:", error);
+        }
+    }
+
+    const handleAddTrainee = async (userId) => {
+        try {
+            console.log("User ID:", userId);
+            await axios.put(`http://localhost:5000/api/users/${userId}`, {role : "trainee_trainer"});
+            setVerifyAlert("success");
+            setVerifyAlertMessage("request_accepted");
+            setShowsVerifificationAlert(true);
+        } catch (error) {
+            console.error("Error sending request:", error);
+        }
+    }
+
+    const openBecomeTraineeConfrim = () => {
+        setBecomeTraineeConfirm(true);
+    }
+
+    const closeBecomeTraineeConfirm = () => {
+        setBecomeTraineeConfirm(false);
+    }
+
+    const handleBecomeTrainee = async () => {
+        try {
+            const response = await axios.post("http://localhost:5000/api/notifications/rolechange/managers", {
+                sen: user._id,
+                tp: "Request_Become_Trainee",
+                msg: becomeTraineeMessage
+            });
+            if (response.data.success) {
+                closeBecomeTraineeConfirm();
+                setVerifyAlert("success");
+                setVerifyAlertMessage("Request sent successfully!");
+                setShowsVerifificationAlert(true);
+            }
+        } catch (error) {
+            console.error("Error sending request:", error);
+            setVerifyAlert("error");
+            setVerifyAlertMessage("Failed to send request!");
+            setShowsVerifificationAlert(true);
+        }
+    };
+
+
+    // Logout
+
+
+    const handleLogout = async() => {
+        try {
+            await axios.delete("http://localhost:5000/api/notifications", {
+            data: {
+                rec: user._id,
+                tp: "Role_Changed"
+              }})
+                .then(() => {
+                    setNumberOfRoleChanged(0);
+                    setSignedIn(false);
+                    setCookie("SignedIn",false,5);
+                    window.location.href = "/";
+                })
+          } catch (error) {
+            console.error("Error marking notifications as read", error);
+          }
     };
     
 
@@ -296,11 +534,25 @@ const Navbar = () => {
                 }}
             >
                 <Link href="/dashboard" sx={linkStyle('/dashboard')}>{t("dashboard")}</Link>
+                <Badge badgeContent={numberOfQuizFromTrainee} color="primary"
+                    sx={{ 
+                    "& .MuiBadge-badge": { 
+                        fontSize: "10px", 
+                        height: "16px", 
+                        minWidth: "16px", 
+                        padding: "2px",
+                        position: "absolute",
+                        right: "10px",
+                    } 
+                    }}
+                >
                 <Link href={(user.role === "trainer" || user.role === "trainee_trainer" && chosenRole === "trainer") ? '/trainersession' : (user.role === "trainee" || user.role === "trainee_trainer" && chosenRole === "trainee") ? '/traineesession' : user.role === 'manager' ? '/managesessions' : ''} 
                 sx={linkStyle((user.role === "trainer" || user.role === "trainee_trainer"&& chosenRole === "trainer") ? '/trainersession' : (user.role === "trainee" || user.role === "trainee_trainer" && chosenRole === "trainee") ? '/traineesession' : user.role === 'manager' ? '/managesessions' : '')}>{t("sessions")}</Link>
+                </Badge>
                 {user.role === "manager" ? <Link href="/managetrainings" sx={linkStyle('/managetrainings')}>{t("trainings")}</Link>:null}
-                {!(user.role) ?  <Link href="/manageusers" sx={linkStyle('/manageusers')}>{t("users")}</Link> : (user.role === "manager")? 
-                <Badge badgeContent={numberOfRequests} color="primary"
+                {!(user.role) ?  <Link href="/manageusers" sx={linkStyle('/manageusers')}>{t("users")}</Link> : 
+                (user.role === "manager")? 
+                <Badge badgeContent={numberOfTrainingRequests + numberOfTraineeRequests} color="primary"
                 sx={{ 
                     "& .MuiBadge-badge": { 
                     fontSize: "10px", 
@@ -311,10 +563,44 @@ const Navbar = () => {
                     right: "10px",
                     } 
                 }}
-                > <Link href="/requests" sx={linkStyle('/requests')}>{t("requests")}</Link>
+                >
+                <Link
+                    href="/requests"
+                    sx={linkStyle('/requests')}
+                >
+                    {t("requests")}
+                </Link>
                 </Badge> : (user.role === "trainer" || user.role === "trainee_trainer" && chosenRole === "trainer")?
-                             <Link href="/trainertraining" sx={linkStyle('/trainertraining')}>{t("trainings")}</Link> :
-                             <Link href="/enrolledtrainee" sx={linkStyle('/enrolledtrainee')}>{t("enrolled")}</Link>  }
+                            <Badge badgeContent={numberOfTrainingsStatus} color="primary"
+                                sx={{ 
+                                "& .MuiBadge-badge": { 
+                                    fontSize: "10px", 
+                                    height: "16px", 
+                                    minWidth: "16px", 
+                                    padding: "2px",
+                                    position: "absolute",
+                                    right: "10px",
+                                } 
+                                }}
+                            >
+                                <Link href="/trainertraining" sx={linkStyle('/trainertraining')}
+                                >{t("trainings")}</Link>
+                            </Badge>
+                              :
+                             <Badge badgeContent={numberOfNewFeedbacksReq+numberOfRequestsReponses+numberOfDeletedTrainee+numberOfQuizFromTrainer} color="primary"
+                             sx={{ 
+                                 "& .MuiBadge-badge": { 
+                                 fontSize: "10px", 
+                                 height: "16px", 
+                                 minWidth: "16px", 
+                                 padding: "2px",
+                                 position: "absolute",
+                                 right: "10px",
+                                 } 
+                             }}
+                             >
+                             <Link href="/enrolledtrainee" sx={linkStyle('/enrolledtrainee')}
+                             >{t("trainings")}</Link></Badge> }
                 <Link href="/calendar" sx={linkStyle('/calendar')}>{t("calendar")}</Link>
                 <Link href="/contact" sx={linkStyle('/contact')}>{t("contact")}</Link>
                 <Link href="/about" sx={linkStyle('/about')}>{t("about")}</Link>
@@ -429,7 +715,7 @@ const Navbar = () => {
                     handleOpenMenu();
                 }}              
                 >
-                    <Badge badgeContent={numberOfCalls} color="primary"
+                    <Badge badgeContent={numberOfCalls+numberOfConfirmAttendance+numberOfNewFeedbacks+numberOfRoleChanged+numberOfRequestRoleTrainee} color="primary"
                       sx={{ 
                         "& .MuiBadge-badge": { 
                           fontSize: "10px", 
@@ -493,7 +779,7 @@ const Navbar = () => {
                     </Menu>
                     {(user.role !== "manager") ? 
                     <MenuItem onClick={() => {
-                        handleOpenNotifications();
+                        handleOpenCallNotifications();
                         window.location.href = "/trainercall";}}
                     sx={menuStyle("/trainercall")}>
                     <Badge badgeContent={numberOfCalls} color="primary"
@@ -512,8 +798,80 @@ const Navbar = () => {
                     {t("training_calls")}
                     </MenuItem>
                     : null}
-                    {user.role === "trainee" ? <MenuItem onClick={() => window.location.href = "/becametrainer"} sx={menuStyle("/becametrainer")}><PersonIcon sx={{marginRight:'10px'}}/>{t("became_trainer")}</MenuItem> : null}
+                    {user.role === "trainee" ? <MenuItem onClick={() => window.location.href = "/becometrainer"} sx={menuStyle("/becometrainer")}><PersonIcon sx={{marginRight:'10px'}}/>{t("become_trainer")}</MenuItem> : null}
+                    {user.role === "trainer" ? <MenuItem onClick={() => openBecomeTraineeConfrim()} sx={menuStyle("/becometrainee")}><PersonIcon sx={{marginRight:'10px'}}/>{t("become_trainee")}</MenuItem> : null}
+                    {user.role === "manager" ? <MenuItem  sx={menuStyle("/req")} onClick={() => openListOfRequests()}>
+                    <Badge
+                            badgeContent={numberOfRequestRoleTrainee}
+                            color="primary"
+                            sx={{
+                                "& .MuiBadge-badge": {
+                                fontSize: "10px",
+                                height: "16px",
+                                minWidth: "16px",
+                                padding: "2px",
+                                position: "absolute",
+                                right: "10px",
+                                },
+                            }}
+                            >
+                    <PersonIcon sx={{marginRight:'10px'}}/>
+                    </Badge>{t("requests")}</MenuItem> : null}
+                    {user.role === 'manager' ? <MenuItem  sx={menuStyle("/callfortraining")}><AddchartIcon sx={{marginRight:'10px'}}/>{t("call_for_training")}</MenuItem> : null}
                     {user.role === 'manager' ? <MenuItem onClick={() => openCallForTrainers()} sx={menuStyle("/callfortrainers")}><GroupAddIcon sx={{marginRight:'10px'}}/>{t("call_for_trainers")}</MenuItem> : null}
+                    {user.role === 'manager' && (
+                    <Box sx={{ width: "100%" }}>
+
+                        <MenuItem onClick={openListOfConfirmedTrainees} sx={menuStyle("/")}>
+                            <Badge
+                            badgeContent={numberOfConfirmAttendance}
+                            color="primary"
+                            sx={{
+                                "& .MuiBadge-badge": {
+                                fontSize: "10px",
+                                height: "16px",
+                                minWidth: "16px",
+                                padding: "2px",
+                                position: "absolute",
+                                right: "10px",
+                                },
+                            }}
+                            >
+                            <ChecklistIcon sx={{ marginRight: '10px' }} />
+                            </Badge>
+                            {t("new_trainee_confirm")}
+                        </MenuItem>
+                        
+                    </Box>
+                    )}
+                    {user.role === 'manager' && (
+                    <Box sx={{ width: "100%" }}>
+                        <MenuItem sx={menuStyle("/")}
+                            onClick={() => {
+                                handleOpenFeedbackNotification();
+                                window.location.href = "/managetrainings";
+                            }}
+                        >
+                            <Badge
+                            badgeContent={numberOfNewFeedbacks}
+                            color="primary"
+                            sx={{
+                                "& .MuiBadge-badge": {
+                                fontSize: "10px",
+                                height: "16px",
+                                minWidth: "16px",
+                                padding: "2px",
+                                position: "absolute",
+                                right: "10px",
+                                },
+                            }}
+                            >
+                            <FeedbackIcon sx={{ marginRight: '10px' }} />
+                            </Badge>
+                            {t("new_feedback")}
+                        </MenuItem>
+                    </Box>
+                    )}
                     <MenuItem sx={menuStyle("")} onClick={toggleTheme}  onMouseEnter={handleCloseSubmenu}>
                         {darkMode ? <Brightness7Icon sx={{marginRight:'10px'}}/> : <Brightness4Icon sx={{marginRight:'10px'}}/>}
                         {darkMode? t("light_mode") : t("dark_mode")}
@@ -523,7 +881,27 @@ const Navbar = () => {
                         {choosedLanguage === "en" ? t("french") : t("english")}
                     </MenuItem>
                     <MenuItem onClick={() => window.location.href = "/account"} sx={menuStyle("/account")} onMouseEnter={handleCloseSubmenu}><EditIcon sx={{marginRight:'10px'}}/>{t("profile")}</MenuItem>
-                    <MenuItem onClick={handleLogout} sx={menuStyle("/logout")} onMouseEnter={handleCloseSubmenu}><LogoutIcon sx={{marginRight:'10px'}}/>{t("logout")}</MenuItem>
+                    <Tooltip title={t("your_role_updated_to_trainee_trainer")} arrow disableHoverListener={!numberOfRoleChanged}>
+                    <MenuItem onClick={handleLogout} sx={menuStyle("/logout")} onMouseEnter={handleCloseSubmenu}>
+                        <Badge
+                        badgeContent={numberOfRoleChanged}
+                        color="primary"
+                        sx={{ 
+                            "& .MuiBadge-badge": { 
+                            fontSize: "10px", 
+                            height: "16px", 
+                            minWidth: "16px", 
+                            padding: "2px",
+                            position: "absolute",
+                            right: "10px",
+                            } 
+                        }}
+                        >
+                        <LogoutIcon sx={{ marginRight: '10px' }} />
+                        </Badge>
+                        {t("logout")}
+                    </MenuItem>
+                    </Tooltip>
                 </Menu>
             </Box> : null}
             <Dialog
@@ -532,7 +910,7 @@ const Navbar = () => {
                 onClose={closeCallForTrainers}
                 PaperProps={{
                     sx: {
-                        width: "auto",  
+                        minWidth: "35%",  
                         height: "auto", 
                         display: "flex",
                         flexDirection: "column",
@@ -554,18 +932,25 @@ const Navbar = () => {
                         gap: '20px',
                     }}
                 >
-                    <FormControl variant="outlined" sx={{ 
-                            width: '100%',
-                        }}
-                    >
-                        <InputLabel required>{t("message")}</InputLabel>
-                        <OutlinedInput
-                            multiline
-                            value={callMessage}
-                            onChange={(e) => setCallMessage(e.target.value)}
-                            label="Message ................"
-                        />
-                    </FormControl>
+                <FormControl
+                variant="outlined"
+                sx={{
+                    width: '100%',
+                }}
+                >
+                <InputLabel required>{t("message")}</InputLabel>
+                <OutlinedInput
+                    multiline
+                    minRows={8}
+                    value={callMessage}
+                    onChange={(e) => setCallMessage(e.target.value)}
+                    label={t("message")}
+                    sx={{
+                    height: '200px',
+                    alignItems: 'flex-start'
+                    }}
+                />
+                </FormControl>
                     <Box 
                         sx={{
                             width: '100%',
@@ -615,6 +1000,303 @@ const Navbar = () => {
                             {t("yes")}
                         </Button>
                     </Box>
+                </Box>
+            </Dialog>
+            <Dialog
+                open={showListOfConfirmedTrainees}
+                disableScrollLock={true}
+                onClose={closeListOfConfirmedTrainees}
+                PaperProps={{
+                    sx: {
+                        minWidth: "50%",  
+                        height: "auto", 
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        borderRadius: "10px",
+                        padding: '20px',
+                        gap: "10px",
+                    }
+                }}
+            >
+                <DialogTitle>{t("trainees_confirmed")}</DialogTitle>
+                {[...confirmedTrainees]
+                .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+                .map((trainee) => (
+                    <Box
+                    key={trainee._id}
+                    sx={{
+                        width: "100%",
+                        backgroundColor: "background.paper",
+                        boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.25)",
+                        display: "flex",
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        borderRadius: "10px",
+                        gap: "10px",
+                        padding: "10px",
+                    }}
+                    >
+                    <Typography
+                    >{t("name")} : {trainee.name}</Typography>
+                    <Typography
+                    >{t("email")} : {trainee.email}</Typography>
+                    <Typography
+                    >{t("training")} : {trainee.trainingTitle}</Typography>
+                    {trainee.new ? <Badge color="primary" variant="dot" /> : null}
+                    </Box>
+                ))}
+                <Box 
+                    sx={{
+                        width: '100%',
+                        display: 'flex',
+                        flexDirection: 'row',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        gap: '20px',
+                    }}
+                >
+                    <Button sx={{
+                        color: 'white',
+                        backgroundColor: '#2CA8D5',
+                        padding: '5px 10px',
+                        borderRadius: '10px',
+                        textDecoration: 'none',
+                        fontWeight: 'bold',
+                        width: '100px',
+                        height: '40px',
+                        marginTop: '10px',
+                        textTransform: "none",
+                        '&:hover': {
+                            backgroundColor: '#76C5E1',
+                            color: 'white',
+                        },
+                    }} 
+                    onClick={() => {
+                        closeListOfConfirmedTrainees();
+                        }}>
+                        {t("ok")}
+                    </Button>
+                </Box>
+            </Dialog>
+            <Dialog
+                open={becomeTraineeConfirm}
+                disableScrollLock={true}
+                onClose={closeBecomeTraineeConfirm}
+                PaperProps={{
+                    sx: {
+                        width: "auto",  
+                        height: "auto", 
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        borderRadius: "10px",
+                        padding: '20px',
+                    }
+                }}
+            >
+                <DialogTitle>{t("become_trainee")}?</DialogTitle>
+                <Box 
+                    sx={{
+                        width: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        gap: '20px',
+                    }}
+                >
+                    <FormControl variant="outlined" sx={{ 
+                            width: '100%',
+                        }}
+                    >
+                        <InputLabel>{t("message")}</InputLabel>
+                        <OutlinedInput
+                            multiline
+                            required={false}
+                            value={becomeTraineeMessage}
+                            onChange={(e) => setBecomeTraineeMessage(e.target.value)}
+                            label="Message ................"
+                        />
+                    </FormControl>
+                    <Box 
+                        sx={{
+                            width: '100%',
+                            display: 'flex',
+                            flexDirection: 'row',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            gap: '20px',
+                        }}
+                    >
+                        <Button sx={{
+                            color: 'white',
+                            backgroundColor: '#EA9696',
+                            padding: '5px 10px',
+                            borderRadius: '10px',
+                            textDecoration: 'none',
+                            fontWeight: 'bold',
+                            width: '100px',
+                            height: '40px',
+                            marginTop: '10px',
+                            textTransform: "none",
+                            '&:hover': {
+                                backgroundColor: '#EAB8B8',
+                                color: 'white',
+                            },
+                        }} 
+                        onClick={closeBecomeTraineeConfirm}>
+                            {t("no")}
+                        </Button>
+                        <Button sx={{
+                            color: 'white',
+                            backgroundColor: '#2CA8D5',
+                            padding: '5px 10px',
+                            borderRadius: '10px',
+                            textDecoration: 'none',
+                            fontWeight: 'bold',
+                            width: '100px',
+                            height: '40px',
+                            marginTop: '10px',
+                            textTransform: "none",
+                            '&:hover': {
+                                backgroundColor: '#76C5E1',
+                                color: 'white',
+                            },
+                        }} 
+                        onClick={() => {
+                            handleBecomeTrainee();
+                            closeBecomeTraineeConfirm();}}>
+                            {t("yes")}
+                        </Button>
+                    </Box>
+                </Box>
+            </Dialog>
+            <Dialog
+                open={showListOfRequests}
+                disableScrollLock={true}
+                onClose={closeListOfRequests}
+                PaperProps={{
+                    sx: {
+                        minWidth: "70%",  
+                        height: "auto", 
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        borderRadius: "10px",
+                        padding: '20px',
+                        gap: "10px",
+                    }
+                }}
+            >
+                <DialogTitle>{t("requests")}</DialogTitle>
+                {[...listOfRequests]
+                .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+                .map((trainer) => (
+                    <Box
+                    key={trainer._id}
+                        sx={{
+                            width: "100%",
+                            backgroundColor: "background.paper",
+                            boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.25)",
+                            display: "flex",
+                            flexDirection: "row",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            borderRadius: "10px",
+                            gap: "10px",
+                            padding: "10px",
+                        }}
+                        >
+                        <Typography
+                        >{t("name")} : {trainer.name}</Typography>
+                        <Typography
+                        >{t("email")} : {trainer.email}</Typography>
+                        <Typography
+                        >{t("message")} : {trainer.message}</Typography>
+                        <Box 
+                            sx={{
+                                width: '8%',
+                                display: 'flex',
+                                flexDirection: 'row',
+                                justifyContent: 'end',
+                                alignItems: 'center',
+                                gap: '10px',
+                            }}
+                        >
+                            {trainer.new ? <Badge color="primary" variant="dot" /> : null}
+                            <Tooltip title={t("accept")} arrow> 
+                                <IconButton sx={{color:"#76C5E1"}} onClick={() => {
+                                    handleAddTrainee(trainer._id);
+                                    notifyRoleChangeToTrainee(trainer._id);
+                                    deleteRequestToBecomeTrainee(trainer._id);
+                                }}>
+                                    <AddIcon/>
+                                </IconButton>
+                            </Tooltip>
+                            <Tooltip title={t("reject")} arrow>
+                                <IconButton sx={{color:"#EA9696"}} onClick={() => deleteRequestToBecomeTrainee(trainer._id)}>
+                                    <CloseIcon/>
+                                </IconButton>
+                            </Tooltip>
+                        </Box>
+                    </Box>
+                ))}
+                <Box 
+                    sx={{
+                        width: '100%',
+                        display: 'flex',
+                        flexDirection: 'row',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        gap: '20px',
+                    }}
+                >
+                    <Button sx={{
+                        color: 'white',
+                        backgroundColor: '#EA9696',
+                        padding: '5px 10px',
+                        borderRadius: '10px',
+                        textDecoration: 'none',
+                        fontWeight: 'bold',
+                        width: '100px',
+                        height: '40px',
+                        marginTop: '10px',
+                        textTransform: "none",
+                        '&:hover': {
+                            backgroundColor: '#EAB8B8',
+                            color: 'white',
+                        },
+                    }} 
+                    onClick={() => {
+                        closeListOfRequests();
+                        }}>
+                        {t("cancel")}
+                    </Button>
+                    <Button sx={{
+                        color: 'white',
+                        backgroundColor: '#2CA8D5',
+                        padding: '5px 10px',
+                        borderRadius: '10px',
+                        textDecoration: 'none',
+                        fontWeight: 'bold',
+                        width: '100px',
+                        height: '40px',
+                        marginTop: '10px',
+                        textTransform: "none",
+                        '&:hover': {
+                            backgroundColor: '#76C5E1',
+                            color: 'white',
+                        },
+                    }} 
+                    onClick={() => {
+                        }}>
+                        {t("save")}
+                    </Button>
                 </Box>
             </Dialog>
             <Snackbar open={showsVerificationAlert} autoHideDuration={3000} onClose={handleVerificationAlertClose}>

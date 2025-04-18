@@ -1,15 +1,23 @@
 const Admin = require("../models/admin.model");
-
+const jwt = require("jsonwebtoken");
 
 const signAdmin = async (req, res) => {
-    const { email, password } = req.body;
-    const admin = await Admin.findOne({ email });
-    if (!admin) return res.status(401).json({ message: "email_not_found" });
-    const passwordMatch = (password == admin.password);
-    if (!passwordMatch) return res.status(401).json({ message: "incorrect_password" });
-    res.json( admin );
-  };
+  const { email, password } = req.body;
+  const admin = await Admin.findOne({ email });
 
+  if (!admin) return res.status(401).json({ message: "email_not_found" });
+  const passwordMatch = password === admin.password;
+  if (!passwordMatch) return res.status(401).json({ message: "incorrect_password" });
+
+
+  const token = jwt.sign(
+    { id: admin._id, email: admin.email, role: "admin" },
+    process.env.PRIVATE_KEY, 
+    { expiresIn: "1h" }
+  );
+
+  res.json({ admin, token });
+};
 
 const updateAdmin = async (req, res) => {
   try {

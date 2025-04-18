@@ -10,6 +10,7 @@ const trainingSchema = new mongoose.Schema({
   nbOfHours: { type: Number, required: true },
   nbOfReceivedRequests: { type: Number , default: 0 },
   nbOfAcceptedRequests: { type: Number },
+  nbOfConfirmedRequests: { type: Number },
   nbOfParticipants: { type: Number, required: true },
   nbOfAttendees: { type: Number},
   nbOfAttendeesCompleted: { type: Number},
@@ -25,12 +26,22 @@ const trainingSchema = new mongoose.Schema({
   comment: {type: String},
   type: {type: String, required: true},
   description: {type: String, required: true},
-  trainer: { type: mongoose.Schema.Types.ObjectId,ref: "users" },
+  trainer: { type: mongoose.Schema.Types.ObjectId,ref: "User" },
   traineesrequests: [{
     trainee: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     date: { type: Date }
-}],
-  acceptedtrainees: [{ type: mongoose.Schema.Types.ObjectId, ref: "users" }],
+  }],
+  acceptedtrainees: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  confirmedtrainees: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  rejectedtrainees: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+  registrationDeadline: { type: Date, default: Date.now },
+  quiz: {
+    data: { type: Buffer },
+    contentType: { type: String },  
+    fileName: { type: String },
+    type: { type: String, enum: ['pre', 'post'] },    
+  },
+
 }, { collection: 'trainings', timestamps: true });
 
 const Training = mongoose.model("Training", trainingSchema);

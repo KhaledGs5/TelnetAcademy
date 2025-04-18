@@ -8,6 +8,7 @@ import { getCookie } from "./Cookies";
 import axios from "axios";
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import { useNavbar } from '../NavbarContext';
 import dayjs from 'dayjs';
 
 const TrainerTraining = () => {
@@ -46,25 +47,42 @@ const TrainerTraining = () => {
                 let rejectedCount = 0;
                 updatedForms.forEach(form => {
                     if (form.status === "pending") pendingCount++;
-                    if (form.status === "approved") approvedCount++;
+                    if (form.status === "approved" || form.status === "deleted") approvedCount++;
                     if (form.status === "rejected") rejectedCount++;
                 });
                 setNumberOfPending(pendingCount);
                 setNumberOfApproved(approvedCount);
                 setNumberOfRejected(rejectedCount);
                 setForms(updatedForms);
+                handleOpenTrainingsStatusNotifications();
             })
             .catch((error) => {
                 console.error("Error fetching forms:", error);
             });
     };
-    
 
+    const {setNumberOfTrainingsStatus} = useNavbar();
+
+    const handleOpenTrainingsStatusNotifications = async () => {
+        try {
+        await axios.delete("http://localhost:5000/api/notifications", {
+            data: {
+                rec: user._id,
+                tp: "New_Training_Status",
+            }
+            });
+          setNumberOfTrainingsStatus(0);
+        } catch (error) {
+          console.error("Error marking notifications as read", error);
+        }
+    };
+    
     useEffect(() => {
         fetchForms();
     }, []);
 
-    console.log(forms);
+
+
     // Form ...........
     const [formData, setFormData] = useState({
         matricule: "",
@@ -121,6 +139,7 @@ const TrainerTraining = () => {
     const FormStatusColors = {
         "pending": '#90CAF9',
         "approved": '#A5D6A7',
+        "deleted": '#A5D6A7',
         "rejected":'#FFCDD2',
     }
 

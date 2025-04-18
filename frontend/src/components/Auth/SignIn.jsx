@@ -42,10 +42,12 @@ const SignIn = () => {
           });
           if (response.status == 200) {
             if(rememberMe) {
-                setCookie("User",response.data, 5);
+                setCookie("Token",response.data.token, 5);
+                setCookie("User",response.data.user, 5);
                 setCookie("SignedIn",true, 5);
             }else{
-                setCookie("User",response.data);
+                setCookie("Token",response.data.token);
+                setCookie("User",response.data.user);
                 setCookie("SignedIn",true);
             }
             window.location.href = "/dashboard";

@@ -5,6 +5,7 @@ const http = require('http');
 const socketIo = require('socket.io');
 const nodemailer = require("nodemailer");
 const connectDB = require("./db");
+require("dotenv").config();
 
 const app = express();
 const server = http.createServer(app);
@@ -25,14 +26,16 @@ app.use(cors({ origin: "http://localhost:3000" }));
 
 connectDB();
 io.on('connection', (socket) => {
-  socket.on('joinRoom', (trainerId) => {
-    socket.join(trainerId); 
+  socket.on('joinRoom', (userId) => {
+    socket.join(userId); 
   });
 
   socket.on('disconnect', () => {
     console.log('Client disconnected');
   });
 });
+
+module.exports.io = io;
 
 app.get("/", (req, res) => {
   res.send("MongoDB is connected!");
@@ -50,11 +53,18 @@ app.use("/api", trainingRoutes);
 const sessionRoutes = require("./app/routes/session.routes");
 app.use("/api", sessionRoutes);
 
-const callnotificationRoutes = require("./app/routes/notification.routes");
-app.use("/api", callnotificationRoutes);
+const notificationRoutes = require("./app/routes/notification.routes");
+app.use("/api", notificationRoutes);
 
-const callFormRoutes = require("./app/routes/form.routes");
-app.use("/api", callFormRoutes);
+const FormRoutes = require("./app/routes/form.routes");
+app.use("/api", FormRoutes);
+
+const ColdFeedbackRoutes = require("./app/routes/coldfeedback.routes");
+app.use("/api", ColdFeedbackRoutes);
+
+const HotFeedbackRoutes = require("./app/routes/hotfeedback.routes");
+app.use("/api", HotFeedbackRoutes);
+
 
 // Automatic Mail Sending ..........
 const transporter = nodemailer.createTransport({
@@ -118,6 +128,130 @@ app.post("/reject-request", async (req, res) => {
     res.status(500).json({ success: false, message: "Failed to send email." });
   }
 });
+
+app.post("/accept-request", async (req, res) => {
+  const { toEmail, message } = req.body;
+
+  try {
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: toEmail,
+      subject: "Request Accepted",
+      text: `Message: ${message}`,
+    });
+
+    res.status(200).json({ success: true, message: "Email sent successfully!" });
+  } catch (error) {
+    console.error("Error sending email:", error);
+    res.status(500).json({ success: false, message: "Failed to send email." });
+  }
+});
+
+app.post("/new_training_status", async (req, res) => {
+  const { toEmail, message } = req.body;
+
+  try {
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: toEmail,
+      subject: "Training Status Updated", 
+      text: `Message: ${message}`,
+    });
+
+    res.status(200).json({ success: true, message: "Email sent successfully!" });
+  } catch (error) {
+    console.error("Error sending email:", error);
+    res.status(500).json({ success: false, message: "Failed to send email." });
+  }
+});
+
+app.post("/delete_from_training", async (req, res) => {
+  const { toEmail, message } = req.body;
+
+  try {
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: toEmail,
+      subject: "Status Updated", 
+      text: `Message: ${message}`,
+    });
+
+    res.status(200).json({ success: true, message: "Email sent successfully!" });
+  } catch (error) {
+    console.error("Error sending email:", error);
+    res.status(500).json({ success: false, message: "Failed to send email." });
+  }
+});
+
+const {notify} = require("./app/controllers/notification.controllers");
+app.post("/send-reminder", async (req, res) => {
+  const { toEmail, message, trainee, managerreminded, training } = req.body;
+
+  if (!toEmail || !message || !trainee || !managerreminded || !training) {
+    return res.status(400).json({ success: false, message: "Missing required fields." });
+  }
+
+  try {
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: toEmail,
+      subject: "Reminder",
+      text: `Message: ${message}`,
+    });
+    await notify(trainee, managerreminded, "Request_Accepted", training.toString());
+
+    res.status(200).json({ success: true, message: "Email sent successfully!" });
+  } catch (error) {
+    console.error("Error sending email:", error);
+    res.status(500).json({ success: false, message: "Failed to send email." });
+  }
+});
+
+app.post("/request-feedback", async (req, res) => {
+  const { toEmail, message } = req.body;
+
+  if (!toEmail || !message) {
+    return res.status(400).json({ success: false, message: "Missing required fields." });
+  }
+
+  try {
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: toEmail,
+      subject: "Feedback Request",
+      text: `Message: ${message}`,
+    });
+
+    res.status(200).json({ success: true, message: "Email sent successfully!" });
+  } catch (error) {
+    console.error("Error sending email:", error);
+    res.status(500).json({ success: false, message: "Failed to send email." });
+  }
+});
+
+app.post("/role-changed", async (req, res) => {
+  const { toEmail, message } = req.body;
+
+  if (!toEmail || !message) {
+    return res.status(400).json({ success: false, message: "Missing required fields." });
+  }
+
+  try {
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: toEmail,
+      subject: "Role Changed",
+      text: `Message: ${message}`,
+    });
+
+    res.status(200).json({ success: true, message: "Email sent successfully!" });
+  } catch (error) {
+    console.error("Error sending email:", error);
+    res.status(500).json({ success: false, message: "Failed to send email." });
+  }
+});
+
+
 
 // Fetch All Users from excel to mongoDB
 const User = require("./app/models/user.model");

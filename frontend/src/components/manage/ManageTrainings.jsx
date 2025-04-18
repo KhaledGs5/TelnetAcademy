@@ -1,20 +1,24 @@
 import React, { useState, useEffect } from "react";
 import { useLanguage } from "../../languagecontext";
-import { Box, TextField , Typography, Button,Input,IconButton, InputAdornment, Tooltip, OutlinedInput, FormControl, InputLabel, Pagination,Radio, Alert, Snackbar , Autocomplete, Popover  } from "@mui/material";
+import { Box, TextField , Typography, Button,Input,IconButton, InputAdornment, Tooltip, OutlinedInput, FormControl, InputLabel, Pagination,Radio, Alert, Snackbar , Autocomplete, Popover, Rating, Badge } from "@mui/material";
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import ClearIcon from '@mui/icons-material/Clear';
 import SearchIcon from '@mui/icons-material/Search';
 import MenuItem from '@mui/material/MenuItem';
+import { getCookie } from '../Cookies';
 import AddIcon from '@mui/icons-material/Add';
 import GroupIcon from '@mui/icons-material/Group';
+import FeedIcon from '@mui/icons-material/Feed';
 import FilterAltOffIcon from '@mui/icons-material/FilterAltOff';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CloseIcon from '@mui/icons-material/Close';
 import SaveIcon from '@mui/icons-material/Save';
+import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
 import DialogTitle from '@mui/material/DialogTitle';
 import Dialog from '@mui/material/Dialog';
+import { useNavbar } from '../../NavbarContext';
 import { StaticDatePicker, LocalizationProvider , DateTimePicker} from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
@@ -22,10 +26,21 @@ import dayjs from 'dayjs';
 import axios from "axios";
 import * as XLSX from 'xlsx';
 
+
 const ManageTrainings = () => {
 
     const { t } = useLanguage();
     const [selectedTrainingId, setSelectedTrainingId] = useState(true);
+    const user = getCookie("User");
+
+    // Verify Update Or Create Training...........
+
+    const [showsVerificationAlert, setShowsVerifificationAlert] = useState(false);
+    const [verifyAlertMessage, setVerifyAlertMessage] = useState("");
+    const [verifyAlert, setVerifyAlert] = useState("error");
+    const handleVerificationAlertClose = () => {
+        setShowsVerifificationAlert(false);
+    };
     
 
     // Fetch All Tranings with corresponding sessions
@@ -45,6 +60,9 @@ const ManageTrainings = () => {
     updateStatus();
     }, []);
 
+    const [numberOfConfirmed,  setNumberOfConfirmed] = useState(0);
+    const [numberOfNotConfirmed,  setNumberOfNotConfirmed] = useState(0);
+
     const fetchTrainings = () => {
         axios.get("http://localhost:5000/api/trainings")
             .then((response) => {
@@ -52,11 +70,21 @@ const ManageTrainings = () => {
                     ...training,
                     modified: false,
                     sessions: [],
-                    full: training.nbOfAcceptedRequests >= training.nbOfParticipants,
+                    full: training.nbOfConfirmedRequests == training.nbOfParticipants,
                 }));
                 setTrainings(trainingsWithModified);
     
+                let fullTrainings = 0;
+                let notFullTrainings = 0;
                 trainingsWithModified.forEach((training) => {
+                    if(training.full){
+                        fullTrainings++;
+                    }else{
+                        notFullTrainings++;
+                    }
+                    setNumberOfFullTrainings(fullTrainings);
+                    setNumberOfNotFullTrainings(notFullTrainings);
+                    setNewTrainingRegisDeadline(dayjs(training.registrationDeadline));
                     axios.get(`http://localhost:5000/api/sessions/training/${training._id}`)
                         .then((response) => {
                             const updatedSessions = response.data.map(session => ({
@@ -76,11 +104,19 @@ const ManageTrainings = () => {
     
                 trainingsWithModified.forEach((training) => {
                     let listOfTrainees = [];
-                    (training.acceptedtrainees).forEach((traineeId) => {
+                    (training.acceptedtrainees).forEach((traineeId) => { 
                         axios.get(`http://localhost:5000/api/users/${traineeId}`)
                            .then((response) => {
-                                console.log(response.data);
-                                listOfTrainees.push(response.data)
+                                const res = response.data;
+                                const trainee = {
+                                    ...res,
+                                    status: training.confirmedtrainees.includes(traineeId) 
+                                    ? "confirmed"
+                                    : "not_confirmed"
+                                }
+                                listOfTrainees.push(trainee);
+                                setNumberOfConfirmed(training.confirmedtrainees.length);
+                                setNumberOfNotConfirmed(training.acceptedtrainees.length - training.confirmedtrainees.length);
                             })
                            .catch((error) => {
                                 console.error("Error fetching trainee:", error);
@@ -121,6 +157,10 @@ const ManageTrainings = () => {
         return `${finalDaysFormat} ${month}`;
     };
 
+    const [numberOfFullTrainings, setNumberOfFullTrainings] = useState(0);
+    const [numberOfNotFullTrainings, setNumberOfNotFullTrainings] = useState(0);
+
+
     //Edit Attendance List By Id ...........
 
     const [showAttendeeList, setShowAttendeeList] = useState(false);
@@ -134,15 +174,143 @@ const ManageTrainings = () => {
         setShowAttendeeList(false);
     };
 
-    const handleUpdateAttendanceList = (traineeId) => {
-        const req = {trainee : traineeId};
-        axios.put(`http://localhost:5000/api/trainings/delete/${selectedTrainingId}`, req)
-        .then((response) => {
-            console.log("Successfully updated attendance list:", response.data);
+    const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+    const [traineeMail, setTraineeMail] = useState("");
+    const [traineeName, setTraineeName] = useState("");
+    const [selectedTraineeId, setSelectedTraineeId] = useState("");
+
+    const showConfirmDeleteDialog = (mail, name, id) => {
+        setTraineeMail(mail);
+        setTraineeName(name);
+        setShowConfirmDelete(true);
+        setSelectedTraineeId(id)
+    };
+
+    const hideConfirmDeleteDialog = () => {
+        setShowConfirmDelete(false);
+    };
+
+    const handleUpdateAttendanceList = async () => {
+        const req = {trainee : selectedTraineeId, managerdeleted: user._id};
+        await axios.put(`http://localhost:5000/api/trainings/delete/${selectedTrainingId}`, req)
+        .then(() => {
+            fetchTrainings();
+            showAttendeeListDialog(selectedTrainingId);
+            setShowConfirmDelete(false);
         })
         .catch((error) => {
             console.error("Error updating attendance list:", error);
         });
+        await axios.post("http://localhost:5000/delete_from_training", 
+            {
+                toEmail: traineeMail,
+                message: `Hello ${traineeName}, you have been deleted from the training`,
+            })
+    };
+
+    const [newTrainingRegisDeadline, setNewTrainingRegisDeadline] = useState(dayjs());
+    const [confirmChangeDeadline, setConfirmChangeDeadline] = useState(false);
+
+    const showConfirmChangeDeadlineDialog = () => {
+        setConfirmChangeDeadline(true);
+    };
+
+    const hideConfirmChangeDeadlineDialog = () => {
+        setConfirmChangeDeadline(false);
+    };
+
+
+    const handleUpdateTrainingRegisDeadline = async () => {
+        const req = {registrationDeadline: newTrainingRegisDeadline};
+        await axios.put(`http://localhost:5000/api/trainings/${selectedTrainingId}`, req)
+            .then(() => {
+                fetchTrainings();
+                setShowAttendeeList(false);
+                hideConfirmChangeDeadlineDialog();
+            })
+            .catch((error) => {
+                console.error("Error updating training registration deadline:", error);
+            });
+    }
+
+    //Send Reminder ...............
+
+    const [showSendReminder, setShowSendReminder] = useState(false);
+    const [mail, setMail] = useState("");
+    const [trainingName, setTrainingName] = useState("");
+    const [traineeId, setTraineeId] = useState("");
+
+    const showSendReminderDialog = (m,name,id) => {
+        setTrainingName(name);
+        setMail(m);
+        setTraineeId(id);
+        setShowSendReminder(true);
+    }
+
+    const hideSendReminderDialog = () => {
+        setShowSendReminder(false);
+    }
+
+    const handleSendReminder = (m, name, id) => {
+        axios.post("http://localhost:5000/send-reminder", { 
+          toEmail: m,
+          message: `Reminder for Confirmation: ${name} Training`,
+          trainee: id,
+          managerreminded: user._id,
+          training: selectedTrainingId
+        })
+        .then((response) => {
+          setVerifyAlert("success");
+          setVerifyAlertMessage("reminder_sent_successfully");
+          setShowsVerifificationAlert(true);
+          hideSendReminderDialog();
+        })
+        .catch((error) => {
+          console.error("Reminder send error:", error);
+          setVerifyAlert("error");
+          setVerifyAlertMessage("reminder_not_sent");
+          setShowsVerifificationAlert(true);
+        });
+      }
+      
+    // Show Feedbacks for training .............
+    const [feedbacks, setFeedbacks] = useState([]);
+    const [feedbackType, setFeedbackType] = useState("cold");
+    const { numberOfNewFeedbacks, setNumberOfNewFeedbacks } = useNavbar();
+
+    const handleOpenFeedbackNotification = async () => {
+        try {
+          await axios.delete("http://localhost:5000/api/notifications", { data : {rec : user._id, tp : "New_Feedback"}});
+          setNumberOfNewFeedbacks(0);
+        } catch (error) {
+          console.error("Error marking notifications as read", error);
+        }
+    };
+
+    const fetchFeedbacks = (trainingId, traineeId) => {
+        axios
+          .post(`http://localhost:5000/api/trainings/feedbacks/${trainingId}`, {
+            trainee: traineeId,
+          })
+          .then((response) => {
+            setFeedbacks(response.data);
+            setShowFeedbacks(true);
+            console.log("Fetched feedbacks:", response.data);
+          })
+          .catch((error) => {
+            console.error("Error fetching feedbacks:", error);
+          });
+    };
+
+    const [showFeedbacks, setShowFeedbacks] = useState(false);
+
+    const showFeedbacksDialog = (trainingId, traineeId) => {
+        fetchFeedbacks(trainingId,traineeId);
+        handleOpenFeedbackNotification();
+    };
+
+    const hideFeedbacksDialog = () => {
+        setShowFeedbacks(false);
     };
 
     // Delete training by Id..............
@@ -162,17 +330,12 @@ const ManageTrainings = () => {
             .then((response) => {
                 console.log(response.data.message);
                 hideVerifyDeleteDialog();
+                fetchTrainings();
             })
             .catch((error) => {
                 console.error("Error deleting training:", error);
             });
-        
-        setTrainings((prevTrainings) => {
-            const updatedTrainings = Object.fromEntries(
-                Object.entries(prevTrainings).filter(([_, training]) => training._id !== trainingId) 
-            );
-            return updatedTrainings;
-        });
+
     };
         
 
@@ -195,6 +358,105 @@ const ManageTrainings = () => {
         hideVerifyDeleteAllDialog();
     };
 
+    // Get Training By Id .................
+    const getTrainingById = (id) => {
+        return Object.values(trainings).find(training => training._id === id) || null;
+    };
+
+    // Send Feedback Request.................
+
+    const [sendFeedbackRequest, setSendFeedbackRequest] = useState(false);
+    
+    const showSendFeedbackRequest = (trainingId) => {
+        setSelectedTrainingId(trainingId)
+        setSendFeedbackRequest(true);
+    }
+
+    const hideSendFeedbackRequest = () => {
+        setSendFeedbackRequest(false);
+    }
+
+    // Confirm Cold Feedback.........
+
+    const [confirmColdRequest, setConfirmColdRequest] = useState(false);
+
+    const showConfirmColdRequestDialog = () => {
+        setConfirmColdRequest(true);
+    }
+
+    const hideConfirmColdRequestDialog = () => {
+        setConfirmColdRequest(false);
+    }
+
+    const sendColdRequest = async (trainingId) => {
+        await axios.post(`http://localhost:5000/api/trainings/sendcoldrequest/${trainingId}`, {manager : user._id})
+            .then((response) => {
+                setVerifyAlert("success");
+                setVerifyAlertMessage("request_sent_successfully");
+                setShowsVerifificationAlert(true);
+                if(response.data) {
+                    const training = getTrainingById(trainingId);
+                    const listOfTrainees = training.trainees.map((trainee) => ({
+                        id: trainee._id,
+                        name: trainee.name,
+                        email: trainee.email,
+                    }));
+                    
+                    listOfTrainees.forEach((trainee) => {
+                        axios.post("http://localhost:5000/request-feedback", {
+                          toEmail: trainee.email,
+                          message: `Hello ${trainee.name}, can you please add feedback to Training : ${training.title}.`,
+                        });
+                    });    
+                }
+                hideConfirmColdRequestDialog();
+            }).catch((error) => {
+                setVerifyAlert("error");
+                setVerifyAlertMessage("request_not_sent");
+                setShowsVerifificationAlert(true);
+            })
+    }
+    
+    // Confirm Hot Feedback
+    const [confirmHotRequest, setConfirmHotRequest] = useState(false);
+
+    const showConfirmHotRequestDialog = () => {
+        setConfirmHotRequest(true);
+    }
+
+    const hideConfirmHotRequestDialog = () => {
+        setConfirmHotRequest(false);
+    }
+    
+    const sendHotRequest = (trainingId) => {
+        axios.post(`http://localhost:5000/api/trainings/sendhotrequest/${trainingId}`, {manager : user._id})
+            .then((response) => {
+                setVerifyAlert("success");
+                setVerifyAlertMessage("request_sent_successfully");
+                setShowsVerifificationAlert(true);
+                if(response.data) {
+                    const training = getTrainingById(trainingId);
+                    const listOfTrainees = training.trainees.map((trainee) => ({
+                        id: trainee._id,
+                        name: trainee.name,
+                        email: trainee.email,
+                    }));
+                    
+                    listOfTrainees.forEach((trainee) => {
+                        axios.post("http://localhost:5000/request-feedback", {
+                          toEmail: trainee.email,
+                          message: `Hello ${trainee.name}, can you please add feedback to Training : ${training.title}.`,
+                        });
+                    });    
+                }
+                hideConfirmHotRequestDialog();
+            }).catch((error) => {
+                setVerifyAlert("error");
+                setVerifyAlertMessage("request_not_sent");
+                setShowsVerifificationAlert(true);
+            })
+    }
+
     // Order ........................
     const [orderState, setOrderState] = useState('Down');
     const [trainingOrderState, setTrainingOrderState]= useState('Down');  
@@ -212,9 +474,24 @@ const ManageTrainings = () => {
     };
 
     // Filters ....................
+    const TraineeStatusColors = {
+        "confirmed": '#A5D6A7',
+        "not_confirmed": '#FFCDD2',
+    }
+
+    const [selectedStatus, setSelectedStatus] = useState("all");
+
+    const filteredAttendance = (attendance) =>
+        {return Object.entries(attendance)
+        .filter(([key, trainee]) => 
+            selectedStatus === "all" || trainee.status === selectedStatus
+        )
+        .map(([key, form]) => form); 
+    }
+
     const FilterColors = {
-        "full": "#FFCDD2",
-        "not_full": "#C8E6C9",
+        "full": "#C8E6C9",
+        "not_full": "#FFCDD2",
     }
 
     const [selectedFilter, setSelectedFiler] = useState("all");
@@ -436,26 +713,6 @@ const ManageTrainings = () => {
                     </Button>
                     <Button 
                         sx={{...buttonStyle, backgroundColor :"#C8E6C9"}}
-                        onClick={() => setSelectedFiler("not_full")}
-                    >
-                    {selectedFilter === "not_full" && (
-                        <Box
-                        sx={{
-                            width: 12,
-                            height: 12, 
-                            backgroundColor: "#2CA8D5", 
-                            borderRadius: "50%",
-                            position: "absolute",
-                            top: 10, 
-                            right: 10, 
-                            boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
-                        }}
-                        />
-                    )}
-                        5<br/>{t("not_full")}
-                    </Button>
-                    <Button 
-                        sx={{...buttonStyle, backgroundColor :"#FFCDD2"}}
                         onClick={() => setSelectedFiler("full")}
                     >
                     {selectedFilter === "full" && (
@@ -472,7 +729,27 @@ const ManageTrainings = () => {
                         }}
                         />
                     )}
-                        10<br/>{t("full")}
+                        {numberOfFullTrainings}<br/>{t("full")}
+                    </Button>
+                    <Button 
+                        sx={{...buttonStyle, backgroundColor :"#FFCDD2"}}
+                        onClick={() => setSelectedFiler("not_full")}
+                    >
+                    {selectedFilter === "not_full" && (
+                        <Box
+                        sx={{
+                            width: 12,
+                            height: 12, 
+                            backgroundColor: "#2CA8D5", 
+                            borderRadius: "50%",
+                            position: "absolute",
+                            top: 10, 
+                            right: 10, 
+                            boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
+                        }}
+                        />
+                    )}
+                        {numberOfNotFullTrainings}<br/>{t("not_full")}
                     </Button>
                 </Box>
             </Box>
@@ -1070,14 +1347,32 @@ const ManageTrainings = () => {
                                 height: '20px',
                                 borderRadius: '50%',
                                 backgroundColor: training.full ? FilterColors.full : FilterColors.not_full,
-                                marginRight: "30px",
+                                marginRight: "10px",
                                 }}
                             />
-                            <Tooltip title={t("attendance")} arrow> 
-                                <IconButton sx={{color:"#76C5E1"}} onClick={() => showAttendeeListDialog(training._id)}>
-                                    <GroupIcon/>
+                            <Tooltip title={t("feedback_request")} arrow> 
+                                <IconButton sx={{color:"#76C5E1"}} onClick={() => showSendFeedbackRequest(training._id)}>
+                                    <FeedIcon/>
                                 </IconButton>
                             </Tooltip>
+                            <Badge badgeContent={numberOfNewFeedbacks} color="primary"
+                                sx={{ 
+                                    "& .MuiBadge-badge": { 
+                                    fontSize: "10px", 
+                                    height: "16px", 
+                                    minWidth: "16px", 
+                                    padding: "2px",
+                                    position: "absolute",
+                                    right: "10px",
+                                    } 
+                                }}
+                            >
+                                <Tooltip title={t("attendance")} arrow> 
+                                    <IconButton sx={{color:"#76C5E1"}} onClick={() => showAttendeeListDialog(training._id)}>
+                                        <GroupIcon/>
+                                    </IconButton>
+                                </Tooltip>
+                            </Badge>
                             <Tooltip title={t("delete")} arrow> 
                                 <IconButton sx={{color:"#EA9696"}} onClick={() => showVerifyDeleteDialog(training._id)}>
                                     <DeleteIcon/>
@@ -1164,7 +1459,7 @@ const ManageTrainings = () => {
                     height: "auto", 
                     display: "flex",
                     flexDirection: "column",
-                    justifyContent: "",
+                    justifyContent: "center",
                     alignItems: "center",
                     borderRadius: "10px",
                     padding: '20px',
@@ -1172,7 +1467,7 @@ const ManageTrainings = () => {
             }}
         >
             <DialogTitle>{t("list_of_trainees")}</DialogTitle>
-            {trainings?.filter(training => training._id === selectedTrainingId)
+            {trainings.filter(training => training && training._id === selectedTrainingId)
                 .map((training) => (
                 <Box key={training._id}
                     sx={{
@@ -1187,47 +1482,143 @@ const ManageTrainings = () => {
                     <Typography>
                         {t("training")} : {training.title}
                     </Typography>
-                    {training.trainees.map((trainee) => (
+                    <Box
+                        sx={{
+                            width: '100%',
+                            display: 'flex',
+                            flexDirection: 'row',
+                            justifyContent: "center",
+                            alignItems: "center",
+                            gap: '10px',
+                        }}
+                    >
+                        <Button 
+                            sx={buttonStyle}
+                            onClick={() => setSelectedStatus("all")}
+                        >
+                        {selectedStatus === "all" && (
+                            <Box
+                            sx={{
+                                width: 12,
+                                height: 12, 
+                                backgroundColor: "#2CA8D5", 
+                                borderRadius: "50%",
+                                position: "absolute",
+                                top: 10, 
+                                right: 10, 
+                                boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
+                            }}
+                            />
+                        )}
+                            {t("all")}
+                        </Button>
+                        <Button 
+                            sx={{...buttonStyle, backgroundColor : "#A5D6A7"}}
+                            onClick={() => setSelectedStatus("confirmed")}
+                        >
+                        {selectedStatus === "confirmed" && (
+                            <Box
+                            sx={{
+                                width: 12,
+                                height: 12, 
+                                backgroundColor: "#2CA8D5", 
+                                borderRadius: "50%",
+                                position: "absolute",
+                                top: 10, 
+                                right: 10, 
+                                boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
+                            }}
+                            />
+                        )}
+                           {numberOfConfirmed} <br/>{t("confirmed")}
+                        </Button>
+                        <Button 
+                        sx={{
+                            ...buttonStyle,
+                            backgroundColor: "#FFCDD2",
+                            position: "relative",
+                        }}
+                        onClick={() => setSelectedStatus("not_confirmed")}
+                        >
+                        {selectedStatus === "not_confirmed" && (
+                            <Box
+                            sx={{
+                                width: 12,
+                                height: 12, 
+                                backgroundColor: "#2CA8D5", 
+                                borderRadius: "50%",
+                                position: "absolute",
+                                top: 10, 
+                                right: 10, 
+                                boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
+                            }}
+                            />
+                        )}
+                        
+                         {numberOfNotConfirmed}<br />
+                        {t("not_confirmed")}
+                        </Button>
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                            <DateTimePicker
+                                sx={{ width: '30%' }}
+                                label={t("registration_deadline")}
+                                value={newTrainingRegisDeadline}
+                                onChange={(dateTime) => {
+                                    setNewTrainingRegisDeadline(dateTime);
+                                }}
+                            />
+                        </LocalizationProvider>
+                    </Box>
+                    {filteredAttendance(training.trainees).map((trainee) => (
                         <Box 
                             key={trainee._id} 
                             sx={{
                                 width: '750px',
                                 display: 'flex',
                                 flexDirection: 'row',
-                                justifyContent: 'center',
+                                justifyContent: 'space-between',
                                 alignItems: 'center',
                                 backgroundColor: "background.paper",
                                 boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.25)",
                                 borderRadius: '10px',
                                 paddingTop: '20px',
                                 paddingBottom: '20px',
+                                paddingLeft: '10px',
                                 height: '50px',
                                 gap: '20px',
                             }}
                         >
                             <Typography
-                                sx={{
-                                    width:"25%",
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                }}
                             >
                                 {trainee.name}
                             </Typography>
                             <Typography
-                                sx={{
-                                    width:"55%",
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                }}
                             >
                                 {trainee.email}
                             </Typography>
-                            <Box sx={{ width: '20%',paddingRight: "10px", display: "flex", flexDirection: "row", justifyContent: "end" }}>
+                            <Box sx={{ width: '30%',paddingRight: "10px", display: "flex", flexDirection: "row", justifyContent: "end" , alignItems:"center"}}>
+                                <Box
+                                    sx={{
+                                        marginRight: '10px',
+                                        width: "20px",
+                                        height: "20px", 
+                                        backgroundColor: TraineeStatusColors[trainee?.status],
+                                        borderRadius: "50%",
+                                    }}
+                                />
+                                {trainee?.status === "not_confirmed" && (
+                                <Tooltip title={t("send_reminder")} arrow> 
+                                    <IconButton sx={{color:"#76C5E1"}} onClick={() => showSendReminderDialog(trainee.email, training.title, trainee._id)}>
+                                        <NotificationsActiveIcon/>
+                                    </IconButton>
+                                </Tooltip>)}
+                                <Tooltip title={t("feedback")} arrow> 
+                                    <IconButton sx={{color:"#76C5E1"}}  onClick={() => showFeedbacksDialog(training._id, trainee._id)}>
+                                        <FeedIcon/>
+                                    </IconButton>
+                                </Tooltip>
                                 <Tooltip title={t("delete")} arrow>
-                                    <IconButton sx={{ color: "#EA9696" }} onClick={() => handleUpdateAttendanceList(trainee._id)}>
+                                    <IconButton sx={{ color: "#EA9696" }} onClick={() => showConfirmDeleteDialog(trainee.email, trainee.name, trainee._id)}>
                                         <CloseIcon />
                                     </IconButton>
                                 </Tooltip>
@@ -1236,6 +1627,712 @@ const ManageTrainings = () => {
                     ))}
                 </Box>
             ))}
+            <Box 
+                sx={{
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: '20px',
+                }}
+            >
+                <Button sx={{
+                    color: 'white',
+                    backgroundColor: '#2CA8D5',
+                    borderRadius: '10px',
+                    textDecoration: 'none',
+                    fontWeight: 'bold',
+                    width: '100px',
+                    height: '40px',
+                    marginTop: '10px',
+                    textTransform: "none",
+                    '&:hover': {
+                        backgroundColor: '#76C5E1',
+                        color: 'white',
+                    },
+                }} 
+                onClick={() => showConfirmChangeDeadlineDialog()}>
+                    {t("save")}
+                </Button>
+                <Button sx={{
+                    color: 'white',
+                    backgroundColor: '#2CA8D5',
+                    borderRadius: '10px',
+                    textDecoration: 'none',
+                    fontWeight: 'bold',
+                    width: '100px',
+                    height: '40px',
+                    marginTop: '10px',
+                    textTransform: "none",
+                    '&:hover': {
+                        backgroundColor: '#76C5E1',
+                        color: 'white',
+                    },
+                }} 
+                onClick={hideAttendeeListDialog}>
+                    {t("ok")}
+                </Button>
+            </Box>
+            </Dialog>
+            <Dialog
+                open={showFeedbacks}
+                disableScrollLock={true}
+                onClose={hideFeedbacksDialog}
+                PaperProps={{
+                    sx: {
+                        minWidth: "50%",  
+                        height: "auto", 
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "",
+                        alignItems: "center",
+                        borderRadius: "10px",
+                        padding: '20px',
+                    }
+                }}
+            >
+            <DialogTitle>{feedbackType === "cold" ? t("cold_feedback") : t("hot_feedback")}</DialogTitle>
+            <Box 
+                sx={{
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    marginBottom: "10px",
+                    gap: '20px',
+                }}
+            >
+                <Button sx={{
+                    color: 'white',
+                    backgroundColor: '#2CA8D5',
+                    borderRadius: '10px',
+                    textDecoration: 'none',
+                    fontWeight: 'bold',
+                    width: 'auto',
+                    height: '40px',
+                    marginTop: '10px',
+                    textTransform: "none",
+                    '&:hover': {
+                        backgroundColor: '#76C5E1',
+                        color: 'white',
+                    },
+                }} 
+                onClick={() => setFeedbackType("cold")}>
+                    {t("cold_feedback")}
+                </Button>
+                <Button sx={{
+                    color: 'white',
+                    backgroundColor: '#EA9696',
+                    borderRadius: '10px',
+                    textDecoration: 'none',
+                    fontWeight: 'bold',
+                    width: 'auto',
+                    height: '40px',
+                    marginTop: '10px',
+                    textTransform: "none",
+                    '&:hover': {
+                        backgroundColor: '#EAB8B8',
+                        color: 'white',
+                    },
+                }} 
+                onClick={() => setFeedbackType("hot")}
+                >
+                    {t("hot_feedback")}
+                </Button>
+            </Box>
+            {feedbackType === "cold" && feedbacks?.coldFeedback?.length !== 0 ? 
+            <Box
+                sx={{
+                    width:"100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: '15px',
+                }}
+            >
+                <Typography
+                
+                >
+                    {t("training")}
+                </Typography>
+                <TextField
+                    label={t("theme")}
+                    value={feedbacks?.coldFeedback?.[0]?.theme || ""}
+                    sx={{ 
+                        width: "50%",
+                        cursor: "pointer", 
+                        "& .MuiInputBase-input": { cursor: "pointer" }, 
+                        "& .MuiOutlinedInput-root": { cursor: "pointer" } 
+                    }}
+                    InputProps={{
+                        readOnly: true, 
+                    }}
+                />
+                <Box
+                    sx={{
+                        width: "100%",
+                        display: "flex",
+                        flexDirection: "row",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        gap: '10px',
+                    }}
+                >
+                    <TextField
+                        label={t("association")}
+                        value={feedbacks?.coldFeedback?.[0]?.association || ""}
+                        sx={{ 
+                            width: "50%",
+                            cursor: "pointer", 
+                            "& .MuiInputBase-input": { cursor: "pointer" }, 
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" } 
+                        }}
+                        InputProps={{
+                            readOnly: true, 
+                        }}
+                    />
+                    <TextField
+                        label={t("trainer")}
+                        value={feedbacks?.coldFeedback?.[0]?.trainer || ""}
+                        sx={{ 
+                            width: "50%",
+                            cursor: "pointer", 
+                            "& .MuiInputBase-input": { cursor: "pointer" }, 
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" } 
+                        }}
+                        InputProps={{
+                            readOnly: true, 
+                        }}
+                    />
+                </Box>
+                <Box
+                    sx={{
+                        width: "100%",
+                        display: "flex",
+                        flexDirection: "row",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        gap: '10px',
+                    }}
+                >
+                    <TextField
+                        label={t("date")}
+                        value={feedbacks?.coldFeedback?.[0]?.trainingDate || ""}
+                        sx={{ 
+                            width: "50%",
+                            cursor: "pointer", 
+                            "& .MuiInputBase-input": { cursor: "pointer" }, 
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" } 
+                        }}
+                        InputProps={{
+                            readOnly: true, 
+                        }}
+                    />
+                    <TextField
+                        label={t("location")}
+                        value={feedbacks?.coldFeedback?.[0]?.location || ""}
+                        sx={{ 
+                            width: "50%",
+                            cursor: "pointer", 
+                            "& .MuiInputBase-input": { cursor: "pointer" }, 
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" } 
+                        }}
+                        InputProps={{
+                            readOnly: true, 
+                        }}
+                    />
+                </Box>
+                <Typography
+                
+                >
+                    {t("participant")}
+                </Typography>
+                <Box
+                    sx={{
+                        width: "100%",
+                        display: "flex",
+                        flexDirection: "row",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        gap: '10px',
+                    }}
+                >
+                    <TextField
+                        label={t("name")}
+                        value={feedbacks?.coldFeedback?.[0]?.name || ""}
+                        sx={{ 
+                            width: "50%",
+                            cursor: "pointer", 
+                            "& .MuiInputBase-input": { cursor: "pointer" }, 
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" } 
+                        }}
+                        InputProps={{
+                            readOnly: true, 
+                        }}
+                    />
+                    <TextField
+                        label={t("registration_number")}
+                        value={feedbacks?.coldFeedback?.[0]?.matricule || ""}
+                        sx={{ 
+                            width: "50%",
+                            cursor: "pointer", 
+                            "& .MuiInputBase-input": { cursor: "pointer" }, 
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" } 
+                        }}
+                        InputProps={{
+                            readOnly: true, 
+                        }}
+                    />
+                </Box>
+                <Box
+                    sx={{
+                        width: "100%",
+                        display: "flex",
+                        flexDirection: "row",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        gap: '10px',
+                    }}
+                >
+                    <TextField
+                        label={t("function")}
+                        value={feedbacks?.coldFeedback?.[0]?.function || ""}
+                        sx={{ 
+                            width: "50%",
+                            cursor: "pointer", 
+                            "& .MuiInputBase-input": { cursor: "pointer" }, 
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" } 
+                        }}
+                        InputProps={{
+                            readOnly: true, 
+                        }}
+                    />
+                    <TextField
+                        label={t("service")}
+                        value={feedbacks?.coldFeedback?.[0]?.service || ""}
+                        sx={{ 
+                            width: "50%",
+                            cursor: "pointer", 
+                            "& .MuiInputBase-input": { cursor: "pointer" }, 
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" } 
+                        }}
+                        InputProps={{
+                            readOnly: true, 
+                        }}
+                    />
+                </Box>
+                <Typography
+                >
+                    {t("participant")} {t("evaluation")} 
+                </Typography>
+                {feedbacks?.coldFeedback?.[0]?.appliedKnowledge && (
+                    <TextField
+                        label={t("knowledge")}
+                        value={feedbacks?.coldFeedback?.[0]?.knowledge || ""}
+                        sx={{ 
+                            width: "50%",
+                            cursor: "pointer", 
+                            "& .MuiInputBase-input": { cursor: "pointer" }, 
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" } 
+                        }}
+                        InputProps={{
+                            readOnly: true, 
+                        }}
+                    />
+                )}
+                {!(feedbacks?.coldFeedback?.[0]?.appliedKnowledge) && (
+                <Box
+                    sx={{
+                        width: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        height: '100%',
+                        gap: '10px',
+                    }}
+                >
+                    <TextField
+                        label={t("why_didnt_apply")}
+                        value={feedbacks?.coldFeedback?.[0]?.otherWhyNotApplied || feedbacks?.coldFeedback?.[0]?.whyNotApplied}
+                        sx={{ 
+                            width: "50%",
+                            cursor: "pointer", 
+                            "& .MuiInputBase-input": { cursor: "pointer" }, 
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" } 
+                        }}
+                        InputProps={{
+                            readOnly: true, 
+                        }}
+                    />
+                </Box>)
+                }
+                {feedbacks?.coldFeedback?.[0]?.improvedWorkEfficiency && (
+                    <Box
+                        sx={{
+                            width: '100%',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            height: '100%',
+                            gap: '10px',
+                        }}
+                    >
+                        <TextField
+                            label={t("improvment")}
+                            value={feedbacks?.coldFeedback?.[0]?.improvment || ""}
+                            sx={{ 
+                                width: "100%",
+                                cursor: "pointer", 
+                                "& .MuiInputBase-input": { cursor: "pointer" }, 
+                                "& .MuiOutlinedInput-root": { cursor: "pointer" } 
+                            }}
+                            InputProps={{
+                                readOnly: true, 
+                            }}
+                        />
+                    </Box>
+                )}
+                {!feedbacks?.coldFeedback?.[0]?.improvedWorkEfficiency && (
+                    <Box
+                        sx={{
+                            width: '100%',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            height: '100%',
+                            gap: '10px',
+                        }}
+                    >
+                        <TextField
+                            label={t("why_not_improved")}
+                            value={feedbacks?.coldFeedback?.[0]?.whyNotImproved || ""}
+                            sx={{ 
+                                width: "100%",
+                                cursor: "pointer", 
+                                "& .MuiInputBase-input": { cursor: "pointer" }, 
+                                "& .MuiOutlinedInput-root": { cursor: "pointer" } 
+                            }}
+                            InputProps={{
+                                readOnly: true, 
+                            }}
+                        />
+                    </Box>
+                )}
+                <TextField
+                    label={t("suggestion")}
+                    value={feedbacks?.coldFeedback?.[0]?.trainingImprovementsSuggested || ""}
+                    sx={{ 
+                        width: "100%",
+                        cursor: "pointer", 
+                        "& .MuiInputBase-input": { cursor: "pointer" }, 
+                        "& .MuiOutlinedInput-root": { cursor: "pointer" } 
+                    }}
+                    InputProps={{
+                        readOnly: true, 
+                    }}
+                />
+                <TextField
+                    label={t("comments")}
+                    value={feedbacks?.coldFeedback?.[0]?.comments || ""}
+                    sx={{ 
+                        width: "100%",
+                        cursor: "pointer", 
+                        "& .MuiInputBase-input": { cursor: "pointer" }, 
+                        "& .MuiOutlinedInput-root": { cursor: "pointer" } 
+                    }}
+                    InputProps={{
+                        readOnly: true, 
+                    }}
+                />
+            </Box>
+            :feedbackType === "cold" && feedbacks?.coldFeedback?.length === 0 ?
+            <Typography
+                sx={{
+                    width: "100%",
+                    display:'flex',
+                    flexDirection: "row",
+                    justifyContent: "center",
+                    alignItems: "center",
+                }}
+            >
+                {t("cold_feedback_not_submited_yet")}
+            </Typography>
+            : feedbackType==="hot" && feedbacks?.hotFeedback?.length !== 0 ? 
+            <Box     
+                sx={{
+                    width:"100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: '10px',
+                }}
+            >
+                <Typography
+                
+                >
+                    {t("training")}
+                </Typography>
+                <TextField
+                    label={t("theme")}
+                    value={feedbacks?.hotFeedback?.[0]?.theme || ""}
+                    sx={{ 
+                        width: "50%",
+                        cursor: "pointer", 
+                        "& .MuiInputBase-input": { cursor: "pointer" }, 
+                        "& .MuiOutlinedInput-root": { cursor: "pointer" } 
+                    }}
+                    InputProps={{
+                        readOnly: true, 
+                    }}
+                />
+                <Box
+                    sx={{
+                        width: "100%",
+                        display: "flex",
+                        flexDirection: "row",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        gap: '10px',
+                    }}
+                >
+                    <TextField
+                        label={t("association")}
+                        value={feedbacks?.hotFeedback?.[0]?.association || ""}
+                        sx={{ 
+                            width: "50%",
+                            cursor: "pointer", 
+                            "& .MuiInputBase-input": { cursor: "pointer" }, 
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" } 
+                        }}
+                        InputProps={{
+                            readOnly: true, 
+                        }}
+                    />
+                    <TextField
+                        label={t("trainer")}
+                        value={feedbacks?.hotFeedback?.[0]?.trainer || ""}
+                        sx={{ 
+                            width: "50%",
+                            cursor: "pointer", 
+                            "& .MuiInputBase-input": { cursor: "pointer" }, 
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" } 
+                        }}
+                        InputProps={{
+                            readOnly: true, 
+                        }}
+                    />
+                </Box>
+                <Box
+                    sx={{
+                        width: "100%",
+                        display: "flex",
+                        flexDirection: "row",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        gap: '10px',
+                    }}
+                >
+                    <TextField
+                        label={t("date")}
+                        value={feedbacks?.hotFeedback?.[0]?.trainingDate || ""}
+                        sx={{ 
+                            width: "50%",
+                            cursor: "pointer", 
+                            "& .MuiInputBase-input": { cursor: "pointer" }, 
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" } 
+                        }}
+                        InputProps={{
+                            readOnly: true, 
+                        }}
+                    />
+                    <TextField
+                        label={t("location")}
+                        value={feedbacks?.hotFeedback?.[0]?.location || ""}
+                        sx={{ 
+                            width: "50%",
+                            cursor: "pointer", 
+                            "& .MuiInputBase-input": { cursor: "pointer" }, 
+                            "& .MuiOutlinedInput-root": { cursor: "pointer" } 
+                        }}
+                        InputProps={{
+                            readOnly: true, 
+                        }}
+                    />
+                </Box>
+                <Typography
+                
+                >
+                    {t("evaluation")}
+                </Typography>
+                {[
+                    { label: t("objectivesCommunication"), field: "objectivesCommunication" },
+                    { label: t("trainingOrganization"), field: "trainingOrganization" },
+                    { label: t("groupComposition"), field: "groupComposition" },
+                    { label: t("materialAdequacy"), field: "materialAdequacy" },
+                    { label: t("programCompliance"), field: "programCompliance" },
+                    { label: t("contentClarity"), field: "contentClarity" },
+                    { label: t("materialQuality"), field: "materialQuality" },
+                    { label: t("trainingAnimation"), field: "trainingAnimation" },
+                    { label: t("trainingProgress"), field: "trainingProgress" },
+                    { label: t("metExpectations"), field: "metExpectations" },
+                    { label: t("objectivesAchieved"), field: "objectivesAchieved" },
+                    { label: t("exercisesRelevance"), field: "exercisesRelevance" },
+                    { label: t("willApplySkills"), field: "willApplySkills" }
+                ].map((question, index) => (
+                    <Box key={index} 
+                    sx={{ 
+                        width: '100%', 
+                        display: 'flex', 
+                        flexDirection: 'row',
+                        justifyContent: 'start',
+                        alignItems: 'center',
+                        gap: "40px" }}
+                    >
+                        <Typography>{question.label}</Typography>
+                        <Rating
+                            name={question.field}
+                            value={feedbacks?.hotFeedback?.[0]?.[question.field]}
+                            readOnly
+                        />
+                    </Box>
+                ))}
+                <TextField
+                    label={t("comments")}
+                    value={feedbacks?.hotFeedback?.[0]?.comments || ""}
+                    sx={{ 
+                        width: "50%",
+                        cursor: "pointer", 
+                        "& .MuiInputBase-input": { cursor: "pointer" }, 
+                        "& .MuiOutlinedInput-root": { cursor: "pointer" } 
+                    }}
+                    InputProps={{
+                        readOnly: true, 
+                    }}
+                />
+            </Box>
+            :feedbackType === "hot" && feedbacks?.hotFeedback?.length === 0 ?
+            <Typography
+                sx={{
+                    width: "100%",
+                    display:'flex',
+                    flexDirection: "row",
+                    justifyContent: "center",
+                    alignItems: "center",
+                }}
+            >
+                {t("hot_feedback_not_submited_yet")}
+            </Typography> 
+            :null}
+            <Box 
+                sx={{
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: '20px',
+                }}
+            >
+                <Button sx={{
+                    color: 'white',
+                    backgroundColor: '#2CA8D5',
+                    borderRadius: '10px',
+                    textDecoration: 'none',
+                    fontWeight: 'bold',
+                    width: '100px',
+                    height: '40px',
+                    marginTop: '10px',
+                    textTransform: "none",
+                    '&:hover': {
+                        backgroundColor: '#76C5E1',
+                        color: 'white',
+                    },
+                }} 
+                onClick={hideFeedbacksDialog}>
+                    {t("ok")}
+                </Button>
+            </Box>
+            </Dialog>
+            <Dialog
+            open={sendFeedbackRequest}
+            disableScrollLock={true}
+            onClose={hideSendFeedbackRequest}
+            PaperProps={{
+                sx: {
+                    width: "auto",  
+                    height: "auto", 
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "",
+                    alignItems: "center",
+                    borderRadius: "10px",
+                    padding: '20px',
+                }
+            }}
+        >
+            <DialogTitle>{t("feedback_request")}</DialogTitle>
+            <Box
+                sx={{
+                    width: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyItems: "center",
+                    alignItems: "center",
+                }}
+            >
+                <Typography>
+                    {t("feedback_type")}
+                </Typography>
+                <Box 
+                sx={{
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: '20px',
+                }}>
+                    <Button sx={{
+                        color: 'white',
+                        backgroundColor: '#2CA8D5',
+                        borderRadius: '10px',
+                        textDecoration: 'none',
+                        fontWeight: 'bold',
+                        width: 'auto',
+                        height: '40px',
+                        marginTop: '10px',
+                        textTransform: "none",
+                        '&:hover': {
+                            backgroundColor: '#76C5E1',
+                            color: 'white',
+                        },
+                    }} 
+                    onClick={showConfirmColdRequestDialog}
+                    >
+                        {t("cold_feedback")}
+                    </Button>
+                    <Button sx={{
+                        color: 'white',
+                        backgroundColor: '#EA9696',
+                        borderRadius: '10px',
+                        textDecoration: 'none',
+                        fontWeight: 'bold',
+                        width: 'auto',
+                        height: '40px',
+                        marginTop: '10px',
+                        textTransform: "none",
+                        '&:hover': {
+                            backgroundColor: '#EAB8B8',
+                            color: 'white',
+                        },
+                    }} 
+                    onClick={showConfirmHotRequestDialog}
+                    >
+                        {t("hot_feedback")}
+                    </Button>
+                </Box>
+            </Box>
             <Box 
                 sx={{
                     width: '100%',
@@ -1261,8 +2358,257 @@ const ManageTrainings = () => {
                         color: 'white',
                     },
                 }} 
-                onClick={hideAttendeeListDialog}>
+                onClick={hideSendFeedbackRequest}>
                     {t("cancel")}
+                </Button>
+            </Box>
+            </Dialog>
+            <Dialog
+            open={confirmColdRequest}
+            disableScrollLock={true}
+            onClose={hideConfirmColdRequestDialog}
+            PaperProps={{
+                sx: {
+                    width: "auto",  
+                    height: "auto", 
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "",
+                    alignItems: "center",
+                    borderRadius: "10px",
+                    padding: '20px',
+                }
+            }}
+        >
+            <DialogTitle>{t("request_cold_feedback")}?</DialogTitle>
+            <Box 
+                sx={{
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: '20px',
+                }}
+            >
+                <Button sx={{
+                    color: 'white',
+                    backgroundColor: '#EA9696',
+                    borderRadius: '10px',
+                    textDecoration: 'none',
+                    fontWeight: 'bold',
+                    width: '100px',
+                    height: '40px',
+                    marginTop: '10px',
+                    textTransform: "none",
+                    '&:hover': {
+                        backgroundColor: '#EAB8B8',
+                        color: 'white',
+                    },
+                }} 
+                onClick={hideConfirmColdRequestDialog}>
+                    {t("no")}
+                </Button>
+                <Button sx={{
+                    color: 'white',
+                    backgroundColor: '#2CA8D5',
+                    borderRadius: '10px',
+                    textDecoration: 'none',
+                    fontWeight: 'bold',
+                    width: '100px',
+                    height: '40px',
+                    marginTop: '10px',
+                    textTransform: "none",
+                    '&:hover': {
+                        backgroundColor: '#76C5E1',
+                        color: 'white',
+                    },
+                }}
+                onClick={() => sendColdRequest(selectedTrainingId)} 
+                >
+                    {t("yes")}
+                </Button>
+            </Box>
+            </Dialog>
+            <Dialog
+            open={confirmHotRequest}
+            disableScrollLock={true}
+            onClose={hideConfirmHotRequestDialog}
+            PaperProps={{
+                sx: {
+                    width: "auto",  
+                    height: "auto", 
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "",
+                    alignItems: "center",
+                    borderRadius: "10px",
+                    padding: '20px',
+                }
+            }}
+        >
+            <DialogTitle>{t("request_hot_feedback")}?</DialogTitle>
+            <Box 
+                sx={{
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: '20px',
+                }}
+            >
+                <Button sx={{
+                    color: 'white',
+                    backgroundColor: '#EA9696',
+                    borderRadius: '10px',
+                    textDecoration: 'none',
+                    fontWeight: 'bold',
+                    width: '100px',
+                    height: '40px',
+                    marginTop: '10px',
+                    textTransform: "none",
+                    '&:hover': {
+                        backgroundColor: '#EAB8B8',
+                        color: 'white',
+                    },
+                }} 
+                onClick={hideConfirmHotRequestDialog}>
+                    {t("no")}
+                </Button>
+                <Button sx={{
+                    color: 'white',
+                    backgroundColor: '#2CA8D5',
+                    borderRadius: '10px',
+                    textDecoration: 'none',
+                    fontWeight: 'bold',
+                    width: '100px',
+                    height: '40px',
+                    marginTop: '10px',
+                    textTransform: "none",
+                    '&:hover': {
+                        backgroundColor: '#76C5E1',
+                        color: 'white',
+                    },
+                }}
+                onClick={() => sendHotRequest(selectedTrainingId)} 
+                >
+                    {t("yes")}
+                </Button>
+            </Box>
+            </Dialog>
+            <Dialog
+            open={showSendReminder}
+            disableScrollLock={true}
+            onClose={hideSendReminderDialog}
+            PaperProps={{
+                sx: {
+                    width: "auto",  
+                    height: "auto", 
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "",
+                    alignItems: "center",
+                    borderRadius: "10px",
+                    padding: '20px',
+                }
+            }}
+        >
+            <DialogTitle>{t("send_reminder")} ?</DialogTitle>
+            <Box 
+                sx={{
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: '20px',
+                }}
+            >
+                <Button sx={{
+                    color: 'white',
+                    backgroundColor: '#EA9696',
+                    borderRadius: '10px',
+                    textDecoration: 'none',
+                    fontWeight: 'bold',
+                    width: '100px',
+                    height: '40px',
+                    marginTop: '10px',
+                    textTransform: "none",
+                    '&:hover': {
+                        backgroundColor: '#EAB8B8',
+                        color: 'white',
+                    },
+                }} 
+                onClick={hideSendReminderDialog}>
+                    {t("no")}
+                </Button>
+                <Button sx={{
+                    color: 'white',
+                    backgroundColor: '#2CA8D5',
+                    borderRadius: '10px',
+                    textDecoration: 'none',
+                    fontWeight: 'bold',
+                    width: '100px',
+                    height: '40px',
+                    marginTop: '10px',
+                    textTransform: "none",
+                    '&:hover': {
+                        backgroundColor: '#76C5E1',
+                        color: 'white',
+                    },
+                }}
+                onClick={() => handleSendReminder(mail, trainingName, traineeId)} 
+                >
+                    {t("yes")}
+                </Button>
+            </Box>
+            </Dialog>
+            <Dialog
+            open={showConfirmDelete}
+            disableScrollLock={true}
+            onClose={hideConfirmDeleteDialog}
+            PaperProps={{
+                sx: {
+                    width: "auto",  
+                    height: "auto", 
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "",
+                    alignItems: "center",
+                    borderRadius: "10px",
+                    padding: '20px',
+                }
+            }}
+        >
+            <DialogTitle>{t("confirm_delete_trainee")}?</DialogTitle>
+            <Box 
+                sx={{
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: '20px',
+                }}
+            >
+                <Button sx={{
+                    color: 'white',
+                    backgroundColor: '#EA9696',
+                    borderRadius: '10px',
+                    textDecoration: 'none',
+                    fontWeight: 'bold',
+                    width: '100px',
+                    height: '40px',
+                    marginTop: '10px',
+                    textTransform: "none",
+                    '&:hover': {
+                        backgroundColor: '#EAB8B8',
+                        color: 'white',
+                    },
+                }} 
+                onClick={hideConfirmDeleteDialog}>
+                    {t("no")}
                 </Button>
                 <Button sx={{
                     color: 'white',
@@ -1279,11 +2625,83 @@ const ManageTrainings = () => {
                         color: 'white',
                     },
                 }} 
-                onClick={() => handleDeleteTraining(selectedTrainingId)}>
-                    {t("save")}
+                onClick={() => handleUpdateAttendanceList()}>
+                    {t("yes")}
                 </Button>
             </Box>
             </Dialog>
+            <Dialog
+            open={confirmChangeDeadline}
+            disableScrollLock={true}
+            onClose={hideConfirmChangeDeadlineDialog}
+            PaperProps={{
+                sx: {
+                    width: "auto",  
+                    height: "auto", 
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "",
+                    alignItems: "center",
+                    borderRadius: "10px",
+                    padding: '20px',
+                }
+            }}
+        >
+            <DialogTitle>{t("confirm_deadline_change")} ?</DialogTitle>
+            <Box 
+                sx={{
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: '20px',
+                }}
+            >
+                <Button sx={{
+                    color: 'white',
+                    backgroundColor: '#EA9696',
+                    borderRadius: '10px',
+                    textDecoration: 'none',
+                    fontWeight: 'bold',
+                    width: '100px',
+                    height: '40px',
+                    marginTop: '10px',
+                    textTransform: "none",
+                    '&:hover': {
+                        backgroundColor: '#EAB8B8',
+                        color: 'white',
+                    },
+                }} 
+                onClick={hideConfirmChangeDeadlineDialog}>
+                    {t("no")}
+                </Button>
+                <Button sx={{
+                    color: 'white',
+                    backgroundColor: '#2CA8D5',
+                    borderRadius: '10px',
+                    textDecoration: 'none',
+                    fontWeight: 'bold',
+                    width: '100px',
+                    height: '40px',
+                    marginTop: '10px',
+                    textTransform: "none",
+                    '&:hover': {
+                        backgroundColor: '#76C5E1',
+                        color: 'white',
+                    },
+                }}
+                onClick={() => handleUpdateTrainingRegisDeadline(selectedTrainingId)} 
+                >
+                    {t("yes")}
+                </Button>
+            </Box>
+            </Dialog>
+            <Snackbar open={showsVerificationAlert} autoHideDuration={3000} onClose={handleVerificationAlertClose}>
+                <Alert onClose={handleVerificationAlertClose} severity={verifyAlert} variant="filled">
+                    {t(verifyAlertMessage)}
+                </Alert>
+            </Snackbar>
             <Pagination
                 count={pageCount}
                 page={page}

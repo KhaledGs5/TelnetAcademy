@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const validator = require('validator');
 
+
 const userSchema = new mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true , validate: [validator.isEmail, 'Invalid email format']},
@@ -19,7 +20,42 @@ const userSchema = new mongoose.Schema({
   jobtitle: { type: String, required: true },
   gender: { type: String, required: true },
   grade: { type: String, required: true },
-  type: { type: String, required: function () { return this.role === "trainer"; }, default: "internal" }, 
+  type: {
+    type: String,
+    required: function () {
+      return ["trainer", "trainee_trainer"].includes(this.role);
+    },
+    default: "internal"
+  },
+  trainingsCanSendColdFeedback: [{
+    type: mongoose.Schema.Types.ObjectId,ref: "Training",
+    required: function () {
+      return ["trainee", "trainee_trainer"].includes(this.role);
+    },
+    default: [],
+  }],
+  trainingsCanSendHotFeedback: [{
+    type: mongoose.Schema.Types.ObjectId,ref: "Training",
+    required: function () {
+      return ["trainee", "trainee_trainer"].includes(this.role);
+    },
+    default: [],
+  }],
+  trainingsAttended: [{
+    training: { type: mongoose.Schema.Types.ObjectId, ref: 'Training' },
+    quizPreTraining: {
+      data: Buffer,
+      contentType: String,
+      fileName: String,
+    },
+    quizPostTraining: {
+      data: Buffer,
+      contentType: String,
+      fileName: String,
+    },
+    scorePreTraining: { type: Number , default: 0 },
+    scorePostTraining: { type: Number , default: 0 },
+  }],  
 }, { collection: 'users', timestamps: true });
 
 const User = mongoose.model("User", userSchema);

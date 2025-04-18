@@ -521,6 +521,33 @@ const ManageSessions = () => {
         return col;
     };
 
+    const [numberOfScheduled, setNumberOfScheduled] = useState(0);
+    const [numberOfInProgress, setNumberOfInProgress] = useState(0);
+    const [numberOfCompleted, setNumberOfCompleted] = useState(0);
+    
+    useEffect(() => {
+        if (!Array.isArray(trainings)) return;
+    
+        let completed = 0;
+        let inProgress = 0;
+        let scheduled = 0;
+    
+        trainings.forEach(training => {
+            training.sessions.forEach((session) => {
+                const status = session.status;
+                if (status === 'scheduled') scheduled++;
+                else if (status === 'in_progress') inProgress++;
+                else if (status === 'completed') completed++;
+            });
+        });
+    
+        setNumberOfScheduled(scheduled);
+        setNumberOfInProgress(inProgress);
+        setNumberOfCompleted(completed);
+    }, [trainings]);
+    
+    
+
     const [selectedFilter, setSelectedFiler] = useState("all");
     const [searchedTitle, setSearchedTitle] = useState('');
     const [applyFilter, setApplyFilter] = useState(false);
@@ -871,7 +898,7 @@ const ManageSessions = () => {
                     }}
                     />
                 )}
-                    15<br/>{t("scheduled")}
+                    {numberOfScheduled}<br/>{t("scheduled")}
                 </Button>
                 <Button 
                 sx={{
@@ -895,7 +922,7 @@ const ManageSessions = () => {
                     }}
                     />
                 )}
-                11
+                {numberOfInProgress}
                 <br />
                 {t("in_progress")}{selectedFilter === "in_progress" ? "." : null}
                 </Button>
@@ -917,7 +944,7 @@ const ManageSessions = () => {
                     }}
                     />
                 )}
-                    40<br/>{t("completed")}
+                {numberOfCompleted}<br/>{t("completed")}
                 </Button>
             </Box>
             </Box>

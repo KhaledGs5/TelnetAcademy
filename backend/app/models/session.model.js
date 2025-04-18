@@ -12,10 +12,9 @@ const sessionSchema = new mongoose.Schema({
   duration: { type: Number },
   location: { type: String },
   status: { type: String, enum: ["scheduled", "in_progress", "completed"] },
-  attendanceList: [{ type: mongoose.Schema.Types.ObjectId , ref: "users"}],
-  training: { type: mongoose.Schema.Types.ObjectId, required: true,ref: "trainings" },
-  trainer: { type: mongoose.Schema.Types.ObjectId, ref: "users" },
-  trainees: [{ type: mongoose.Schema.Types.ObjectId, ref: "users" }],
+  training: { type: mongoose.Schema.Types.ObjectId, required: true,ref: "Training" },
+  trainer: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  presenttrainees: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
 }, { collection: 'sessions', timestamps: true });
 
 sessionSchema.index({ date: 1, training: 1 }, { unique: true });

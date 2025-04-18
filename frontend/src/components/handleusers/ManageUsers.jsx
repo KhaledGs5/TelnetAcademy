@@ -17,6 +17,7 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import CheckIcon from '@mui/icons-material/Check';
 import { useLanguage } from "../../languagecontext";
 import axios from "axios";
+import api from "../../api";
 import * as XLSX from 'xlsx';
 
 const ManageUsers = () => {
@@ -102,7 +103,7 @@ const ManageUsers = () => {
             grade: newUserGrade,
         };
         if(confirmNewUserPassword === newUserPassword) {
-            axios.post("http://localhost:5000/api/users", newUser)
+            api.post("/api/users", newUser)
             .then(() => {
                 fetchUsers();
                 hideNewUserForm();

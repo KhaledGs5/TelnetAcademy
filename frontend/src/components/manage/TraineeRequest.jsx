@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { getCookie , setCookie} from '../Cookies';
 import { useLocation } from 'react-router-dom';
 import { Box, Link, Typography,Tooltip,IconButton, MenuItem, Dialog, Button, DialogTitle, TableCell,TableRow,TableHead,TableContainer,Paper,TextField
-    ,TableBody,Table,FormControl, InputLabel,OutlinedInput,InputAdornment, Popover, Snackbar, Alert,Input
+    ,TableBody,Table,FormControl, InputLabel,OutlinedInput,InputAdornment, Popover, Snackbar, Alert,Input, Badge
 } from "@mui/material";
 import axios from 'axios';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
@@ -14,6 +14,7 @@ import FeedIcon from '@mui/icons-material/Feed';
 import PersonIcon from '@mui/icons-material/Person';
 import ClearIcon from '@mui/icons-material/Clear';
 import SearchIcon from '@mui/icons-material/Search';
+import { useNavbar } from '../../NavbarContext';
 import { StaticDatePicker, LocalizationProvider , DateTimePicker} from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
@@ -26,6 +27,7 @@ const TraineeRequest = () => {
     const location = useLocation();
     const [selectedTraineeId, setSelectedTraineeId] = useState("");
     const [selectedTrainingId, setSelectedTrainingId] = useState("");
+    const user = getCookie("User");
 
     // Verify ...........
 
@@ -39,8 +41,9 @@ const TraineeRequest = () => {
     // Fetch All Forms .................
 
     const [trainings, setTrainings] = useState([]);
+    const [traineeRequestNotif, setTraineeRequestNotif] = useState([]);
 
-    const fetchTrainingsWithRequests = () => {
+    const fetchTrainingsWithRequests = async () => {
         axios.get("http://localhost:5000/api/trainings")
             .then((response) => {
                 const updatedTrainings = response.data.filter(training => (
@@ -70,6 +73,12 @@ const TraineeRequest = () => {
             .catch((error) => {
                 console.error("Error fetching trainings:", error);
             });
+        const response = await axios.post("http://localhost:5000/api/notifications/noread", {rec : user._id });
+        setTraineeRequestNotif(
+            response.data.notifications
+                .filter(notification => notification.type === "New_Trainee_Request")
+                .map(notification => notification.sender)
+            );  
     };
     
 
@@ -77,6 +86,18 @@ const TraineeRequest = () => {
         fetchTrainingsWithRequests();
     }, []);
 
+    const {numberOfTrainingRequests} = useNavbar();
+    const {numberOfTraineeRequests, setNumberOfTraineeRequests} = useNavbar();
+
+
+    const handleOpenTraineeRequestNotifications = async (traineeId) => {
+        try {
+          await axios.put("http://localhost:5000/api/notifications/markread", {rec : user._id, sen : traineeId, tp : "New_Trainee_Request", rtp : "readTraineeRequestNotifications"});
+          setNumberOfTraineeRequests(0);
+        } catch (error) {
+          console.error("Error marking notifications as read", error);
+        }
+    };
 
     // fetch Trainees By Id
 
@@ -169,8 +190,8 @@ const TraineeRequest = () => {
         setVerifyAccept(false);
     };
 
-    const handleAcceptRequest = () => {
-        axios.put(`http://localhost:5000/api/trainings/accept/${selectedTrainingId}`, { trainee:selectedTraineeId })
+    const handleAcceptRequest = async () => {
+        await axios.put(`http://localhost:5000/api/trainings/accept/${selectedTrainingId}`, { trainee:selectedTraineeId, manageraccepted : user._id})
         .then(() => {
             hideVerifyRejectDialog();
             setVerifyAlertMessage("trainee_accepted");
@@ -182,10 +203,15 @@ const TraineeRequest = () => {
         .catch((error) => {
             console.error("Error deleting form:", error);
         });
+        await axios.post("http://localhost:5000/accept-request/", 
+            {
+                toEmail: traineesData[selectedTraineeId]?.email,
+                message: `Hello ${traineesData[selectedTraineeId]?.name}, your request has been accepted.`,
+            })
     };
 
 
-    // Delete Request
+    // Reject Request
     const [verifyReject, setVerifyReject] = useState(false);
     const [rejectMessage, setRejectMessage] = useState("");
 
@@ -200,7 +226,7 @@ const TraineeRequest = () => {
     };
 
     const handleDeleteRequest = () => {
-        axios.put(`http://localhost:5000/api/trainings/reject/${selectedTrainingId}`, { trainee:selectedTraineeId })
+        axios.put(`http://localhost:5000/api/trainings/reject/${selectedTrainingId}`, { trainee:selectedTraineeId, managerrejected:user._id })
         .then(() => {
             hideVerifyRejectDialog();
             setVerifyAlertMessage("trainee_rejected");
@@ -305,16 +331,44 @@ const TraineeRequest = () => {
                     marginTop: '20px',
                 }}  
             >
-                <Link
-                href="/requests/trainer"
-                sx={linkStyle("/requests/trainer")}>
-                    {t("trainer_requests")}
-                </Link>
+                <Badge badgeContent={numberOfTrainingRequests} color="primary"
+                    sx={{ 
+                        "& .MuiBadge-badge": { 
+                        fontSize: "10px", 
+                        height: "16px", 
+                        minWidth: "16px", 
+                        padding: "2px",
+                        position: "absolute",
+                        right: "10px",
+                        } 
+                    }}
+                >
+                    <Link
+                    href="/requests/trainer"
+                    sx={linkStyle("/requests/trainer")}
+                    >
+                        {t("trainer_requests")}
+                    </Link>
+                </Badge>
+                <Badge badgeContent={numberOfTraineeRequests} color="primary"
+                    sx={{ 
+                        "& .MuiBadge-badge": { 
+                        fontSize: "10px", 
+                        height: "16px", 
+                        minWidth: "16px", 
+                        padding: "2px",
+                        position: "absolute",
+                        right: "10px",
+                        } 
+                    }}
+                >
                 <Link
                 href="/requests/trainee"
-                sx={linkStyle("/requests/trainee")}>
+                sx={linkStyle("/requests/trainee")}
+                >
                     {t("trainee_requests")}
                 </Link>
+                </Badge>
             </Box>
             <Box       
                 sx={{
@@ -522,26 +576,37 @@ const TraineeRequest = () => {
                                 >
                                     {dayjs(req.date).format('YYYY-MM-DD HH:mm')}
                                 </Typography>
-                                <Box sx={{ width: '18%', paddingRight: "20px", display: "flex", flexDirection: "row", justifyContent: "end" }}>
+                                <Box sx={{width:'18%', paddingRight: "10px",display:"flex", flexDirection:"row", justifyContent:"end", alignItems: "center"}}>
+                                    {traineeRequestNotif.includes(req.trainee) ? <Badge color="primary" variant="dot" sx={{marginRight: "10px"}} /> : null}
                                     <Tooltip title={t("view_trainee_details")} arrow> 
-                                        <IconButton sx={{ color: "#76C5E1" }} onClick={() => handleShowTraineeDetails(req.trainee)}>
+                                        <IconButton sx={{ color: "#76C5E1" }} onClick={() => {
+                                            handleShowTraineeDetails(req.trainee);
+                                            handleOpenTraineeRequestNotifications(req.trainee);
+                                            }}>
                                             <PersonIcon /> 
                                         </IconButton>
                                     </Tooltip>
                                     <Tooltip title={t("view_training_details")} arrow> 
-                                        <IconButton sx={{ color: "#76C5E1" }} onClick={() => showTrainingDetails(training._id)}>
+                                        <IconButton sx={{ color: "#76C5E1" }} onClick={() => {
+                                            showTrainingDetails(training._id)
+                                            handleOpenTraineeRequestNotifications(req.trainee);
+                                        }}>
                                             <FeedIcon /> 
                                         </IconButton>
                                     </Tooltip>
                                     <Tooltip title={t("accept")} arrow> 
                                         <IconButton sx={{ color: "#76C5E1" }} onClick={() => { 
                                             showVerifyAcceptDialog(training._id, req.trainee);
+                                            handleOpenTraineeRequestNotifications(req.trainee);
                                         }}>
                                             <AddIcon />
                                         </IconButton>
                                     </Tooltip>
                                     <Tooltip title={t("reject")} arrow>
-                                        <IconButton sx={{ color: "#EA9696" }} onClick={() => showVerifyRejectDialog(training._id, req.trainee)}>
+                                        <IconButton sx={{ color: "#EA9696" }} onClick={() => {
+                                            showVerifyRejectDialog(training._id, req.trainee);
+                                            handleOpenTraineeRequestNotifications(req.trainee);
+                                        }}>
                                             <CloseIcon />
                                         </IconButton>
                                     </Tooltip>

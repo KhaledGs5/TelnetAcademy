@@ -11,6 +11,7 @@ import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import ClearIcon from '@mui/icons-material/Clear';
 import SearchIcon from '@mui/icons-material/Search';
+import { useNavbar } from '../../NavbarContext';
 import io from "socket.io-client";
 import { useLanguage } from "../../languagecontext";
 import { StaticDatePicker, LocalizationProvider , DateTimePicker} from "@mui/x-date-pickers";
@@ -24,6 +25,7 @@ const TrainerRequest = () => {
 
     const location = useLocation();
     const [selectedFormId, setSelectedFormId] = useState("");
+    const user = getCookie("User") ?? null;
 
     // Verify Create Training...........
 
@@ -37,8 +39,9 @@ const TrainerRequest = () => {
     // Fetch All Forms
 
     const [forms, setForms] = useState([]);
+    const [trainingRequestNotif, setTrainingRequestNotif] = useState([]);
 
-    const fetchForms = () => {
+    const fetchForms = async () => {
         axios.get("http://localhost:5000/api/form")
             .then((response) => {
                 const updatedForms = response.data
@@ -52,12 +55,34 @@ const TrainerRequest = () => {
             .catch((error) => {
                 console.error("Error fetching forms:", error);
             });
+        const response = await axios.post("http://localhost:5000/api/notifications/noread", {rec : user._id });
+        setTrainingRequestNotif(
+            response.data.notifications
+              .filter(notification => notification.type === "New_Training_Request")
+              .map(notification => notification.sender)
+          );          
     };
-    
 
     useEffect(() => {
         fetchForms();
     }, []);
+
+    const getFormById = (id) => {
+        return Object.values(forms).find(form => form._id === id) || null;
+    };
+
+    const {numberOfTrainingRequests, setNumberOfTrainingRequests} = useNavbar();
+    const {numberOfTraineeRequests, setNumberOfTraineeRequests} = useNavbar();
+
+    const handleOpenTrainingRequestNotifications = async (trainerId) => {
+        try {
+          await axios.put("http://localhost:5000/api/notifications/markread", {rec : user._id,sen : trainerId,tp : "New_Training_Request", rtp : "readTrainingRequestNotifications"});
+          setNumberOfTrainingRequests(0);
+        } catch (error) {
+          console.error("Error marking notifications as read", error);
+        }
+    };
+
 
 
      // Adding new Training
@@ -170,13 +195,21 @@ const TrainerRequest = () => {
             hideNewTrainingForm();
             addSessions(response.data._id);
             axios.put(`http://localhost:5000/api/form/status/${selectedFormId}`, { status:"approved" })
+                .then(() => {fetchForms();});
             if(trainerInfo.role === "trainee"){
                 axios.put(`http://localhost:5000/api/users/${trainerInfo._id}`, {role : "trainee_trainer"})
+                    .then(() => {
+                        axios.post("http://localhost:5000/api/notifications/rolechange", {rec: trainerInfo._id, sen:user._id,tp:"Role_Changed", msg:"your_role_updated_to_trainee_trainer" })
+                        fetchForms();
+                        axios.post("http://localhost:5000/role-changed", {
+                            toEmail: trainerInfo.email,
+                            message: `Hello ${trainerInfo.name}, your role has been updated to Trainee-Trainer.`,
+                        });
+                    })
             }
             setVerifyAlertMessage("training_added_successfully");
             setVerifyAlert("success");
             setShowsVerifificationAlert(true);
-            fetchForms();
         })
         .catch((error) => {
             console.error("Error adding training:", error);
@@ -199,6 +232,11 @@ const TrainerRequest = () => {
             });
         }
         };
+        axios.post("http://localhost:5000/new_training_status", 
+            {
+                toEmail: trainerInfo?.email,
+                message: `Hello ${trainerInfo?.name}, your training request status has been updated to approved.`,
+            })
     };
 
 
@@ -207,6 +245,7 @@ const TrainerRequest = () => {
 
     const showVerifyRejectDialog = (formId) => {
         setSelectedFormId(formId);
+        getTrainer(formId);
         setVerifyReject(true);
     };
 
@@ -214,12 +253,13 @@ const TrainerRequest = () => {
         setVerifyReject(false);
     };
 
-    const handleDeleteRequest = () => {
-        console.log("here");
-        axios.put(`http://localhost:5000/api/form/status/${selectedFormId}`, { status:"rejected" })
+    const handleDeleteRequest = async () => {
+        const prevstatus = getFormById(selectedFormId)?.status;
+        const stat = prevstatus === "pending" ? "rejected" : "deleted"
+        await axios.put(`http://localhost:5000/api/form/status/${selectedFormId}`, { status:stat })
         .then(() => {
             hideVerifyRejectDialog();
-            setVerifyAlertMessage("training_rejected");
+            setVerifyAlertMessage("training_rejected/deleted");
             setVerifyAlert("success");
             setShowsVerifificationAlert(true);
             fetchForms();
@@ -227,6 +267,12 @@ const TrainerRequest = () => {
         .catch((error) => {
             console.error("Error deleting form:", error);
         });
+
+        await axios.post("http://localhost:5000/new_training_status", 
+            {
+                toEmail: trainerInfo?.email,
+                message: `Hello ${trainerInfo?.name}, your training request status has been updated to ${stat}.`,
+            })
     };
 
     // Order ........................
@@ -319,16 +365,44 @@ const TrainerRequest = () => {
                     marginTop: '20px',
                 }}  
             >
-                <Link
-                href="/requests/trainer"
-                sx={linkStyle("/requests/trainer")}>
-                    {t("trainer_requests")}
-                </Link>
+                <Badge badgeContent={numberOfTrainingRequests} color="primary"
+                    sx={{ 
+                        "& .MuiBadge-badge": { 
+                        fontSize: "10px", 
+                        height: "16px", 
+                        minWidth: "16px", 
+                        padding: "2px",
+                        position: "absolute",
+                        right: "10px",
+                        } 
+                    }}
+                >
+                    <Link
+                    href="/requests/trainer"
+                    sx={linkStyle("/requests/trainer")}
+                    >
+                        {t("trainer_requests")}
+                    </Link>
+                </Badge>
+                <Badge badgeContent={numberOfTraineeRequests} color="primary"
+                    sx={{ 
+                        "& .MuiBadge-badge": { 
+                        fontSize: "10px", 
+                        height: "16px", 
+                        minWidth: "16px", 
+                        padding: "2px",
+                        position: "absolute",
+                        right: "10px",
+                        } 
+                    }}
+                >
                 <Link
                 href="/requests/trainee"
-                sx={linkStyle("/requests/trainee")}>
+                sx={linkStyle("/requests/trainee")}
+                >
                     {t("trainee_requests")}
                 </Link>
+                </Badge>
             </Box>
             <Box       
                 sx={{
@@ -520,9 +594,11 @@ const TrainerRequest = () => {
                             >
                                 {dayjs(form.dateOfHire).format('YYYY-MM-DD')}
                             </Typography>
-                            <Box sx={{width:'16%', paddingRight: "20px",display:"flex", flexDirection:"row", justifyContent:"end"}}>
+                            <Box sx={{width:'16%', paddingRight: "20px",display:"flex", flexDirection:"row", justifyContent:"end", alignItems: "center"}}>
+                                {trainingRequestNotif.includes(form.trainer) ? <Badge color="primary" variant="dot" sx={{marginRight: "10px"}} /> : null}
                                 <Tooltip title={t("add_training")} arrow> 
-                                    <IconButton sx={{color:"#76C5E1"}} onClick={() => {showNewTrainingForm(form._id);
+                                    <IconButton sx={{color:"#76C5E1"}} onClick={() => {
+                                        showNewTrainingForm(form._id);
                                         showDetails(form._id);
                                     }}>
                                         <AddIcon/>
@@ -534,7 +610,10 @@ const TrainerRequest = () => {
                                     </IconButton>
                                 </Tooltip>
                                 <Tooltip title={!form.showDetails ? t("view_details") : t("hide_details")} arrow> 
-                                    <IconButton sx={{color:"#76C5E1"}} onClick={() => toggleShowDetails(form._id)}>
+                                    <IconButton sx={{color:"#76C5E1"}} onClick={() => {
+                                        toggleShowDetails(form._id);
+                                        handleOpenTrainingRequestNotifications(form.trainer);    
+                                    }}>
                                         {!form.showDetails ? <KeyboardArrowDownIcon/> : <KeyboardArrowUpIcon/>}
                                     </IconButton>
                                 </Tooltip>
@@ -1322,7 +1401,7 @@ const TrainerRequest = () => {
                         }
                     }}
                 >
-                    <DialogTitle>{t("confirm_reject_request")}?</DialogTitle>
+                    <DialogTitle>{t("confirm_delete_request")}?</DialogTitle>
                     <Box 
                         sx={{
                             width: '100%',

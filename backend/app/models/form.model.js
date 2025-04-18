@@ -21,8 +21,8 @@ const formSchema = new mongoose.Schema({
         }
     ],
     motivation: {type: String, required: false},
-    trainer: { type: mongoose.Schema.Types.ObjectId, ref: "users" },
-    status: { type: String, enum: ["pending","approved", "rejected"], default: "pending" },
+    trainer: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    status: { type: String, enum: ["pending","approved", "rejected", "deleted"], default: "pending" },
 }, { collection: "form" ,timestamps: true });
 
 const Form = mongoose.model("Form", formSchema);

@@ -14,12 +14,14 @@ import TrainerRequest from './components/manage/TrainerRequest.jsx';
 import TrainerCalls from './components/TrainerCalls.jsx';
 import TrainerTraining from './components/TrainerTraining.jsx';
 import TraineeSession from './components/TraineeSession.jsx';
-import BecameTrainer from './components/BecameTrainer.jsx';
+import BecomeTrainer from './components/BecomeTrainer.jsx';
 import ManageTrainings from './components/manage/ManageTrainings.jsx';
-import EnrolledTraineeSessions from './components/EnrolledTraineeSessions.jsx';
+import TraineeTrainings from './components/TraineeTrainings.jsx';
 import { getCookie } from './components/Cookies.jsx';
 import TraineeRequest from './components/manage/TraineeRequest.jsx';
+import { NavbarProvider } from './NavbarContext.js';
 import './index.css';
+
 
 
 function App() {
@@ -27,37 +29,39 @@ function App() {
   const signedIn = getCookie("SignedIn") || null;
 
   return (
-    <Router>
-      <Navbar />
-      <Routes>
-        {user && signedIn ? (
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        ) : (
-          <Route path="/" element={<Home />} />
-        )}
-        <Route path="/signin" element={<SignIn />} />
-        <Route path="/verify" element={<Verify />} />
-        {signedIn && (
-          <>
-            <Route path="/manageusers" element={<ManageUsers />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/managesessions" element={<ManageSessions />} />
-            <Route path="/managetrainings" element={<ManageTrainings />} />
-            <Route path="/trainersession" element={<TrainerSession />} />
-            <Route path="/trainertraining" element={<TrainerTraining />} />
-            <Route path="/traineesession" element={<TraineeSession />} />
-            <Route path="/enrolledtrainee" element={<EnrolledTraineeSessions />} />
-            <Route path="/becametrainer" element={<BecameTrainer />} />
-            <Route path="/requests" element={<Navigate to="/requests/trainer" replace />} />
-            <Route path="/requests/trainee" element={<TraineeRequest />} />
-            <Route path="/requests/trainer" element={<TrainerRequest />} />
-            <Route path="/trainercall" element={<TrainerCalls />} />
-            <Route path="/account" element={<Profile />} />
-            <Route path="/calendar" element={<Calendar />} />
-          </>
-        )}
-      </Routes>
-    </Router>
+    <NavbarProvider>
+      <Router>
+        <Navbar />
+        <Routes>
+          {user && signedIn ? (
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          ) : (
+            <Route path="/" element={<Home />} />
+          )}
+          <Route path="/signin" element={<SignIn />} />
+          <Route path="/verify" element={<Verify />} />
+          {signedIn && (
+            <>
+              <Route path="/manageusers" element={<ManageUsers />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/managesessions" element={<ManageSessions />} />
+              <Route path="/managetrainings" element={<ManageTrainings />} />
+              <Route path="/trainersession" element={<TrainerSession />} />
+              <Route path="/trainertraining" element={<TrainerTraining />} />
+              <Route path="/traineesession" element={<TraineeSession />} />
+              <Route path="/enrolledtrainee" element={<TraineeTrainings />} />
+              <Route path="/becometrainer" element={<BecomeTrainer />} />
+              <Route path="/requests" element={<Navigate to="/requests/trainer" replace />} />
+              <Route path="/requests/trainee" element={<TraineeRequest />} />
+              <Route path="/requests/trainer" element={<TrainerRequest />} />
+              <Route path="/trainercall" element={<TrainerCalls />} />
+              <Route path="/account" element={<Profile />} />
+              <Route path="/calendar" element={<Calendar />} />
+            </>
+          )}
+        </Routes>
+      </Router>
+    </NavbarProvider>
   );
 }
 

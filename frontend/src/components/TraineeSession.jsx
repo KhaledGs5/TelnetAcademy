@@ -37,7 +37,6 @@ const TraineeSession = () => {
 
   // Fetch All Trainings with corresponding sessions
   const [trainings, setTrainings] = useState([]);
-  const [markedTrainingsIds, setMarkedTrainingsIds] = useState([]);
   const user = getCookie("User");
 
   const updateStatus = () => {
@@ -57,15 +56,30 @@ const TraineeSession = () => {
   const fetchTrainings = () => {
     axios.get("http://localhost:5000/api/trainings")
         .then((response) => {
-            const trainingsWithModified = response.data.map(training => ({
+            const trainingsWithModified = response.data
+            .filter(training => training.trainer !== user._id 
+                && (
+                !training.traineesrequests.some(request => request.trainee === user._id) 
+                && !training.acceptedtrainees.includes(user._id) && !training.delivered &&
+                new Date() < new Date(training.registrationDeadline)
+            ))
+            .map(training => ({
                 ...training,
                 sessions: [],
-                full: training.nbOfAcceptedRequests >= training.nbOfParticipants,
+                full: training.nbOfConfirmedRequests >= training.nbOfParticipants,
             }));
-
+            let fullTrainings = 0;
+            let notFullTrainings = 0;
             setTrainings(trainingsWithModified);
 
             trainingsWithModified.forEach((training) => {
+                if(training.full){
+                    fullTrainings++;
+                }else{
+                    notFullTrainings++;
+                }
+                setNumberOfFullTrainings(fullTrainings);
+                setNumberOfNotFullTrainings(notFullTrainings);
                 axios.get(`http://localhost:5000/api/sessions/training/${training._id}`)
                     .then((response) => {
                         const updatedSessions = response.data.map(session => ({
@@ -87,16 +101,8 @@ const TraineeSession = () => {
         });
   };
 
-  const fetchMarkedTrainingsIds = () => {
-    axios.get(`http://localhost:5000/api/users/${user._id}`)
-       .then((response) => {
-            const data = response.data;
-            setMarkedTrainingsIds(data.listOfMarkedTrainings || []);
-        })
-       .catch((error) => {
-            console.error("Error fetching marked trainings:", error);
-        });
-  };
+  const [numberOfFullTrainings, setNumberOfFullTrainings] = useState(0);
+  const [numberOfNotFullTrainings, setNumberOfNotFullTrainings] = useState(0);
 
   // Verify Update Or Create Training...........
 
@@ -110,30 +116,6 @@ const TraineeSession = () => {
 
     const [TrainingTrainers, setTrainingTrainers] = useState([]); 
 
-    // Mark the training
-
-    const toggleAndUpdateTrainingMark = async (id) => {
-        setMarkedTrainingsIds(prevIds => {
-            const updatedIds = prevIds.includes(id) 
-                ? prevIds.filter(trainingId => trainingId !== id) 
-                : [...prevIds, id];
-    
-            (async () => {
-                try {
-                    await axios.put(`http://localhost:5000/api/users/marked_trainings/${user._id}`, { listOfMarkedTrainings: updatedIds }).
-                    then((response) => {
-                        console.log("Updated successfully:", response.data);
-                    })
-                    
-                } catch (error) {
-                    console.error("Update failed:", error.response?.data || error.message);
-                }
-            })();
-    
-            return updatedIds;
-        });
-    };
-    
     // Register in training
 
     const [registerForm, setRegisterForm] = useState(false);
@@ -156,10 +138,11 @@ const TraineeSession = () => {
                 setVerifyAlertMessage("registration_successful");
                 setVerifyAlert("success");
                 hideRegisterForm();
+                fetchTrainings();
             })
             .catch((error) => {
                 setShowsVerifificationAlert(true);
-                setVerifyAlertMessage(error.response.data.error);
+                setVerifyAlertMessage(error.response.data.message);
                 setVerifyAlert("error");
             });
     };
@@ -196,8 +179,8 @@ const TraineeSession = () => {
     // Filters ....................
     const [otherFilterLocation, setOtherFilterLocation] = useState(false);
     const FilterColors = {
-        "full": "#FFCDD2",
-        "not_full": "#C8E6C9",
+        "full": "#C8E6C9",
+        "not_full": "#FFCDD2",
     }
 
     const [selectedFilter, setSelectedFiler] = useState("all");
@@ -244,7 +227,6 @@ const TraineeSession = () => {
 
     useEffect(() => {
         fetchTrainers();
-        fetchMarkedTrainingsIds();
         fetchTrainings();
     }, []);
 
@@ -452,26 +434,6 @@ const TraineeSession = () => {
                     </Button>
                     <Button 
                         sx={{...buttonStyle, backgroundColor :"#C8E6C9"}}
-                        onClick={() => setSelectedFiler("not_full")}
-                    >
-                    {selectedFilter === "not_full" && (
-                        <Box
-                        sx={{
-                            width: 12,
-                            height: 12, 
-                            backgroundColor: "#2CA8D5", 
-                            borderRadius: "50%",
-                            position: "absolute",
-                            top: 10, 
-                            right: 10, 
-                            boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
-                        }}
-                        />
-                    )}
-                        5<br/>{t("not_full")}
-                    </Button>
-                    <Button 
-                        sx={{...buttonStyle, backgroundColor :"#FFCDD2"}}
                         onClick={() => setSelectedFiler("full")}
                     >
                     {selectedFilter === "full" && (
@@ -488,7 +450,27 @@ const TraineeSession = () => {
                         }}
                         />
                     )}
-                        10<br/>{t("full")}
+                        {numberOfFullTrainings}<br/>{t("full")}
+                    </Button>
+                    <Button 
+                        sx={{...buttonStyle, backgroundColor :"#FFCDD2"}}
+                        onClick={() => setSelectedFiler("not_full")}
+                    >
+                    {selectedFilter === "not_full" && (
+                        <Box
+                        sx={{
+                            width: 12,
+                            height: 12, 
+                            backgroundColor: "#2CA8D5", 
+                            borderRadius: "50%",
+                            position: "absolute",
+                            top: 10, 
+                            right: 10, 
+                            boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
+                        }}
+                        />
+                    )}
+                        {numberOfNotFullTrainings}<br/>{t("not_full")}
                     </Button>
                 </Box>
             </Box>
@@ -783,13 +765,12 @@ const TraineeSession = () => {
                     </Button>
                     <Box
                         sx={{
-                        width: '60%',
+                        width: '50%',
                         height: '100%',
                         display: 'flex',
                         justifyContent: 'start',
                         alignItems: 'center',
                         gap: '5px',
-                        paddingRight: '25px',
                         }}
                     >
                         <Button
@@ -831,14 +812,19 @@ const TraineeSession = () => {
                     </Box>
                     <Button
                         sx={{...orderStyle, width: '15%'}}
-                        onClick={() => handleChangeTrainingOrder("nbOfParticipants")}
                     >
                         <Typography>
-                            {t("nbOfParticipants")}
+                            {t("remaining_places")}
                         </Typography>
-                        {selectedTrainingOrder === "nbOfParticipants" ? (trainingOrderState === "Up" ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />) : null}
                     </Button>
-                    <Box sx={{width:'10%', display:"flex", flexDirection:"row", justifyContent:"end"}}>
+                    <Button
+                        sx={{...orderStyle, width: '10%'}}
+                    >
+                        <Typography>
+                            {t("deadline")}
+                        </Typography>
+                    </Button>
+                    <Box sx={{width:'5%', display:"flex", flexDirection:"row", justifyContent:"end"}}>
                     </Box>
                 </Box>
             </Box>
@@ -887,39 +873,21 @@ const TraineeSession = () => {
                             borderRight: '1px solid rgb(192, 192, 192)',
                             padding: 2,
                         }}
-                        ><Box
-                            sx={{
-                                display: "flex",
-                                flexDirection: "row",
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                            }}
                         >
-                            <Box
-                                sx={{
-                                width: '20px',
-                                height: '20px',
-                                borderRadius: '50%',
-                                backgroundColor: training.full ? FilterColors.full : FilterColors.not_full,
-                                marginRight: "10px",
+                        <Typography 
+                                sx={{ 
+                                    width: "100%",
+                                    display: "flex",
+                                    alignItems: "start",
+                                    justifyContent: "center",
                                 }}
-                            />
-                            {training.full ? 'Full' : 'Not Full'}
-                        </Box>
-                            <Typography 
-                                    sx={{ 
-                                        width: "100%",
-                                        display: "flex",
-                                        alignItems: "start",
-                                        justifyContent: "start",
-                                    }}
-                                >
-                                    {training.title || t("title")}
-                            </Typography>
+                            >
+                                {training.title || t("title")}
+                        </Typography>
                         </Box>
                         <Box
                         sx={{
-                            width: '60%',
+                            width: '50%',
                             display: 'flex',
                             flexDirection: "column",
                             justifyContent: 'center',
@@ -1000,11 +968,35 @@ const TraineeSession = () => {
                                 justifyContent: "center",
                             }}
                         >
-                            {training.nbOfParticipants|| t("numberOfParticipants")}
+                            {training.nbOfParticipants - training.nbOfConfirmedRequests || training.nbOfParticipants}
+                        </Typography>
+                        <Typography 
+                        variant="outlined"
+                            sx={{ 
+                                border: "1px solid #ccc", 
+                                borderRadius: "5px", 
+                                cursor: "pointer",
+                                height: "60px",
+                                width: "10%",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                            }}
+                        >
+                            {dayjs(training.registrationDeadline).format("YYYY-MM-DD HH:mm")|| t("registrationDeadline")}
                         </Typography>
                         <Box 
-                        sx={{width:'10%', display:"flex", flexDirection:"row", justifyContent:"end", paddingRight:"10px"}}
+                        sx={{width:'8%', display:"flex", flexDirection:"row", justifyContent:"end", alignItems:"center", paddingRight:"10px"}}
                         >
+                            <Box
+                                sx={{
+                                width: '20px',
+                                height: '20px',
+                                borderRadius: '50%',
+                                backgroundColor: training.full ? FilterColors.full : FilterColors.not_full,
+                                marginRight: "10px",
+                                }}
+                            />
                             <Tooltip title={t("view_details")} arrow> 
                                 <IconButton sx={{color:"#76C5E1"}}  onClick={() => {showTrainingDetails(training._id);
                                 }}>

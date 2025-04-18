@@ -1,5 +1,7 @@
 const User = require("../models/user.model");
-const Notification = require("../models/notification.model");
+const Training = require("../models/training.model");
+const jwt = require("jsonwebtoken");
+const { notifyUsers, deleteNotif,notify } = require("../controllers/notification.controllers");
 
 const getUsers = async (req, res) => {
   try {
@@ -27,12 +29,22 @@ const signUser = async (req, res) => {
   const { email, password, role } = req.body;
   const user = await User.findOne({ email });
   if (!user) return res.status(401).json({ message: "email_not_found" });
-  const passwordMatch = (password == user.password);
-  const roleMatch = (role == user.role || (user.role == "trainee_trainer" && role != "manager"));
+
+  const passwordMatch = (password === user.password); 
+  const roleMatch = (role === user.role || (user.role === "trainee_trainer" && role !== "manager"));
+
   if (!passwordMatch) return res.status(401).json({ message: "incorrect_password" });
   if (!roleMatch) return res.status(401).json({ message: "role_not_allowed" });
-  res.json( user );
+
+  const token = jwt.sign(
+    { id: user._id, role: user.role },
+    process.env.PRIVATE_KEY,
+    { expiresIn: '1d' }
+  );
+
+  res.json({ token, user });
 };
+
 
 const verifyEmail = async (req, res) => {
   try {
@@ -47,35 +59,32 @@ const verifyEmail = async (req, res) => {
   }
 };
 
-
 const createUser = async (req, res) => {
   try {
     const { name, email, password, role, activity, jobtitle, grade, gender } = req.body;
+
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(400).json({ message: "Email already exists" });
 
-    const user = new User({ name, email, password, role ,activity, jobtitle, grade, gender });
+    const user = new User({ name, email, password, role, activity, jobtitle, grade, gender });
+
     await user.save();
 
     res.status(201).json({ message: "User created successfully", user });
   } catch (err) {
     if (err.name === 'ValidationError') {
       if (err.errors.password) {
-        return res.status(400).json({
-          error:
-            'wrong_password_format',
-        });
+        return res.status(400).json({ error: 'wrong_password_format' });
       }
       if (err.errors.email) {
-        return res.status(400).json({
-          error: 'invalid_email_format',
-        });
+        return res.status(400).json({ error: 'invalid_email_format' });
       }
     }
 
     if (err.code === 11000) {
       return res.status(400).json({ error: 'email_already_exists' });
     }
+
     res.status(500).json({ message: err.message });
   }
 };
@@ -110,26 +119,6 @@ const updateUser = async (req, res) => {
     }
 };
 
-const updateMarkedTrainings = async (req, res) => {
-  try {
-      const { id: _id } = req.params;
-      const { listOfMarkedTrainings } = req.body; 
-
-      const updatedUser = await User.findByIdAndUpdate(
-          _id,
-          { listOfMarkedTrainings },
-          { new: true }
-      );
-
-      if (!updatedUser) return res.status(404).json({ message: "User not found" });
-
-      res.json(updatedUser);
-  } catch (err) {
-      res.status(500).json({ message: err.message });
-  }
-};
-
-
 const deleteUser = async (req, res) => {
     try {
       const { id: _id } = req.params;
@@ -142,49 +131,162 @@ const deleteUser = async (req, res) => {
     }
 }
 
-const getNotif = async (req, res) => {
+const callForTrainers = async (req, res) => { 
   try {
-    const { id: _id } = req.params;
-    const unreadNotifications = await Notification.find({ recipient: _id, isRead: false });
-    res.status(200).json({ count: unreadNotifications.length, notifications: unreadNotifications });
+      const { sen, tp, msg } = req.body;
+
+      notifyUsers(sen, tp, msg);
+      res.status(201).json({ success: true, message: "Notifications sent to all trainers!" });
   } catch (error) {
-    res.status(500).json({ message: "Error fetching notifications" });
+      console.error(error);
+      res.status(500).json({ success: false, message: "Error sending notifications" });
+  }
+}
+
+const uploadQuiz = async (req, res) => {
+  try {
+    const { userId, trainingId } = req.body;
+    const file = req.file;
+
+    if (!file) {
+      console.log("No file uploaded");
+      return res.status(400).json({ message: "No file uploaded" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const training = await Training.findById(trainingId);
+    if (!training) {
+      return res.status(404).json({ message: "Training not found" });
+    }
+
+    let trainingRecord = user.trainingsAttended.find(
+      t => t.training.toString() === trainingId
+    );
+
+    if (!trainingRecord) {
+      trainingRecord = {
+        training: trainingId,
+        quizPreTraining: {},
+        quizPostTraining: {},
+      };
+      user.trainingsAttended.push(trainingRecord);
+    }
+
+    const type = training.quiz?.type;
+
+
+    const quizData = {
+      data: file.buffer,
+      contentType: file.mimetype,
+      fileName: file.originalname,
+    };
+
+    if (type === "pre") {
+      trainingRecord.quizPreTraining = quizData;
+    } else if (type === "post") {
+      trainingRecord.quizPostTraining = quizData;
+    } else {
+      return res.status(400).json({ message: "Invalid quiz type" });
+    }
+
+    notify(training.trainer, userId, "Quiz_Uploaded_From_Trainee", trainingId.toString());
+    await user.save();
+    res.status(200).json({ message: "quiz uploaded successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-const getAvailableNotif = async (req, res) => {
+const getQuizFile = async (req, res) => {
   try {
-    const { id: _id } = req.params;
-    const notifications = await Notification.find({ recipient: _id });
-    res.status(200).json({ notifications });
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching notifications" });
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const { trainingId, type } = req.body;
+    if (!trainingId || !type) {
+      return res.status(400).json({ message: "Missing trainingId or type" });
+    }
+
+    const tr = await Training.findById(trainingId);
+    if (!tr) {
+      return res.status(404).json({ message: "Training not found" });
+    }
+
+    const training = user.trainingsAttended.find(
+      t => t.training.toString() === trainingId
+    );
+    if (!training) {
+      return res.status(404).json({ message: "Training not found" });
+    }
+
+    let quizFile = null;
+    if (type === "pre") {
+      quizFile = training.quizPreTraining;
+    } else if (type === "post") {
+      quizFile = training.quizPostTraining;
+    } else {
+      return res.status(400).json({ message: "Invalid quiz type" });
+    }
+
+    if (!quizFile || !quizFile.data) {
+      return res.status(404).json({ message: `No ${type}-quiz file found` });
+    }
+
+    res.setHeader('Content-Type', quizFile.contentType || 'application/octet-stream');
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(quizFile.fileName)}"`);
+
+    deleteNotif(tr.trainer,req.params.id, "Quiz_Uploaded_From_Trainee", null);
+    res.send(quizFile.data);
+  } catch (err) {
+    console.error("Download error:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-const markRead = async (req, res) => {
+const updateScore = async (req, res) => {
   try {
-    const { id: _id } = req.params;
-    await Notification.updateMany({ recipient: _id, isRead: false }, { isRead: true });
-    req.io.to(trainerId).emit("readNotifications");
-    res.status(200).json({ message: "Notifications marked as read" });
-  } catch (error) {
-    res.status(500).json({ message: "Error updating notifications" });
+    const { traineeId, trainingId, scorePre, scorePost } = req.body;
+    console.log(scorePre, scorePost);
+
+    const user = await User.findById(traineeId);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const trainingIndex = user.trainingsAttended.findIndex(
+      t => t.training.toString() === trainingId
+    );
+
+    if (trainingIndex === -1) {
+      user.trainingsAttended.push({
+        training: trainingId,
+        quizPreTraining: {},
+        quizPostTraining: {},
+        scorePreTraining: scorePre ?? 0,
+        scorePostTraining: scorePost ?? 0,
+      });
+    } else {
+      if (scorePre) {
+        user.trainingsAttended[trainingIndex].scorePreTraining = scorePre;
+        console.log(user.trainingsAttended[trainingIndex]);
+      }
+      if (scorePost) {
+        user.trainingsAttended[trainingIndex].scorePostTraining = scorePost;
+      }
+    }
+
+    await user.save();
+    res.status(200).json({ message: "Scores updated successfully" });
+  } catch (err) {
+    console.error("Error updating scores:", err);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-const deleteNotif = async (req, res) => {
-  try {
-    const { id: _id } = req.params;
-    await Notification.deleteMany({ recipient: _id });
-    res.status(200).json({ message: "Notifications deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ message: "Error deleting notifications" });
-  }
-};
 
 
-
-module.exports = { getUsers,signUser,verifyEmail,createUser,updateUser,deleteUser, getUserById, updateMarkedTrainings, getNotif,markRead, deleteNotif,
-  getAvailableNotif
-};
+module.exports = { getUsers,signUser,verifyEmail,createUser,updateUser,deleteUser, getUserById,callForTrainers,uploadQuiz,getQuizFile,updateScore};
