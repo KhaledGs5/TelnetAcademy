@@ -204,6 +204,7 @@ const TrainerRequest = () => {
                         axios.post("http://localhost:5000/role-changed", {
                             toEmail: trainerInfo.email,
                             message: `Hello ${trainerInfo.name}, your role has been updated to Trainee-Trainer.`,
+                            url: "http://localhost:3000/dashboard",
                         });
                     })
             }
@@ -236,6 +237,7 @@ const TrainerRequest = () => {
             {
                 toEmail: trainerInfo?.email,
                 message: `Hello ${trainerInfo?.name}, your training request status has been updated to approved.`,
+                url: "http://localhost:3000/trainertraining",
             })
     };
 
@@ -272,6 +274,7 @@ const TrainerRequest = () => {
             {
                 toEmail: trainerInfo?.email,
                 message: `Hello ${trainerInfo?.name}, your training request status has been updated to ${stat}.`,
+                url: "http://localhost:3000/trainertraining",
             })
     };
 

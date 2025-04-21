@@ -101,7 +101,7 @@ app.post("/call-for-trainers", async (req, res) => {
       from: process.env.EMAIL_USER,
       to: toEmail,
       subject: "Call For Trainers",
-      text: `Message: ${message}`,
+      text: `Message : ${message}`,
     });
 
     res.status(200).json({ success: true, message: "Email sent successfully!" });
@@ -112,14 +112,17 @@ app.post("/call-for-trainers", async (req, res) => {
 });
 
 app.post("/reject-request", async (req, res) => {
-  const { toEmail, message } = req.body;
+  const { toEmail, message, url } = req.body; 
 
   try {
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: toEmail,
       subject: "Request Rejected",
-      text: `Message: ${message}`,
+      html: `
+        <p><strong>Message:</strong> ${message}</p>
+        <p>You can view the full details <a href="${url}" target="_blank">here</a>.</p>
+      `
     });
 
     res.status(200).json({ success: true, message: "Email sent successfully!" });
@@ -129,15 +132,19 @@ app.post("/reject-request", async (req, res) => {
   }
 });
 
+
 app.post("/accept-request", async (req, res) => {
-  const { toEmail, message } = req.body;
+  const { toEmail, message, url} = req.body;
 
   try {
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: toEmail,
       subject: "Request Accepted",
-      text: `Message: ${message}`,
+      html: `
+        <p><strong>Message:</strong> ${message}</p>
+        <p>You can view the full details <a href="${url}" target="_blank">here</a>.</p>
+      `
     });
 
     res.status(200).json({ success: true, message: "Email sent successfully!" });
@@ -148,14 +155,17 @@ app.post("/accept-request", async (req, res) => {
 });
 
 app.post("/new_training_status", async (req, res) => {
-  const { toEmail, message } = req.body;
+  const { toEmail, message, url } = req.body;
 
   try {
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: toEmail,
       subject: "Training Status Updated", 
-      text: `Message: ${message}`,
+      html: `
+        <p><strong>Message:</strong> ${message}</p>
+        <p>You can view the full details <a href="${url}" target="_blank">here</a>.</p>
+      `
     });
 
     res.status(200).json({ success: true, message: "Email sent successfully!" });
@@ -166,14 +176,17 @@ app.post("/new_training_status", async (req, res) => {
 });
 
 app.post("/delete_from_training", async (req, res) => {
-  const { toEmail, message } = req.body;
+  const { toEmail, message, url } = req.body;
 
   try {
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: toEmail,
       subject: "Status Updated", 
-      text: `Message: ${message}`,
+      html: `
+        <p><strong>Message:</strong> ${message}</p>
+        <p>You can view the full details <a href="${url}" target="_blank">here</a>.</p>
+      `
     });
 
     res.status(200).json({ success: true, message: "Email sent successfully!" });
@@ -185,7 +198,7 @@ app.post("/delete_from_training", async (req, res) => {
 
 const {notify} = require("./app/controllers/notification.controllers");
 app.post("/send-reminder", async (req, res) => {
-  const { toEmail, message, trainee, managerreminded, training } = req.body;
+  const { toEmail, message, trainee, managerreminded, training, url} = req.body;
 
   if (!toEmail || !message || !trainee || !managerreminded || !training) {
     return res.status(400).json({ success: false, message: "Missing required fields." });
@@ -196,7 +209,10 @@ app.post("/send-reminder", async (req, res) => {
       from: process.env.EMAIL_USER,
       to: toEmail,
       subject: "Reminder",
-      text: `Message: ${message}`,
+      html: `
+        <p><strong>Message:</strong> ${message}</p>
+        <p>You can view the full details <a href="${url}" target="_blank">here</a>.</p>
+      `
     });
     await notify(trainee, managerreminded, "Request_Accepted", training.toString());
 
@@ -208,7 +224,7 @@ app.post("/send-reminder", async (req, res) => {
 });
 
 app.post("/request-feedback", async (req, res) => {
-  const { toEmail, message } = req.body;
+  const { toEmail, message, url } = req.body;
 
   if (!toEmail || !message) {
     return res.status(400).json({ success: false, message: "Missing required fields." });
@@ -219,7 +235,10 @@ app.post("/request-feedback", async (req, res) => {
       from: process.env.EMAIL_USER,
       to: toEmail,
       subject: "Feedback Request",
-      text: `Message: ${message}`,
+      html: `
+        <p><strong>Message:</strong> ${message}</p>
+        <p>You can view the full details <a href="${url}" target="_blank">here</a>.</p>
+      `
     });
 
     res.status(200).json({ success: true, message: "Email sent successfully!" });
@@ -230,7 +249,7 @@ app.post("/request-feedback", async (req, res) => {
 });
 
 app.post("/role-changed", async (req, res) => {
-  const { toEmail, message } = req.body;
+  const { toEmail, message, url } = req.body;
 
   if (!toEmail || !message) {
     return res.status(400).json({ success: false, message: "Missing required fields." });
@@ -241,7 +260,10 @@ app.post("/role-changed", async (req, res) => {
       from: process.env.EMAIL_USER,
       to: toEmail,
       subject: "Role Changed",
-      text: `Message: ${message}`,
+      html: `
+        <p><strong>Message:</strong> ${message}</p>
+        <p>You can view the full details <a href="${url}" target="_blank">here</a>.</p>
+      `
     });
 
     res.status(200).json({ success: true, message: "Email sent successfully!" });

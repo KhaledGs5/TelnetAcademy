@@ -40,25 +40,60 @@ function App() {
           )}
           <Route path="/signin" element={<SignIn />} />
           <Route path="/verify" element={<Verify />} />
-          {signedIn && (
+          {signedIn && !user.role && (
             <>
               <Route path="/manageusers" element={<ManageUsers />} />
               <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/managesessions" element={<ManageSessions />} />
-              <Route path="/managetrainings" element={<ManageTrainings />} />
-              <Route path="/trainersession" element={<TrainerSession />} />
-              <Route path="/trainertraining" element={<TrainerTraining />} />
-              <Route path="/traineesession" element={<TraineeSession />} />
-              <Route path="/enrolledtrainee" element={<TraineeTrainings />} />
-              <Route path="/becometrainer" element={<BecomeTrainer />} />
-              <Route path="/requests" element={<Navigate to="/requests/trainer" replace />} />
-              <Route path="/requests/trainee" element={<TraineeRequest />} />
-              <Route path="/requests/trainer" element={<TrainerRequest />} />
-              <Route path="/trainercall" element={<TrainerCalls />} />
-              <Route path="/account" element={<Profile />} />
               <Route path="/calendar" element={<Calendar />} />
             </>
           )}
+
+          {signedIn && user.role === 'manager' && (
+            <>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/managesessions" element={<ManageSessions />} />
+              <Route path="/managetrainings" element={<ManageTrainings />} />
+              <Route path="/requests" element={<Navigate to="/requests/trainer" replace />} />
+              <Route path="/requests/trainee" element={<TraineeRequest />} />
+              <Route path="/requests/trainer" element={<TrainerRequest />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/calendar" element={<Calendar />} />
+            </>
+          )}
+
+          {signedIn && user.role === 'trainer' && (
+            <>
+              <Route path="/trainertraining" element={<TrainerTraining />} />
+              <Route path="/trainersession" element={<TrainerSession />} />
+              <Route path="/trainercall" element={<TrainerCalls />} />
+              <Route path="/calendar" element={<Calendar />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+            </>
+          )}
+
+          {signedIn && user.role === 'trainee' && (
+            <>
+              <Route path="/traineesession" element={<TraineeSession />} />
+              <Route path="/enrolledtrainee" element={<TraineeTrainings />} />
+              <Route path="/becometrainer" element={<BecomeTrainer />} />
+              <Route path="/calendar" element={<Calendar />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+            </>
+          )}
+          
+          {signedIn && user.role === "trainee_trainer" && (
+            <>
+              <Route path="/trainertraining" element={<TrainerTraining />} />
+              <Route path="/trainersession" element={<TrainerSession />} />
+              <Route path="/trainercall" element={<TrainerCalls />} />
+              <Route path="/traineesession" element={<TraineeSession />} />
+              <Route path="/enrolledtrainee" element={<TraineeTrainings />} />
+              <Route path="/becometrainer" element={<BecomeTrainer />} />
+              <Route path="/calendar" element={<Calendar />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+            </>
+          )}
+
         </Routes>
       </Router>
     </NavbarProvider>

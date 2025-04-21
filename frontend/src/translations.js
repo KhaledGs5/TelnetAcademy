@@ -333,6 +333,11 @@ const translations = {
       "scores_saved_successfully": "Scores Saved Successfully",
       "score": "Score",
       "call_for_training": "Call For Training",
+      "total": "Total",
+      "soft skills": "Soft Skills",
+      "internal tech": "Internal Tech",
+      "external tech": "External Tech",
+      "total_number_of_trainings": "Total Number of Trainings",
     },
     "fr": {
       "name": "Nom",
@@ -667,6 +672,11 @@ const translations = {
       "scores_saved_successfully": "Scores enregistrés avec succès",
       "score": "Score",
       "call_for_training": "Appel pour formation",
+      "total": "Total",
+      "soft skills": "Compétences comportementales",
+      "internal tech": "Compétences techniques internes",
+      "external tech": "Compétences techniques externes",
+      "total_number_of_trainings": "Nombre total de formations",
     }
   };
   

@@ -15,9 +15,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import ClearIcon from '@mui/icons-material/Clear';
 import SearchIcon from '@mui/icons-material/Search';
 import { useNavbar } from '../../NavbarContext';
-import { StaticDatePicker, LocalizationProvider , DateTimePicker} from "@mui/x-date-pickers";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
-import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+
 import dayjs from 'dayjs';
 
 const TraineeRequest = () => {
@@ -207,6 +205,7 @@ const TraineeRequest = () => {
             {
                 toEmail: traineesData[selectedTraineeId]?.email,
                 message: `Hello ${traineesData[selectedTraineeId]?.name}, your request has been accepted.`,
+                url: "http://localhost:3000/enrolledtrainee",
             })
     };
 
@@ -243,6 +242,7 @@ const TraineeRequest = () => {
                 const receiver = {
                     toEmail: response.data.email,
                     message: rejectMessage,
+                    url: "http://localhost:3000/enrolledtrainee",
                 }
                 axios.post("http://localhost:5000/reject-request", receiver);
             })

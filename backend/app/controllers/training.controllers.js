@@ -445,5 +445,6 @@ const getQuizFile = async (req, res) => {
 
 
 
+
 module.exports = {getTrainings, getTrainingById, createTraining, updateTrainingById , deleteTrainingById, addTraineeReq, 
   acceptTraineeReq,rejectTraineeReq,deleteTrainee,traineeConfirm,getFeedbacks, sendColdRequest, sendHotRequest, uploadQuiz, getQuizFile}

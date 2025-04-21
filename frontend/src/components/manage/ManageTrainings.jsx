@@ -205,6 +205,7 @@ const ManageTrainings = () => {
             {
                 toEmail: traineeMail,
                 message: `Hello ${traineeName}, you have been deleted from the training`,
+                url: "http://localhost:3000/enrolledtrainee",
             })
     };
 
@@ -255,6 +256,7 @@ const ManageTrainings = () => {
         axios.post("http://localhost:5000/send-reminder", { 
           toEmail: m,
           message: `Reminder for Confirmation: ${name} Training`,
+          url: "http://localhost:3000/enrolledtrainee",
           trainee: id,
           managerreminded: user._id,
           training: selectedTrainingId
@@ -406,6 +408,7 @@ const ManageTrainings = () => {
                         axios.post("http://localhost:5000/request-feedback", {
                           toEmail: trainee.email,
                           message: `Hello ${trainee.name}, can you please add feedback to Training : ${training.title}.`,
+                          url: "http://localhost:3000/enrolledtrainee",
                         });
                     });    
                 }

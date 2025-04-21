@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Box, Typography, Button} from "@mui/material";
 import { useLanguage } from "../languagecontext";
+import * as echarts from 'echarts';
+import axios from "axios";
 
 
 const Navbar = () => {
@@ -9,6 +11,168 @@ const Navbar = () => {
 
     const [view, setView] = useState("home");
 
+    // Get Trainings Data .................
+    const skillTypeChart = useRef(null);
+    const hoursChart = useRef(null);
+
+    const [numberOfSoftSkillsTrainigs, setNumberOfSoftSkillsTrainings] = useState(0);
+    const [numberOfInternTechnicalSkillsTrainigs, setNumberOfInternTechnicalSkillsTrainings] = useState(0);
+    const [numberOfExternTechnicalSkillsTrainigs, setNumberOfExternTechnicalSkillsTrainings] = useState(0);
+    const [numberOfTrainings, setNumberOfTrainings] = useState(0);
+    const [numberOfSoftSkillsHours, setNumberOfSoftSkillsHours] = useState(0);
+    const [numberOfTechnicalSkillsHours, setNumberOfTechnicalSkillsHours] = useState(0);
+
+    const fetchData = async () => {
+        try {
+            const response = await axios.get("http://localhost:5000/api/trainings");
+            const softSkills = response.data.filter(t => t.skillType === "soft_skill");
+            const internTechnicalSkills = response.data.filter(t => t.skillType === "technical_skill" && t.type === "internal");
+            const externTechnicalSkills = response.data.filter(t => t.skillType === "technical_skill" && t.type === "external");
+            const technicalSkills = response.data.filter(t => t.skillType === "technical_skill");
+            
+            setNumberOfSoftSkillsTrainings(softSkills.length);
+            setNumberOfInternTechnicalSkillsTrainings(internTechnicalSkills.length);
+            setNumberOfExternTechnicalSkillsTrainings(externTechnicalSkills.length);
+            setNumberOfTrainings(response.data.length);
+            setNumberOfTechnicalSkillsHours(technicalSkills.reduce((acc, t) => acc + t.nbOfHours, 0));
+            setNumberOfSoftSkillsHours(softSkills.reduce((acc, t) => acc + t.nbOfHours, 0));
+
+            
+        } catch (error) {
+            console.error("Error fetching trainings data:", error);
+        }
+    }
+
+    useEffect(() => {
+      fetchData();
+    }, []);
+    
+    useEffect(() => {
+      if (skillTypeChart.current) {
+        const chartInstance = echarts.init(skillTypeChart.current);
+        const option = {
+          title: {
+            text: t("total_number_of_trainings") + " : " + numberOfTrainings,
+          },
+          tooltip: {
+            trigger: "item",
+          },
+          legend: {
+            data: [
+              t("soft skills"),
+              t("internal tech"),
+              t("external tech"),
+            ],
+            bottom: 0,
+          },
+          xAxis: {
+            type: "category",
+            axisLabel: {
+              interval: 0,
+            },
+          },
+          yAxis: {
+            type: "value",
+          },
+          series: [
+            {
+              name: t("soft skills"),
+              data: [numberOfSoftSkillsTrainigs, 0, 0],
+              type: "bar",
+              itemStyle: { color: "#91CC75" },
+              barWidth: 60,
+              stack: 'stacked',
+            },
+            {
+              name: t("internal tech"),
+              data: [0, numberOfInternTechnicalSkillsTrainigs, 0],
+              type: "bar",
+              itemStyle: { color: "#FAC858" },
+              barWidth: 60,
+              stack: 'stacked',
+            },
+            {
+              name: t("external tech"),
+              data: [0, 0, numberOfExternTechnicalSkillsTrainigs],
+              type: "bar",
+              itemStyle: { color: "#EE6666" },
+              barWidth: 60,
+              stack: 'stacked',
+            },
+          ],
+        };
+        chartInstance.setOption(option);
+    
+        return () => {
+          chartInstance.dispose();
+        };
+      }else if(hoursChart.current){
+          const chartInstance = echarts.init(skillTypeChart.current);
+          const option = {
+            title: {
+              text: t("total_number_of_trainings") + " : " + numberOfTrainings,
+            },
+            tooltip: {
+              trigger: "item",
+            },
+            legend: {
+              data: [
+                t("soft skills"),
+                t("internal tech"),
+                t("external tech"),
+              ],
+              bottom: 0,
+            },
+            xAxis: {
+              type: "category",
+              axisLabel: {
+                interval: 0,
+              },
+            },
+            yAxis: {
+              type: "value",
+            },
+            series: [
+              {
+                name: t("soft skills"),
+                data: [numberOfSoftSkillsTrainigs, 0, 0],
+                type: "bar",
+                itemStyle: { color: "#91CC75" },
+                barWidth: 60,
+                stack: 'stacked',
+              },
+              {
+                name: t("internal tech"),
+                data: [0, numberOfInternTechnicalSkillsTrainigs, 0],
+                type: "bar",
+                itemStyle: { color: "#FAC858" },
+                barWidth: 60,
+                stack: 'stacked',
+              },
+              {
+                name: t("external tech"),
+                data: [0, 0, numberOfExternTechnicalSkillsTrainigs],
+                type: "bar",
+                itemStyle: { color: "#EE6666" },
+                barWidth: 60,
+                stack: 'stacked',
+              },
+            ],
+          };
+          chartInstance.setOption(option);
+      
+          return () => {
+            chartInstance.dispose();
+          };
+      }
+    }, [
+      numberOfTrainings,
+      numberOfSoftSkillsTrainigs,
+      numberOfInternTechnicalSkillsTrainigs,
+      numberOfExternTechnicalSkillsTrainigs,
+      t,
+    ]);
+    
 
     // Styles .............
 
@@ -105,12 +269,86 @@ const Navbar = () => {
               display:"flex",
               flexDirection: "row",
               gap: "20px",
-              justifyContent:"center",
-              alignItems:"center",
+              justifyContent:"start",
+              alignItems:"start",
               padding:"20px",
             }}
           >
+            <Box
+              sx={{
+                width: "33%",
+                height: 'auto',
+                boxSizing: 'border-box',
+                backgroundColor: "background.paper",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "start",
+                boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.25)",
+                borderRadius: '10px',
+                padding: '30px',
+                gap: "10px",
+              }}
+            >
 
+            </Box>
+            <Box
+              sx={{
+                width: "33%",
+                height: 'auto',
+                boxSizing: 'border-box',
+                backgroundColor: "background.paper",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "start",
+                boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.25)",
+                borderRadius: '10px',
+                padding: '30px',
+                gap: "10px",
+              }}
+            >
+              <Box
+                  sx={{
+                    width: "100%",
+                    height: "300px", 
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "start",
+                    alignItems: "center",
+                  }}
+                  ref={skillTypeChart}
+                />
+              <Box
+                  sx={{
+                    width: "100%",
+                    height: "300px", 
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "start",
+                    alignItems: "center",
+                  }}
+                  ref={skillTypeChart}
+                />
+            </Box>
+            <Box
+              sx={{
+                width: "33%",
+                height: 'auto',
+                boxSizing: 'border-box',
+                backgroundColor: "background.paper",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "start",
+                boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.25)",
+                borderRadius: '10px',
+                padding: '30px',
+                gap: "10px",
+              }}
+            >
+
+            </Box>
           </Box>
         </Box>
       );
