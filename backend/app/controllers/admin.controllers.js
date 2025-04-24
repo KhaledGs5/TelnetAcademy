@@ -13,7 +13,7 @@ const signAdmin = async (req, res) => {
   const token = jwt.sign(
     { id: admin._id, email: admin.email, role: "admin" },
     process.env.PRIVATE_KEY, 
-    { expiresIn: "1h" }
+    { expiresIn: "1d" }
   );
 
   res.json({ admin, token });

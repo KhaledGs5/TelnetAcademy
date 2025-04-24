@@ -143,6 +143,25 @@ const callForTrainers = async (req, res) => {
   }
 }
 
+const callForSpecifiedTrainers = async (req, res) => { 
+  try {
+    const { trainersIDs, sen, tp, msg } = req.body;
+
+    if (!trainersIDs || !Array.isArray(trainersIDs) || trainersIDs.length === 0) {
+      return res.status(400).json({ success: false, message: "No trainer emails provided." });
+    }
+    for (const rec of trainersIDs) {
+      console.log(rec);
+      await notify(rec,sen, tp, msg); 
+    }
+    res.status(201).json({ success: true, message: "Notifications sent to specified trainers!" });
+  } catch (error) {
+    console.error("Error sending notifications:", error);
+    res.status(500).json({ success: false, message: "Error sending notifications." });
+  }
+};
+
+
 const uploadQuiz = async (req, res) => {
   try {
     const { userId, trainingId } = req.body;
@@ -289,4 +308,4 @@ const updateScore = async (req, res) => {
 
 
 
-module.exports = { getUsers,signUser,verifyEmail,createUser,updateUser,deleteUser, getUserById,callForTrainers,uploadQuiz,getQuizFile,updateScore};
+module.exports = { getUsers,signUser,verifyEmail,createUser,updateUser,deleteUser, getUserById,callForTrainers,uploadQuiz,getQuizFile,updateScore, callForSpecifiedTrainers};

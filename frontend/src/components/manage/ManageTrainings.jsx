@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLanguage } from "../../languagecontext";
-import { Box, TextField , Typography, Button,Input,IconButton, InputAdornment, Tooltip, OutlinedInput, FormControl, InputLabel, Pagination,Radio, Alert, Snackbar , Autocomplete, Popover, Rating, Badge } from "@mui/material";
+import { Box, TextField , Typography, Button,Input,IconButton, InputAdornment, Tooltip, OutlinedInput, FormControl, InputLabel, Pagination,Radio, Alert, Snackbar , Autocomplete, Popover, Rating, Badge, Select } from "@mui/material";
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import ClearIcon from '@mui/icons-material/Clear';
@@ -640,7 +640,7 @@ const ManageTrainings = () => {
 
     // Pagination ...............
     const [page, setPage] = useState(1);
-    const itemsPerPage = 20; 
+    const [itemsPerPage, setItemsPerPage] = useState(10); 
 
     const handlePageChange = (event, value) => {
         setPage(value);
@@ -795,6 +795,19 @@ const ManageTrainings = () => {
                     )}
                         {numberOfNotFullTrainings}<br/>{t("not_full")}
                     </Button>
+                    <FormControl sx={{ marginLeft: 2, minWidth: 200 }} size="small">
+                        <InputLabel id="number-select-label">{t("trainings_per_page")}</InputLabel>
+                        <Select
+                        labelId="number-select-label"
+                        value={itemsPerPage} 
+                        label={t("trainings_per_page")}
+                        onChange={(e) => setItemsPerPage(e.target.value)} 
+                        >
+                        {Array.from({ length: 16 }, (_, i) => i + 5).map((num) => (
+                            <MenuItem key={num} value={num}>{num}</MenuItem>
+                        ))}
+                        </Select>
+                    </FormControl>
                 </Box>
             </Box>
             <Box

@@ -51,7 +51,7 @@ const trainingSchema = new mongoose.Schema({
     fileName: { type: String },
     type: { type: String, enum: ['pre', 'post'] },    
   },
-
+  quizVisibility: {type: String},
 }, { collection: 'trainings', timestamps: true });
 
 const Training = mongoose.model("Training", trainingSchema);

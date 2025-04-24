@@ -4,7 +4,7 @@ import { useContext } from 'react';
 import { ThemeContext } from '../themecontext';
 import { getCookie , setCookie} from './Cookies';
 import { Box, Link, Typography, Menu, MenuItem, Dialog, Button, DialogTitle, Badge, Snackbar, Alert,
-    OutlinedInput,InputLabel,FormControl,Tooltip,IconButton
+    OutlinedInput,InputLabel,FormControl,Tooltip,IconButton,FormControlLabel, Radio, RadioGroup, Checkbox,TextField
 } from "@mui/material";
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -302,7 +302,44 @@ const Navbar = () => {
         }
     };
 
+    // Call For Trainers ......
+
     const [verifyCallForTrainers, setVerifyCallForTrainers] = useState(false);
+    const [searchedTrainer, setSearchedTrainer] = useState("");
+
+    const [TrainingTrainers, setTrainingTrainers] = useState([]);
+    const fetchTrainers = async () => {
+        try {
+        const response = await axios.get('http://localhost:5000/api/users');
+        if (response.status === 200) {
+            const trainers = response.data
+            .filter(user => user.role === "trainer" || user.role === "trainee_trainer")
+            .map(user => ({ name: user.name, id: user._id, selected: false, email:user.email }));
+  
+            setTrainingTrainers(trainers);
+        }
+        } catch (error) {
+        console.error("Error fetching trainers:", error);
+        }
+    };
+    useEffect(() => {
+        fetchTrainers();
+      }, []);
+    const toggleTrainerSelection = (trainerId) => {
+        setTrainingTrainers(prev =>
+          prev.map(trainer =>
+            trainer.id === trainerId
+              ? { ...trainer, selected: !trainer.selected }
+              : trainer
+        )
+    );
+    };  
+    
+    const filteredTrainers = TrainingTrainers.filter(trainer => 
+        trainer.name.toLowerCase().includes(searchedTrainer.toLowerCase())
+    );
+
+    const [callType , setCallType] = useState("all");
 
     const openCallForTrainers = () => {
         setVerifyCallForTrainers(true);
@@ -314,30 +351,58 @@ const Navbar = () => {
 
     const sendCallForTrainers = async () => {
         try {
-            const response = await axios.post("http://localhost:5000/api/users/callfortrainers", {
-                sen: user._id,
-                tp:"Call_For_Trainers",
-                msg:callMessage,
-            });
-    
-            if (response.data.success) {
-                setVerifyAlert("success");
-                setVerifyAlertMessage("Call sent successfully!");
-                setShowsVerifificationAlert(true);
-                closeCallForTrainers();
-                
-                
-                await axios.post("http://localhost:5000/call-for-trainers", {
-                    toEmail : trainersEmails,
-                    message: callMessage,
+            let selectedTrainerEmails = [];
+            let selectedTrainerIds = [];
+            if (callType === 'specify') {
+                selectedTrainerEmails = TrainingTrainers
+                    .filter(trainer => trainer.selected)
+                    .map(trainer => trainer.email); 
+                selectedTrainerIds = TrainingTrainers
+                    .filter(trainer => trainer.selected)
+                    .map(trainer => trainer.id); 
+
+                const response = await axios.post("http://localhost:5000/api/users/callforspecifiedtrainers", {
+                    trainersIDs: selectedTrainerIds,
+                    sen: user._id,
+                    tp: "Call_For_Trainers",
+                    msg: callMessage,
                 });
+    
+                if (response.data.success) {
+                    await axios.post("http://localhost:5000/call-for-trainers", {
+                        toEmail: selectedTrainerEmails,
+                        message: callMessage,
+                    });
+                }
+    
+            } else {
+                const response = await axios.post("http://localhost:5000/api/users/callfortrainers", {
+                    sen: user._id,
+                    tp: "Call_For_Trainers",
+                    msg: callMessage,
+                });
+    
+                if (response.data.success) {
+                    await axios.post("http://localhost:5000/call-for-trainers", {
+                        toEmail: trainersEmails, 
+                        message: callMessage,
+                    });
+                }
             }
+    
+            setVerifyAlert("success");
+            setVerifyAlertMessage("Call sent successfully!");
+            setShowsVerifificationAlert(true);
+            closeCallForTrainers();
+    
         } catch (error) {
             console.error("Error sending call for trainers:", error);
         }
     };
+    
+    
 
-    //Became Trainee
+    //Became Trainee ...............
 
     const [becomeTraineeConfirm, setBecomeTraineeConfirm] = useState(false);
     const [becomeTraineeMessage, setBecomeTraineeMessage] = useState("");
@@ -423,7 +488,12 @@ const Navbar = () => {
     const [trainingsCost, setTrainingsCost] = useState(false);
     const [cost, setCost] = useState(0);
 
-    const showTrainingsCost = () => {
+    const showTrainingsCost = async () => {
+        let currentCost = 0;
+        await axios.get("http://localhost:5000/api/trainings")
+            .then((response) => {
+                setCost(response.data[0].trainingsCost);
+            })
         setTrainingsCost(true);
     };
 
@@ -852,7 +922,6 @@ const Navbar = () => {
                     <PersonIcon sx={{marginRight:'10px'}}/>
                     </Badge>{t("requests")}</MenuItem> : null}
                     {user.role === 'manager' ? <MenuItem  sx={menuStyle("/settrainingscost")} onClick={() => showTrainingsCost()}><MonetizationOnIcon sx={{marginRight:'10px'}}/>{t("set_trainings_cost")}</MenuItem> : null}
-                    {user.role === 'manager' ? <MenuItem  sx={menuStyle("/callfortraining")}><AddchartIcon sx={{marginRight:'10px'}}/>{t("call_for_training")}</MenuItem> : null}
                     {user.role === 'manager' ? <MenuItem onClick={() => openCallForTrainers()} sx={menuStyle("/callfortrainers")}><GroupAddIcon sx={{marginRight:'10px'}}/>{t("call_for_trainers")}</MenuItem> : null}
                     {user.role === 'manager' && (
                     <Box sx={{ width: "100%" }}>
@@ -945,7 +1014,7 @@ const Navbar = () => {
                 onClose={closeCallForTrainers}
                 PaperProps={{
                     sx: {
-                        minWidth: "35%",  
+                        minWidth: "55%",  
                         height: "auto", 
                         display: "flex",
                         flexDirection: "column",
@@ -967,25 +1036,98 @@ const Navbar = () => {
                         gap: '20px',
                     }}
                 >
-                <FormControl
-                variant="outlined"
-                sx={{
-                    width: '100%',
-                }}
-                >
-                <InputLabel required>{t("message")}</InputLabel>
-                <OutlinedInput
-                    multiline
-                    minRows={8}
-                    value={callMessage}
-                    onChange={(e) => setCallMessage(e.target.value)}
-                    label={t("message")}
-                    sx={{
-                    height: '200px',
-                    alignItems: 'flex-start'
-                    }}
-                />
-                </FormControl>
+                    <Box
+                        sx={{
+                            width: '100%',
+                            display: 'flex',
+                            flexDirection: 'row',
+                            justifyContent: 'start',
+                            alignItems: 'start',
+                            gap: '20px',
+                        }}
+                    >
+                        <Box
+                            sx={{
+                                width: '40%',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                justifyContent: 'start',
+                                alignItems: 'center',
+                                gap: '20px',
+                            }}
+                        >
+                            <FormControl component="fieldset"
+                                sx={{
+                                    width: "100%",
+                                    display: "flex",
+                                    flexDirection: "row",
+                                    justifyContent: "start",
+                                    alignItems: "center",
+                                }}
+                            >
+                                <RadioGroup
+                                row
+                                value={callType}
+                                onChange={(e) => setCallType(e.target.value)}
+                                >
+                                <FormControlLabel
+                                    value="all"
+                                    control={<Radio />}
+                                    label={t("all")}
+                                />
+                                <FormControlLabel
+                                    value="specify"
+                                    control={<Radio />}
+                                    label={t("specify_trainers")}
+                                />
+                                </RadioGroup>
+                            </FormControl>
+                            {callType === "specify" && (
+                                <Box sx={{ width: '100%' }}>
+                                    <TextField
+                                        label={t("search_for_trainer")}
+                                        variant="outlined"
+                                        fullWidth
+                                        sx={{ marginBottom: '20px' }}
+                                        value={searchedTrainer}
+                                        onChange={(e) => setSearchedTrainer(e.target.value)}
+                                    />
+
+                                    {filteredTrainers.map((trainer) => (
+                                        <FormControlLabel
+                                            key={trainer.id}
+                                            control={
+                                                <Checkbox
+                                                    checked={trainer.selected}
+                                                    onChange={() => toggleTrainerSelection(trainer.id)}
+                                                />
+                                            }
+                                            label={trainer.name}
+                                        />
+                                    ))}
+                                </Box>
+                            )}
+                        </Box>
+                        <FormControl
+                            variant="outlined"
+                            sx={{
+                                width: '60%',
+                            }}
+                            >
+                            <InputLabel required>{t("message")}</InputLabel>
+                            <OutlinedInput
+                                multiline
+                                minRows={8}
+                                value={callMessage}
+                                onChange={(e) => setCallMessage(e.target.value)}
+                                label={t("message")}
+                                sx={{
+                                height: '200px',
+                                alignItems: 'flex-start'
+                                }}
+                            />
+                        </FormControl>
+                    </Box>
                     <Box 
                         sx={{
                             width: '100%',

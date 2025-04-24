@@ -362,6 +362,15 @@ const translations = {
       "set_new_trainings_cost": "Set New Trainings Cost",
       "cost": "Cost",
       "cost_changed_successfully": "Cost Changed Successfully",
+      "specify_trainers": "Specify Trainers",
+      "search_for_trainer": "Search For Trainer",
+      "download": "Download",
+      "donwload_form": "Download Form",
+      "anonymous": "Anonymous",
+      "not_anonymous": "Not Anonymous",
+      "select_visibility": "Select Visibility",
+      "trainings_per_page": "Trainings Per Page",
+      "users_per_page": "Users Per Page",
     },
     "fr": {
       "name": "Nom",
@@ -725,6 +734,15 @@ const translations = {
       "set_new_trainings_cost": "Définir le nouveau coût des formations",
       "cost": "Coût",
       "cost_changed_successfully": "Coût modifié avec succès",
+      "specify_trainers": "Spécifier les formateurs",
+      "search_for_trainer": "Rechercher un formateur",
+      "download": "Télécharger",
+      "download_form": "Télécharger le formulaire",
+      "anonymous": "Anonyme",
+      "not_anonymous": "Non anonyme",
+      "select_visibility": "Sélectionner la visibilité",
+      "trainings_per_page": "Formations par page",
+      "users_per_page": "Utilisateurs par page",
     }
   };
   

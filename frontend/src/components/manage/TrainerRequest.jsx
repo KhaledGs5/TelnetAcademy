@@ -2,14 +2,17 @@ import React, { useState, useEffect } from "react";
 import { getCookie , setCookie} from '../Cookies';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Box, Link, Typography,Tooltip,IconButton, Menu, MenuItem, Dialog, Button, DialogTitle, Badge, TableCell,TableRow,TableHead,TableContainer,Paper,TextField
-    ,Checkbox,FormControlLabel,TableBody,Table,FormControl, InputLabel,OutlinedInput,InputAdornment, Popover, Snackbar, Alert,Input
+    ,Checkbox,FormControlLabel,TableBody,Table,FormControl, InputLabel,OutlinedInput,InputAdornment, Popover, Snackbar, Alert,Input,
 } from "@mui/material";
+import { Document, Packer, Paragraph, TextRun, HeadingLevel} from "docx";
+import { saveAs } from "file-saver";
 import axios from 'axios';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import ClearIcon from '@mui/icons-material/Clear';
+import DownloadIcon from '@mui/icons-material/Download';
 import SearchIcon from '@mui/icons-material/Search';
 import { useNavbar } from '../../NavbarContext';
 import io from "socket.io-client";
@@ -240,6 +243,110 @@ const TrainerRequest = () => {
                 url: "http://localhost:3000/trainertraining",
             })
     };
+
+    // Donwload the form ......
+
+    const [selectFormName, setSelectFormName]= useState(false);
+    const [formName, setFormName] = useState("");
+    const [selectedForm, setSelectedForm] = useState({});
+
+    const showSelectFormName = (form) => {
+        setSelectedForm(form);
+        setSelectFormName(true);
+    }
+
+    const hideSelectFormName = () => {
+        setSelectFormName(false);
+    }
+
+    const generateWordDoc = (form) => {
+        const sectionTitle = (text) =>
+          new Paragraph({
+            children: [
+              new TextRun({
+                text,
+                bold: true,
+                size: 28, 
+                color: "2E86C1", 
+              }),
+            ],
+            spacing: { after: 200 },
+          });
+      
+        const infoLine = (label, value) =>
+          new Paragraph({
+            children: [
+              new TextRun({ text: `${label}: `, bold: true }),
+              new TextRun({ text: value || "N/A" }),
+            ],
+            spacing: { after: 100 },
+          });
+      
+        const doc = new Document({
+          sections: [
+            {
+              children: [
+                new Paragraph({
+                  children: [
+                    new TextRun({
+                      text: "Training Form Summary",
+                      bold: true,
+                      size: 32, 
+                      color: "1A5276",
+                    }),
+                  ],
+                  spacing: { after: 400 },
+                }),
+    
+                sectionTitle("General Information"),
+                infoLine("Name", form.name),
+                infoLine("Matricule", form.matricule),
+                infoLine("Position", form.position),
+                infoLine("Activity", form.activity),
+                infoLine("Date of Hire", form.dateOfHire?.split("T")[0]),
+      
+                sectionTitle("Domains"),
+                ...(form.domains?.length > 0
+                  ? form.domains.map((domain, i) =>
+                      new Paragraph({
+                        children: [
+                          new TextRun({ text: `${i + 1}. `, bold: true }),
+                          new TextRun({ text: `Description: ${domain.description || "N/A"}    ` }),
+                          new TextRun({ text: `Expertise: ${domain.expertise || "N/A"}` }),
+                        ],
+                        spacing: { after: 100 },
+                      })
+                    )
+                  : [new Paragraph("No domain information provided.")]),
+      
+                ...(form.hasExperience && Array.isArray(form.exp)
+                  ? [
+                      sectionTitle("Experience"),
+                      ...form.exp.map((exp, i) =>
+                        new Paragraph({
+                          children: [
+                            new TextRun({ text: `${i + 1}. `, bold: true }),
+                            new TextRun({ text: `Theme: ${exp.theme || "N/A"}    ` }),
+                            new TextRun({ text: `Context: ${exp.cadre || "N/A"}    ` }),
+                            new TextRun({ text: `Period: ${exp.periode || "N/A"}` }),
+                          ],
+                          spacing: { after: 100 },
+                        })
+                      ),
+                    ]
+                  : []),
+
+                sectionTitle("Motivation"),
+                new Paragraph(form.motivation || "N/A"),
+              ],
+            },
+          ],
+        });
+      
+        Packer.toBlob(doc).then((blob) => {
+          saveAs(blob, formName);
+        });
+      };
 
 
     // Delete Request
@@ -610,6 +717,11 @@ const TrainerRequest = () => {
                                 <Tooltip title={t("delete")} arrow>
                                     <IconButton sx={{color:"#EA9696"}} onClick={() => showVerifyRejectDialog(form._id)}>
                                         <CloseIcon/>
+                                    </IconButton>
+                                </Tooltip>
+                                <Tooltip title={t("download")} arrow>
+                                    <IconButton sx={{color:"#76C5E1"}} onClick={() => showSelectFormName(form)}>
+                                        <DownloadIcon/>
                                     </IconButton>
                                 </Tooltip>
                                 <Tooltip title={!form.showDetails ? t("view_details") : t("hide_details")} arrow> 
@@ -1451,6 +1563,89 @@ const TrainerRequest = () => {
                         onClick={handleDeleteRequest}
                         >
                             {t("yes")}
+                        </Button>
+                    </Box>
+                </Dialog>
+                <Dialog
+                    open={selectFormName}
+                    disableScrollLock={true}
+                    onClose={hideSelectFormName}
+                    PaperProps={{
+                        sx: {
+                            width: "auto",  
+                            height: "auto", 
+                            display: "flex",
+                            flexDirection: "column",
+                            justifyContent: "",
+                            alignItems: "center",
+                            borderRadius: "10px",
+                            padding: '20px',
+                        }
+                    }}
+                >
+                    <DialogTitle>{t("donwload_form")} ?</DialogTitle>
+                    <FormControl
+                    variant="outlined"
+                    sx={{
+                        width: '100%',
+                    }}
+                    >
+                    <InputLabel>{t("name")}</InputLabel>
+                    <OutlinedInput
+                        value={formName}
+                        onChange={(e) => setFormName(e.target.value)}
+                        label={t("name")}
+                        sx={{
+                        alignItems: 'flex-start'
+                        }}
+                    />
+                    </FormControl>
+                    <Box 
+                        sx={{
+                            width: '100%',
+                            display: 'flex',
+                            flexDirection: 'row',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            gap: '20px',
+                        }}
+                    >
+                        <Button sx={{
+                            color: 'white',
+                            backgroundColor: '#EA9696',
+                            borderRadius: '10px',
+                            textDecoration: 'none',
+                            fontWeight: 'bold',
+                            width: 'auto',
+                            height: '40px',
+                            marginTop: '10px',
+                            textTransform: "none",
+                            '&:hover': {
+                                backgroundColor: '#EAB8B8',
+                                color: 'white',
+                            },
+                        }} 
+                        onClick={hideSelectFormName}>
+                            {t("cancel")}
+                        </Button>
+                        <Button sx={{
+                            color: 'white',
+                            backgroundColor: '#2CA8D5',
+                            borderRadius: '10px',
+                            textDecoration: 'none',
+                            fontWeight: 'bold',
+                            width: 'auto',
+                            height: '40px',
+                            marginTop: '10px',
+                            textTransform: "none",
+                            '&:hover': {
+                                backgroundColor: '#76C5E1',
+                                color: 'white',
+                            },
+                        }} 
+                        onClick={() => generateWordDoc(selectedForm)}
+                        >
+                            {t("download")}
                         </Button>
                     </Box>
                 </Dialog>

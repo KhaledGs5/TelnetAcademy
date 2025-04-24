@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useLanguage } from "../languagecontext";
 import { Box, TextField , Typography, Button,Input,IconButton, InputAdornment, Tooltip, OutlinedInput, FormControl, InputLabel, Pagination,Radio, Alert, Snackbar , Autocomplete, Popover,Table, TableBody, TableCell, TableContainer, 
-    TableHead, TableRow, Paper, Checkbox, FormControlLabel,Grid ,Badge } from "@mui/material";
+    TableHead, TableRow, Paper, Checkbox, FormControlLabel,Grid ,Badge, Select } from "@mui/material";
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import ClearIcon from '@mui/icons-material/Clear';
@@ -294,9 +294,6 @@ const TrainerSession = () => {
         return false;
     };
     
-    
-    
-    
     const {numberOfQuizFromTrainee, setNumberOfQuizFromTrainee }= useNavbar();
 
     const handleOpenTraineeQuizNotification = async () => {
@@ -339,6 +336,8 @@ const TrainerSession = () => {
         setFile(e.target.files[0]);
     };
 
+    const [isAnonymous, setIsAnonymous] = useState("notAnonymous");
+
     const handleUpload = async () => {
         if (!file) {
             return;
@@ -351,6 +350,7 @@ const TrainerSession = () => {
         formData.append('trainer', user._id);
 
         try {
+            await axios.put(`http://localhost:5000/api/trainings/${selectedTrainingId}`, {quizVisibility : isAnonymous})
             await axios.put('http://localhost:5000/api/trainings/upload-quiz', formData);
             setVerifyAlertMessage(t("quiz_sent_successfully"));
             setVerifyAlert("success");
@@ -544,7 +544,7 @@ const TrainerSession = () => {
 
     // Pagination ...............
     const [page, setPage] = useState(1);
-    const itemsPerPage = 20; 
+    const [itemsPerPage, setItemsPerPage] = useState(10); 
 
     const handlePageChange = (event, value) => {
         setPage(value);
@@ -708,6 +708,19 @@ const TrainerSession = () => {
                 )}
                     {numberOfNotFullTrainings}<br/>{t("not_full")}
                 </Button>
+                <FormControl sx={{ marginLeft: 2, minWidth: 200 }} size="small">
+                    <InputLabel id="number-select-label">{t("trainings_per_page")}</InputLabel>
+                    <Select
+                    labelId="number-select-label"
+                    value={itemsPerPage} 
+                    label={t("trainings_per_page")}
+                    onChange={(e) => setItemsPerPage(e.target.value)} 
+                    >
+                    {Array.from({ length: 16 }, (_, i) => i + 5).map((num) => (
+                        <MenuItem key={num} value={num}>{num}</MenuItem>
+                    ))}
+                    </Select>
+                </FormControl>
             </Box>
             </Box>
             <Box
@@ -1814,7 +1827,7 @@ const TrainerSession = () => {
                     }}
                 >
                 {trainings?.filter(training => training._id === selectedTrainingId)
-                    .map((training) => (
+                    .map((training, index) => (
                     <Box key={training._id}
                         sx={{
                             display: "flex",
@@ -1858,6 +1871,22 @@ const TrainerSession = () => {
                             >
                                 {t("attach_quiz")}
                             </Button>
+                            <FormControl 
+                                sx={{
+                                    width:"15%",
+                                }}
+                            >
+                                <InputLabel id="anonymous-label">Select Visibility</InputLabel>
+                                <Select
+                                    labelId="anonymous-label"
+                                    value={isAnonymous}
+                                    label={t("select_visibility")}
+                                    onChange={(e) => setIsAnonymous(e.target.value)}
+                                >
+                                    <MenuItem value="anonymous">{t("anonymous")}</MenuItem>
+                                    <MenuItem value="notAnonymous">{t("not_anonymous")}</MenuItem>
+                                </Select>
+                            </FormControl>
                             <TextField
                                 value={file ? file.name : ''}
                                 label="Selected File"
@@ -1893,7 +1922,7 @@ const TrainerSession = () => {
                                         justifyContent: 'center',
                                     }}
                                 >
-                                    {t("name")} : {trainee.name}
+                                    {t("name")} : {training.quizVisibility === 'anonymous' ? `Name ${index + 1}` : trainee.name}
                                 </Typography>
                                 <Typography
                                     sx={{
@@ -1903,7 +1932,7 @@ const TrainerSession = () => {
                                         justifyContent: 'center',
                                     }}
                                 >
-                                    {t("email")} : {trainee.email}
+                                    {t("email")} : {training.quizVisibility === 'anonymous' ? `Email ${index + 1}` : trainee.email}
                                 </Typography>
                                 <Box sx={{ width: '50%',
                                     paddingRight: "10px",

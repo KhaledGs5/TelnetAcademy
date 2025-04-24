@@ -1,5 +1,5 @@
 const express = require("express");
-const { getUsers, signUser, verifyEmail,createUser, updateUser, deleteUser , getUserById, callForTrainers,uploadQuiz,getQuizFile,updateScore} = require("../controllers/user.controllers");
+const { getUsers, signUser, verifyEmail,createUser, updateUser, deleteUser , getUserById, callForTrainers,uploadQuiz,getQuizFile,updateScore,callForSpecifiedTrainers} = require("../controllers/user.controllers");
 
 const router = express.Router();
 const multer = require('multer');
@@ -18,5 +18,7 @@ router.post("/users", verifyAdmin, createUser);
 router.put("/users/:id", updateUser);
 router.delete("/users/:id", deleteUser);
 router.post("/users/callfortrainers", callForTrainers);
+router.post("/users/callforspecifiedtrainers", callForSpecifiedTrainers);
+
 
 module.exports = router;

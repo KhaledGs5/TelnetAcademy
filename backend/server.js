@@ -273,13 +273,39 @@ app.post("/role-changed", async (req, res) => {
   }
 });
 
+app.post("/new-user", async (req, res) => {
+  const { toEmail, url, password } = req.body;
+
+  if (!toEmail) {
+    return res.status(400).json({ success: false, message: "Missing required fields." });
+  }
+
+  try {
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: toEmail,
+      subject: "Welcome to Telnet Academy",
+      html: `
+        <p><strong>Message:</strong> You have been successfully added to the platform.
+You can sign in using the link below: </p>
+        <p>You password is : ${password}</p>
+        <p>You can view the full details <a href="${url}" target="_blank">here</a>.</p>
+      `
+    });
+
+    res.status(200).json({ success: true, message: "Email sent successfully!" });
+  } catch (error) {
+    console.error("Error sending email:", error);
+    res.status(500).json({ success: false, message: "Failed to send email." });
+  }
+});
+
 
 
 // Fetch All Users from excel to mongoDB
 const User = require("./app/models/user.model");
 app.post("/api/uploadUsers", async (req, res) => {
   const data = req.body.data;
-  console.log('Received data:', data);
 
   try {
     await User.insertMany(data);

@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from "react";
-import { Box, TextField , Typography, Button,Input,IconButton, InputAdornment, Tooltip, OutlinedInput, FormControl, InputLabel, Pagination,Radio, Alert, Snackbar  } from "@mui/material";
+import { Box, TextField , Typography, Button,Input,IconButton, InputAdornment, Tooltip, OutlinedInput, FormControl, InputLabel, Pagination,Radio, Alert, Snackbar ,Select } from "@mui/material";
 import ClearIcon from '@mui/icons-material/Clear';
 import SearchIcon from '@mui/icons-material/Search';
 import MenuItem from '@mui/material/MenuItem';
@@ -29,8 +29,6 @@ const ManageUsers = () => {
 
     const [newUserName, setNewUserName] = useState("");
     const [newUserEmail, setNewUserEmail] = useState("");
-    const [newUserPassword, setNewUserPassword] = useState("");
-    const [confirmNewUserPassword,setConfirmNewUserPassword]= useState("");
     const [newUserRole, setNewUserRole] = useState("");
     const [newUserGender, setNewUserGender] = useState("");
     const [newUserActivity, setNewUserActivity] = useState("");
@@ -72,8 +70,6 @@ const ManageUsers = () => {
 
     // Adding new User
     const [newUser, setNewUser] = useState(false);
-    const [showNewUserPassword, setShowNewUserPassword] = useState(false);
-    const [showConfirmNewUserPassword, setShowConfirmNewUserPassword] = useState(false);
     const UserActivities = ["enablers", "mechanical", "formation_systems", "databox", "telecom", "quality", "e-paysys", "media&energy", "electronics", "space"];
     const [otherActivity, setOtherActivity]= useState(false);
     const UserGrades = ["F1", "F2", "F3", "F4", "M1", "M2", "M3", "M4", "M5", "M6"]
@@ -91,36 +87,60 @@ const ManageUsers = () => {
         setNewUser(false);
     };
 
+    function generateRandomPassword() {
+        const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const lower = 'abcdefghijklmnopqrstuvwxyz';
+        const digits = '0123456789';
+        const specials = '@$!%*?&';
+        
+        const required = [
+          upper[Math.floor(Math.random() * upper.length)],
+          lower[Math.floor(Math.random() * lower.length)],
+          digits[Math.floor(Math.random() * digits.length)],
+          specials[Math.floor(Math.random() * specials.length)]
+        ];
+
+        const allChars = upper + lower + digits + specials;
+        while (required.length < 8) {
+          required.push(allChars[Math.floor(Math.random() * allChars.length)]);
+        }
+
+        for (let i = required.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [required[i], required[j]] = [required[j], required[i]];
+        }
+      
+        return required.join('');
+    }
+      
     const handleAddUser = () => {
         const newUser = {
             name: newUserName,
             email: newUserEmail,
-            password: newUserPassword,
+            password: generateRandomPassword(),
             role: newUserRole,
             gender: newUserGender,
             activity: newUserActivity,
             jobtitle: newUserJobtitle,
             grade: newUserGrade,
         };
-        if(confirmNewUserPassword === newUserPassword) {
-            api.post("/api/users", newUser)
-            .then(() => {
-                fetchUsers();
-                hideNewUserForm();
-                setVerifyAlert("success");
-            })
-            .catch((error) => {
-                setVerifyAlertMessage(error.response.data.error);
-                setVerifyAlert("error");
-                setShowsVerifificationAlert(true);
-            }); 
-        }
-        else{
-            setVerifyAlertMessage("passwords_do_not_match");
+        console.log(newUser);
+        api.post("/api/users", newUser)
+        .then(() => {
+            fetchUsers();
+            hideNewUserForm();
+            setVerifyAlert("success");
+            api.post("/new-user", {
+                toEmail: newUserEmail,
+                url: "http://localhost:3000/signin",
+                password: newUser.password,
+              });              
+        })
+        .catch((error) => {
+            setVerifyAlertMessage(error.response.data.error);
             setVerifyAlert("error");
             setShowsVerifificationAlert(true);
-            return;
-        } 
+        });
     };
 
     //  Adding All Users
@@ -340,7 +360,7 @@ const ManageUsers = () => {
 
     // Pagination ...............
     const [page, setPage] = useState(1);
-    const itemsPerPage = 20; 
+    const [itemsPerPage, setItemsPerPage] = useState(10);
   
     const handlePageChange = (event, value) => {
       setPage(value);
@@ -546,6 +566,19 @@ const ManageUsers = () => {
                             </MenuItem>
                         ))}
                     </TextField>
+                    <FormControl sx={{ marginLeft: 2, minWidth: 200 }} size="small">
+                        <InputLabel id="number-select-label">{t("users_per_page")}</InputLabel>
+                        <Select
+                        labelId="number-select-label"
+                        value={itemsPerPage} 
+                        label={t("users_per_page")}
+                        onChange={(e) => setItemsPerPage(e.target.value)} 
+                        >
+                        {Array.from({ length: 16 }, (_, i) => i + 5).map((num) => (
+                            <MenuItem key={num} value={num}>{num}</MenuItem>
+                        ))}
+                        </Select>
+                    </FormControl>
                     <Tooltip title={t("add_user")} arrow> 
                         <IconButton color="primary" aria-label="add" size="small" onClick={showNewUserForm} 
                                 sx={{ borderRadius: '50%'}}>
@@ -634,55 +667,6 @@ const ManageUsers = () => {
                                 onChange={(e) => setNewUserEmail(e.target.value)}
                                 label="Email......"
                             />
-                            </FormControl>
-                        </Box>
-                        <Box
-                            sx={{
-                                width: "100%",
-                                display: "flex",
-                                flexDirection: "row",
-                                justifyContent: "center",
-                                alignItems: "center",
-                                gap: "20px",
-                            }}
-                        >
-                            <FormControl variant="outlined" sx={{ 
-                                width: '50%',
-                            }}
-                            >
-                                <InputLabel required>{t("password")}</InputLabel>
-                                <OutlinedInput
-                                    type={showNewUserPassword ? 'text' : 'password'}
-                                    value={newUserPassword}
-                                    onChange={(e) => setNewUserPassword(e.target.value)}
-                                    label="Password ........."
-                                    endAdornment={
-                                        <InputAdornment position="end">
-                                            <IconButton onClick={() => setShowNewUserPassword(!showNewUserPassword)} size="small">
-                                                {showNewUserPassword ? <VisibilityOff /> : <Visibility />}
-                                            </IconButton>
-                                        </InputAdornment>
-                                    }
-                                />
-                            </FormControl>
-                            <FormControl variant="outlined" sx={{ 
-                                width: '50%',
-                            }}
-                            >
-                                <InputLabel required>{t("confirm_password")}</InputLabel>
-                                <OutlinedInput
-                                    type={showConfirmNewUserPassword ? 'text' : 'password'}
-                                    value={confirmNewUserPassword}
-                                    onChange={(e) => setConfirmNewUserPassword(e.target.value)}
-                                    label="confirm_password ................"
-                                    endAdornment={
-                                        <InputAdornment position="end">
-                                            <IconButton onClick={() => setShowConfirmNewUserPassword(!showConfirmNewUserPassword)} size="small">
-                                                {showConfirmNewUserPassword ? <VisibilityOff /> : <Visibility />}
-                                            </IconButton>
-                                        </InputAdornment>
-                                    }
-                                />
                             </FormControl>
                         </Box>
                         {verifyAlertMessage === "wrong_password_format"? 
