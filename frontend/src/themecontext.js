@@ -22,7 +22,7 @@ export const ThemeProviderWrapper = ({ children }) => {
                         paper: darkMode ? '#555555' : '#f9f9f9',
                         navbar: darkMode ? '#666666' : '#ffffff',
                         calendar: darkMode ? '#666666' : '#ffffff',
-                        dcalendar: darkMode ? '#222222' : '#aaaaaa',
+                        dcalendar: darkMode ? '#222222' : '#dddddd',
                         noBigDiff: darkMode ? '#666666' : '#f6f6f6',
                     },
                     text: {

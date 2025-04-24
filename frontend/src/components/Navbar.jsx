@@ -143,6 +143,7 @@ const Navbar = () => {
             setNumberOfQuizFromTrainee(quizFromTrainee.length);
             setNumberOfQuizFromTrainer(quizFromTrainer.length);
 
+            setConfirmedTrainees([]);
             const availableAttendanceConfirmations = await axios.post("http://localhost:5000/api/notifications/withtype", {rec : user._id, tp : "Trainee_Confirmed_Attendance"});
             availableAttendanceConfirmations.data.notifications.forEach(notification => {
                 axios.get(`http://localhost:5000/api/users/${notification.sender}`)
@@ -155,6 +156,9 @@ const Navbar = () => {
                                 trainee.trainingTitle = training.title;
                                 setConfirmedTrainees((prevConfirmedTrainees) => [...prevConfirmedTrainees, trainee]);
                             })
+                            .catch(error => {
+                                console.error("Error fetching training", error);
+                            });
                     })
                     .catch(error => {
                         console.error("Error fetching trainee", error);

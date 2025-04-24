@@ -60,9 +60,6 @@ const ManageTrainings = () => {
     updateStatus();
     }, []);
 
-    const [numberOfConfirmed,  setNumberOfConfirmed] = useState(0);
-    const [numberOfNotConfirmed,  setNumberOfNotConfirmed] = useState(0);
-
     const fetchTrainings = () => {
         axios.get("http://localhost:5000/api/trainings")
             .then((response) => {
@@ -71,6 +68,8 @@ const ManageTrainings = () => {
                     modified: false,
                     sessions: [],
                     full: training.nbOfConfirmedRequests == training.nbOfParticipants,
+                    numberOfConfirmed : training.nbOfConfirmedRequests || 0,
+                    numberOfNotConfirmed : ((training.nbOfAcceptedRequests || 0) - (training.nbOfConfirmedRequests || 0) || 0),
                 }));
                 setTrainings(trainingsWithModified);
     
@@ -115,8 +114,6 @@ const ManageTrainings = () => {
                                     : "not_confirmed"
                                 }
                                 listOfTrainees.push(trainee);
-                                setNumberOfConfirmed(training.confirmedtrainees.length);
-                                setNumberOfNotConfirmed(training.acceptedtrainees.length - training.confirmedtrainees.length);
                             })
                            .catch((error) => {
                                 console.error("Error fetching trainee:", error);
@@ -164,9 +161,32 @@ const ManageTrainings = () => {
     //Edit Attendance List By Id ...........
 
     const [showAttendeeList, setShowAttendeeList] = useState(false);
+    const [traineesSetFeedbacks, setTraineeSetFeedback] = useState([]);
+
+    const fetchTraineesFeedbacks = (trainingId) => {
+        axios
+          .post(`http://localhost:5000/api/trainings/feedbacks/${trainingId}`)
+          .then((response) => {
+            const { coldFeedback, hotFeedback } = response.data;
+            const trainees = [
+              ...coldFeedback.map(fb => fb.trainee),
+              ...hotFeedback.map(fb => fb.trainee)
+            ];
+      
+            const uniqueTrainees = [...new Set(trainees.map(id => id.toString()))];
+      
+            setTraineeSetFeedback(uniqueTrainees);
+          })
+          .catch((error) => {
+            console.error("Error fetching feedbacks:", error);
+          });
+      };
+      
+      
 
     const showAttendeeListDialog = (trainingId) => {
         setSelectedTrainingId(trainingId);
+        fetchTraineesFeedbacks(trainingId);
         setShowAttendeeList(true);
     };
 
@@ -278,6 +298,7 @@ const ManageTrainings = () => {
     // Show Feedbacks for training .............
     const [feedbacks, setFeedbacks] = useState([]);
     const [feedbackType, setFeedbackType] = useState("cold");
+    const [trainingsHaveFeedbacks, setTrainingsHaveFeedbacks] = useState([]);
     const { numberOfNewFeedbacks, setNumberOfNewFeedbacks } = useNavbar();
 
     const handleOpenFeedbackNotification = async () => {
@@ -303,6 +324,26 @@ const ManageTrainings = () => {
             console.error("Error fetching feedbacks:", error);
           });
     };
+
+    useEffect(() => {
+        const fetchTrainingsFeedbacks = async () => {
+            try {
+                const newFeedbacks = await axios.post("http://localhost:5000/api/notifications/withtype", {
+                    rec: user._id,
+                    tp: "New_Feedback"
+                });
+                newFeedbacks.data.notifications.forEach((notif) => {
+                    setTrainingsHaveFeedbacks(prev => [...prev, notif.message]);
+                });
+            } catch (error) {
+                console.error("Failed to fetch feedback notifications:", error);
+            }
+        };
+
+        fetchTrainingsFeedbacks();
+    }, []);
+    
+      
 
     const [showFeedbacks, setShowFeedbacks] = useState(false);
 
@@ -1358,7 +1399,7 @@ const ManageTrainings = () => {
                                     <FeedIcon/>
                                 </IconButton>
                             </Tooltip>
-                            <Badge badgeContent={numberOfNewFeedbacks} color="primary"
+                            <Badge badgeContent={trainingsHaveFeedbacks.includes(training._id) && numberOfNewFeedbacks ? 1 : 0} color="primary"
                                 sx={{ 
                                     "& .MuiBadge-badge": { 
                                     fontSize: "10px", 
@@ -1533,7 +1574,7 @@ const ManageTrainings = () => {
                             }}
                             />
                         )}
-                           {numberOfConfirmed} <br/>{t("confirmed")}
+                           {training.numberOfConfirmed} <br/>{t("confirmed")}
                         </Button>
                         <Button 
                         sx={{
@@ -1558,7 +1599,7 @@ const ManageTrainings = () => {
                             />
                         )}
                         
-                         {numberOfNotConfirmed}<br />
+                         {training.numberOfNotConfirmed}<br />
                         {t("not_confirmed")}
                         </Button>
                         <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -1616,7 +1657,7 @@ const ManageTrainings = () => {
                                     </IconButton>
                                 </Tooltip>)}
                                 <Tooltip title={t("feedback")} arrow> 
-                                    <IconButton sx={{color:"#76C5E1"}}  onClick={() => showFeedbacksDialog(training._id, trainee._id)}>
+                                    <IconButton sx={{color:"#76C5E1"}} disabled={!traineesSetFeedbacks.includes(trainee._id)} onClick={() => showFeedbacksDialog(training._id, trainee._id)}>
                                         <FeedIcon/>
                                     </IconButton>
                                 </Tooltip>

@@ -1,5 +1,6 @@
 const Training = require("../models/training.model");
 const Session = require("../models/session.model");
+const Notification = require("../models/notification.model")
 const ColdFeedback = require("../models/coldfeedback.model");
 const HotFeedback= require("../models/hotfeedback.model");
 const User = require("../models/user.model");
@@ -52,14 +53,21 @@ const updateTrainingById = async (req, res) => {
 }
 
 const deleteTrainingById = async (req, res) => {
-    try {
-      const training = await Training.findByIdAndDelete(req.params.id);
-      await Session.deleteMany({ training: training._id });
-      if (!training) return res.status(404).json({ message: "Training not found" });
-      res.json({ message: "Training deleted successfully" });
-    } catch (err) {
-      res.status(500).json({ message: err.message });
-    }
+  try {
+    const training = await Training.findByIdAndDelete(req.params.id);
+
+    if (!training) return res.status(404).json({ message: "Training not found" });
+
+    await Session.deleteMany({ training: training._id });
+    await ColdFeedback.deleteMany({ training: training._id });
+    await HotFeedback.deleteMany({ training: training._id });
+    await Notification.deleteMany({ message: training._id.toString() });
+
+    res.json({ message: "Training and related data deleted successfully" });
+  } catch (err) {
+    console.error("Error deleting training:", err);
+    res.status(500).json({ message: err.message });
+  }
 };
 
 // Trainee
@@ -82,6 +90,7 @@ const addTraineeReq = async (req, res) => {
       !training.acceptedtrainees.includes(trainee)
     ) {
       training.traineesrequests.push(req.body);
+      training.requestshistory.push(req.body);
       training.nbOfReceivedRequests = (training.nbOfReceivedRequests || 0) + 1;
 
       await training.save();
@@ -218,9 +227,13 @@ const deleteTrainee = async (req, res) => {
 const getFeedbacks = async (req, res) => {
   try {
     const { trainee } = req.body;
+    const trainingId = req.params.id;
 
-    const coldFeedback = await ColdFeedback.find({ training: req.params.id, trainee });
-    const hotFeedback = await HotFeedback.find({ training: req.params.id, trainee });
+    const query = { training: trainingId };
+    if (trainee) query.trainee = trainee;
+
+    const coldFeedback = await ColdFeedback.find(query);
+    const hotFeedback = await HotFeedback.find(query);
 
     res.status(200).json({ coldFeedback, hotFeedback });
   } catch (error) {
@@ -228,6 +241,7 @@ const getFeedbacks = async (req, res) => {
     res.status(500).json({ message: "Server error while fetching feedbacks" });
   }
 };
+
 
 const sendColdRequest = async (req, res) => {
   try {
@@ -246,11 +260,15 @@ const sendColdRequest = async (req, res) => {
       });
     
       if (alreadySent) continue;
+
+      const alreadyHaveNotif = trainee.trainingsCanSendColdFeedback.includes(req.params.id);
+
+      if (alreadyHaveNotif) continue;
     
       trainee.trainingsCanSendColdFeedback.push(req.params.id);
       await trainee.save();
     
-      notify(traineeId, manager, "Request_Cold_Feedback", "None");
+      notify(traineeId, manager, "Request_Cold_Feedback", req.params.id.toString());
     }
     
 
@@ -260,7 +278,7 @@ const sendColdRequest = async (req, res) => {
   }
 };
 
-const sendHotRequestForTraining = async (trainingId, manager = "System") => {
+const sendHotRequestForTraining = async (trainingId, manager = null) => {
   const training = await Training.findById(trainingId);
   if (!training) {
     console.warn(`Training ${trainingId} not found`);
@@ -278,10 +296,14 @@ const sendHotRequestForTraining = async (trainingId, manager = "System") => {
 
     if (alreadySent) continue;
 
+    const alreadyHaveNotif = trainee.trainingsCanSendHotFeedback.includes(trainingId);
+
+    if (alreadyHaveNotif) continue;
+
     trainee.trainingsCanSendHotFeedback.push(trainingId);
     await trainee.save();
 
-    notify(traineeId, manager, "Request_Hot_Feedback", "None");
+    notify(traineeId, manager, "Request_Hot_Feedback", trainingId.toString());
   }
 };
 
@@ -353,7 +375,7 @@ cron.schedule('* * * * *', async () => {
       const fifteenMinutesAfter = new Date(latestDate.getTime() + 15 * 60 * 1000);
 
       if (now >= fifteenMinutesAfter) {
-        await sendHotRequestForTraining(trainingId, "System");
+        await sendHotRequestForTraining(trainingId, null);
         const training = await Training.findById(trainingId);
         if (!training) continue;
         training.delivered = true;

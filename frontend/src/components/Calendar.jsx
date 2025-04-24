@@ -1,11 +1,14 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Grid, Paper, Typography, Button , Box} from "@mui/material";
 import { getCookie } from './Cookies';
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay } from "date-fns";
 import format from "date-fns/format";
 import { fr, enUS } from "date-fns/locale"; 
+import axios from "axios";
 
 const Calendar = () => {
+  const user = getCookie("User");
+
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
 
@@ -18,6 +21,31 @@ const Calendar = () => {
 
   const handlePrevMonth = () => setCurrentMonth(addDays(startMonth, -1));
   const handleNextMonth = () => setCurrentMonth(addDays(endMonth, 1));
+
+  const [traineeTrainings, setTraineeTrainings] = useState([]);
+
+  const getTraineeTrainings = async () => {
+      try {
+          const trainings = await axios.post("http://localhost:5000/api/notifications/withtype", {
+              rec: user._id,
+              tp: "Trainee_Confirmed_Attendance"
+          });
+          trainings.data.notifications.forEach((notif) => {
+            axios.get(`http://localhost:5000/api/trainings/${notif.message}`)
+              .then((training) => {
+                setTraineeTrainings(prev => [...prev, training]);
+              })
+          });
+      } catch (error) {
+          console.error("Failed to fetch feedback notifications:", error);
+      }
+  }
+
+  useEffect(() => {
+    getTraineeTrainings();
+  }, []);
+
+  console.log(traineeTrainings);
 
   const renderDays = () => {
     const days = [];
@@ -55,8 +83,8 @@ const Calendar = () => {
                 color: isSameMonth(day, currentMonth) ? "black" : "grey",
                 cursor: "pointer",
                 "&:hover": { backgroundColor: "lightblue" },
-                width: '140px',
-                height: '80px',
+                width: '100%',
+                height: '150px',
                 marginBottom: '10px',
               }}
               onClick={() => setSelectedDate(cloneDay)}
@@ -77,7 +105,7 @@ const Calendar = () => {
   };
 
   return (
-    <Box sx={{ maxWidth: "70%", margin: "auto", textAlign: "center"}}>
+    <Box sx={{ maxWidth: "90%", margin: "auto", textAlign: "center", marginTop: "40px"}}>
       <Typography variant="h5">{format(currentMonth, "MMMM yyyy" , { locale: (Language === "fr")?fr:enUS })}</Typography>
       <Button onClick={handlePrevMonth}>⬅️ Prev</Button>
       <Button onClick={handleNextMonth}>Next ➡️</Button>

@@ -261,6 +261,32 @@ const TraineeTrainings = () => {
     const [canAddColdFeedback, setCanSendColdFeedback] = useState([]);
     const [canAddHotFeedback, setCanSendHotFeedback] = useState([]);
     const { numberOfNewFeedbacksReq ,setNumberOfNewFeedbacksReq } = useNavbar();
+    const [trainingsHaveFeedbackReq, setTrainingsHaveFeedbackReq] = useState([]);
+
+    useEffect(() => {
+        const fetchTrainingsFeedbacks = async () => {
+          try {
+            const types = ["Request_Cold_Feedback", "Request_Hot_Feedback"];
+            let allNotifications = [];
+      
+            for (let tp of types) {
+              const res = await axios.post("http://localhost:5000/api/notifications/withtype", {
+                rec: user._id,
+                tp,
+              });
+              allNotifications = [...allNotifications, ...res.data.notifications];
+            }
+      
+            allNotifications.forEach((notif) => {
+              setTrainingsHaveFeedbackReq((prev) => [...prev, notif.message]);
+            });
+          } catch (error) {
+            console.error("Failed to fetch feedback notifications:", error);
+          }
+        };
+      
+        fetchTrainingsFeedbacks();
+    }, []);      
 
     const changeFeedbackAvailabilty = () => {
         axios.get(`http://localhost:5000/api/users/${user._id}`)
@@ -1431,7 +1457,7 @@ const TraineeTrainings = () => {
                             </Tooltip>
                             </Badge>:null}
                             {training.status === "confirmed"?
-                            <Badge badgeContent={numberOfNewFeedbacksReq ? 1 : 0} color="primary"
+                            <Badge badgeContent={(trainingsHaveFeedbackReq.includes(training._id) && numberOfNewFeedbacksReq) ? 1 : 0} color="primary"
                             sx={{ 
                                 "& .MuiBadge-badge": { 
                                 fontSize: "10px", 
@@ -1957,7 +1983,7 @@ const TraineeTrainings = () => {
                     onClick={() => setFeedbackType("cold")}>
                         {t("cold_feedback")}
                     </Button>
-                    <Badge badgeContent={numberOfNewFeedbacksReq ? 1 : 0} color="primary"
+                    <Badge badgeContent={(canAddHotFeedback?.includes(selectedTrainingId) && numberOfNewFeedbacksReq) ? 1 : 0} color="primary"
                             sx={{ 
                                 "& .MuiBadge-badge": { 
                                 fontSize: "10px", 

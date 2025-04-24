@@ -111,13 +111,21 @@ const cron = require('node-cron');
   
   const getNotifWithType = async (req, res) => {
     try {
-      const { rec, tp} = req.body;
-      const notifications = await Notification.find({ recipient: rec, type: tp });
+      const { rec, tp, sen } = req.body;
+
+      const query = {};
+      if (tp) query.type = tp;
+      if (rec) query.recipient = rec;
+      if (sen) query.sender = sen;
+  
+      const notifications = await Notification.find(query);
       res.status(200).json({ notifications });
     } catch (error) {
+      console.error("Error fetching notifications:", error);
       res.status(500).json({ message: "Error fetching notifications" });
     }
   };
+  
 
   const getNoReadNotif = async (req, res) => {
     try {

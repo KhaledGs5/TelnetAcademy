@@ -31,6 +31,15 @@ const trainingSchema = new mongoose.Schema({
     trainee: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     date: { type: Date }
   }],
+  requestshistory: {
+    type: [
+      {
+        trainee: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        date: { type: Date }
+      }
+    ],
+    default: []
+  },
   acceptedtrainees: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   confirmedtrainees: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   rejectedtrainees: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],

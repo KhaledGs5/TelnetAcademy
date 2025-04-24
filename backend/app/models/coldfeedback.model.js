@@ -28,6 +28,7 @@ const coldfeedbackSchema = new mongoose.Schema({
     comments: { type: String },
     trainee: { type: mongoose.Schema.Types.ObjectId,ref: "User" },
     training: { type: mongoose.Schema.Types.ObjectId,ref: "Training" },
+    sentimentScore: { type: Number, required: false },
 }, { collection: "coldfeedback" ,timestamps: true });
 
 const ColdFeedback = mongoose.model("ColdFeedback", coldfeedbackSchema);

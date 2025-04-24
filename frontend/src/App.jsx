@@ -45,6 +45,7 @@ function App() {
               <Route path="/manageusers" element={<ManageUsers />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/calendar" element={<Calendar />} />
+              <Route path="/account" element={<Profile />} />
             </>
           )}
 
@@ -58,6 +59,7 @@ function App() {
               <Route path="/requests/trainer" element={<TrainerRequest />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/calendar" element={<Calendar />} />
+              <Route path="/account" element={<Profile />} />
             </>
           )}
 
@@ -68,6 +70,7 @@ function App() {
               <Route path="/trainercall" element={<TrainerCalls />} />
               <Route path="/calendar" element={<Calendar />} />
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/account" element={<Profile />} />
             </>
           )}
 
@@ -78,6 +81,7 @@ function App() {
               <Route path="/becometrainer" element={<BecomeTrainer />} />
               <Route path="/calendar" element={<Calendar />} />
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/account" element={<Profile />} />
             </>
           )}
           
@@ -91,6 +95,7 @@ function App() {
               <Route path="/becometrainer" element={<BecomeTrainer />} />
               <Route path="/calendar" element={<Calendar />} />
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/account" element={<Profile />} />
             </>
           )}
 

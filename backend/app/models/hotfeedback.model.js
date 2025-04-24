@@ -22,6 +22,7 @@ const hotfeedbackSchema = new mongoose.Schema({
     comments: { type: String }, 
     trainee: { type: mongoose.Schema.Types.ObjectId,ref: "User" },
     training: { type: mongoose.Schema.Types.ObjectId,ref: "Training" },
+    sentimentScore: { type: Number, required: false },
 }, { collection: "hotfeedback" ,timestamps: true });
 
 const HotFeedback = mongoose.model("HotFeedback", hotfeedbackSchema);
