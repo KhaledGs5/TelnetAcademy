@@ -1,7 +1,7 @@
 const express = require("express");
 const { getTrainings , getTrainingById , createTraining, updateTrainingById, deleteTrainingById, addTraineeReq
     ,acceptTraineeReq,rejectTraineeReq,deleteTrainee,traineeConfirm,getFeedbacks,sendColdRequest, sendHotRequest,
-    uploadQuiz, getQuizFile
+    uploadQuiz, getQuizFile, updateAll
 } = require("../controllers/training.controllers");
 
 const router = express.Router();
@@ -14,6 +14,7 @@ router.get("/trainings", getTrainings);
 router.get("/trainings/:id", getTrainingById);
 router.post("/trainings", createTraining);
 router.put("/trainings/:id", updateTrainingById);
+router.put("/trainings", updateAll);
 router.delete("/trainings/:id", deleteTrainingById);
 router.put("/trainings/register/:id", addTraineeReq);
 router.put("/trainings/accept/:id", acceptTraineeReq);

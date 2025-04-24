@@ -70,6 +70,16 @@ const deleteTrainingById = async (req, res) => {
   }
 };
 
+const updateAll = async (req, res) => {
+  try {
+    const updateResult = await Training.updateMany({}, req.body);
+    res.json({ message: "All trainings updated successfully", result: updateResult });
+  } catch (err) {
+    console.error("Error updating all trainings:", err);
+    res.status(500).json({ message: err.message });
+  }
+};
+
 // Trainee
 
 const addTraineeReq = async (req, res) => {
@@ -469,4 +479,4 @@ const getQuizFile = async (req, res) => {
 
 
 module.exports = {getTrainings, getTrainingById, createTraining, updateTrainingById , deleteTrainingById, addTraineeReq, 
-  acceptTraineeReq,rejectTraineeReq,deleteTrainee,traineeConfirm,getFeedbacks, sendColdRequest, sendHotRequest, uploadQuiz, getQuizFile}
+  acceptTraineeReq,rejectTraineeReq,deleteTrainee,traineeConfirm,getFeedbacks, sendColdRequest, sendHotRequest, uploadQuiz, getQuizFile, updateAll}

@@ -358,6 +358,10 @@ const translations = {
       "this_month": "This Month",
       "registrations_received_by_month": "Registrations received by month",
       "completed_trainings": "Completed Trainings",
+      "set_trainings_cost": "Set Trainings Cost",
+      "set_new_trainings_cost": "Set New Trainings Cost",
+      "cost": "Cost",
+      "cost_changed_successfully": "Cost Changed Successfully",
     },
     "fr": {
       "name": "Nom",
@@ -717,6 +721,10 @@ const translations = {
       "this_month": "Ce mois-ci",
       "registrations_received_by_month": "Inscriptions reçues par mois",
       "completed_trainings": "Formations terminées",
+      "set_trainings_cost": "Coût des formations",
+      "set_new_trainings_cost": "Définir le nouveau coût des formations",
+      "cost": "Coût",
+      "cost_changed_successfully": "Coût modifié avec succès",
     }
   };
   

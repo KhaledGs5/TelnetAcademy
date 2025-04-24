@@ -23,6 +23,7 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import LogoutIcon from '@mui/icons-material/Logout';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
+import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
 import LanguageIcon from '@mui/icons-material/Language';
 import axios from 'axios';
 import { useNavbar } from '../NavbarContext';
@@ -416,6 +417,35 @@ const Navbar = () => {
             setShowsVerifificationAlert(true);
         }
     };
+
+    // Set Trainings Cost .........
+    
+    const [trainingsCost, setTrainingsCost] = useState(false);
+    const [cost, setCost] = useState(0);
+
+    const showTrainingsCost = () => {
+        setTrainingsCost(true);
+    };
+
+    const hideTrainingsCost = () => {
+        setTrainingsCost(false);
+    }
+
+    const handleChangeCost = async () => {
+        await axios.put("http://localhost:5000/api/trainings" , {trainingsCost : cost})
+            .then((response) => {
+                hideTrainingsCost();
+                setVerifyAlert("success");
+                setVerifyAlertMessage("cost_changed_successfully");
+                setShowsVerifificationAlert(true);
+            })
+            .catch ((error) => {
+                console.error("Error getting :", error);
+                setVerifyAlert("error");
+                setVerifyAlertMessage("Failed to send request!");
+                setShowsVerifificationAlert(true);
+            })    
+    }
 
 
     // Logout
@@ -821,6 +851,7 @@ const Navbar = () => {
                             >
                     <PersonIcon sx={{marginRight:'10px'}}/>
                     </Badge>{t("requests")}</MenuItem> : null}
+                    {user.role === 'manager' ? <MenuItem  sx={menuStyle("/settrainingscost")} onClick={() => showTrainingsCost()}><MonetizationOnIcon sx={{marginRight:'10px'}}/>{t("set_trainings_cost")}</MenuItem> : null}
                     {user.role === 'manager' ? <MenuItem  sx={menuStyle("/callfortraining")}><AddchartIcon sx={{marginRight:'10px'}}/>{t("call_for_training")}</MenuItem> : null}
                     {user.role === 'manager' ? <MenuItem onClick={() => openCallForTrainers()} sx={menuStyle("/callfortrainers")}><GroupAddIcon sx={{marginRight:'10px'}}/>{t("call_for_trainers")}</MenuItem> : null}
                     {user.role === 'manager' && (
@@ -1301,6 +1332,102 @@ const Navbar = () => {
                         }}>
                         {t("save")}
                     </Button>
+                </Box>
+            </Dialog>
+            <Dialog
+                open={trainingsCost}
+                disableScrollLock={true}
+                onClose={hideTrainingsCost}
+                PaperProps={{
+                    sx: {
+                        minWidth: "15%",  
+                        height: "auto", 
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        borderRadius: "10px",
+                        padding: '20px',
+                    }
+                }}
+            >
+                <DialogTitle>{t("set_new_trainings_cost")}</DialogTitle>
+                <Box 
+                    sx={{
+                        width: '100%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        gap: '20px',
+                    }}
+                >
+                <FormControl
+                variant="outlined"
+                sx={{
+                    width: '100%',
+                }}
+                >
+                <InputLabel required>{t("cost")}</InputLabel>
+                <OutlinedInput
+                    type="number"
+                    value={cost}
+                    onChange={(e) => setCost(e.target.value)}
+                    label={t("message")}
+                    sx={{
+                    alignItems: 'flex-start'
+                    }}
+                />
+                </FormControl>
+                    <Box 
+                        sx={{
+                            width: '100%',
+                            display: 'flex',
+                            flexDirection: 'row',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            gap: '20px',
+                        }}
+                    >
+                        <Button sx={{
+                            color: 'white',
+                            backgroundColor: '#EA9696',
+                            padding: '5px 10px',
+                            borderRadius: '10px',
+                            textDecoration: 'none',
+                            fontWeight: 'bold',
+                            width: '100px',
+                            height: '40px',
+                            marginTop: '10px',
+                            textTransform: "none",
+                            '&:hover': {
+                                backgroundColor: '#EAB8B8',
+                                color: 'white',
+                            },
+                        }} 
+                        onClick={hideTrainingsCost}>
+                            {t("cancel")}
+                        </Button>
+                        <Button sx={{
+                            color: 'white',
+                            backgroundColor: '#2CA8D5',
+                            padding: '5px 10px',
+                            borderRadius: '10px',
+                            textDecoration: 'none',
+                            fontWeight: 'bold',
+                            width: '100px',
+                            height: '40px',
+                            marginTop: '10px',
+                            textTransform: "none",
+                            '&:hover': {
+                                backgroundColor: '#76C5E1',
+                                color: 'white',
+                            },
+                        }} 
+                        onClick={() => handleChangeCost()}>
+                            {t("save")}
+                        </Button>
+                    </Box>
                 </Box>
             </Dialog>
             <Snackbar open={showsVerificationAlert} autoHideDuration={3000} onClose={handleVerificationAlertClose}>

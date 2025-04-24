@@ -40,6 +40,7 @@ const trainingSchema = new mongoose.Schema({
     ],
     default: []
   },
+  trainingsCost: {type: Number, default: 50},
   acceptedtrainees: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   confirmedtrainees: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   rejectedtrainees: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
