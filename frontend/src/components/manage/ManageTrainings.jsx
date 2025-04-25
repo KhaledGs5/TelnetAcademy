@@ -161,21 +161,27 @@ const ManageTrainings = () => {
     //Edit Attendance List By Id ...........
 
     const [showAttendeeList, setShowAttendeeList] = useState(false);
-    const [traineesSetFeedbacks, setTraineeSetFeedback] = useState([]);
+    const [traineesSetColdFeedbacks, setTraineeSetColdFeedback] = useState([]);
+    const [traineesSetHotFeedbacks, setTraineeSetHotFeedback] = useState([]);
 
     const fetchTraineesFeedbacks = (trainingId) => {
         axios
           .post(`http://localhost:5000/api/trainings/feedbacks/${trainingId}`)
           .then((response) => {
             const { coldFeedback, hotFeedback } = response.data;
-            const trainees = [
+            const traineesCold = [
               ...coldFeedback.map(fb => fb.trainee),
-              ...hotFeedback.map(fb => fb.trainee)
             ];
+            const traineesHot = [
+                ...hotFeedback.map(fb => fb.trainee),
+              ];
       
-            const uniqueTrainees = [...new Set(trainees.map(id => id.toString()))];
+            const uniqueHotTrainees = [...new Set(traineesHot.map(id => id.toString()))];
+    
+            setTraineeSetHotFeedback(uniqueHotTrainees);
+            const uniqueColdTrainees = [...new Set(traineesCold.map(id => id.toString()))];
       
-            setTraineeSetFeedback(uniqueTrainees);
+            setTraineeSetColdFeedback(uniqueColdTrainees);
           })
           .catch((error) => {
             console.error("Error fetching feedbacks:", error);
@@ -297,7 +303,6 @@ const ManageTrainings = () => {
       
     // Show Feedbacks for training .............
     const [feedbacks, setFeedbacks] = useState([]);
-    const [feedbackType, setFeedbackType] = useState("cold");
     const [trainingsHaveFeedbacks, setTrainingsHaveFeedbacks] = useState([]);
     const { numberOfNewFeedbacks, setNumberOfNewFeedbacks } = useNavbar();
 
@@ -310,14 +315,18 @@ const ManageTrainings = () => {
         }
     };
 
-    const fetchFeedbacks = (trainingId, traineeId) => {
+    const fetchFeedbacks = (trainingId, traineeId, type) => {
         axios
           .post(`http://localhost:5000/api/trainings/feedbacks/${trainingId}`, {
             trainee: traineeId,
           })
           .then((response) => {
             setFeedbacks(response.data);
-            setShowFeedbacks(true);
+            if(type === "hot"){
+                setShowHotFeedback(true);
+            }else if(type === "cold"){
+                setShowColdFeedback(true);
+            }
             console.log("Fetched feedbacks:", response.data);
           })
           .catch((error) => {
@@ -345,15 +354,34 @@ const ManageTrainings = () => {
     
       
 
-    const [showFeedbacks, setShowFeedbacks] = useState(false);
+    const [showHotFeedbacks, setShowHotFeedbacks] = useState(false);
+    const [showHotFeedback, setShowHotFeedback] = useState(false);
+    const [showColdFeedback, setShowColdFeedback] = useState(false);
 
-    const showFeedbacksDialog = (trainingId, traineeId) => {
-        fetchFeedbacks(trainingId,traineeId);
+    const showHotFeedbacksDialog = () => {
+        setShowHotFeedbacks(true);
+    };
+
+    const hideHotFeedbacksDialog = () => {
+        setShowHotFeedbacks(false);
+    };
+
+    const showHotFeedbackDialog = (trainingId, traineeId) => {
+        fetchFeedbacks(trainingId,traineeId, "hot");
         handleOpenFeedbackNotification();
     };
 
-    const hideFeedbacksDialog = () => {
-        setShowFeedbacks(false);
+    const hideHotFeedbackDialog = () => {
+        setShowHotFeedback(false);
+    };
+
+    const showColdFeedbackDialog = (trainingId, traineeId) => {
+        fetchFeedbacks(trainingId,traineeId, "cold");
+        handleOpenFeedbackNotification();
+    };
+
+    const hideColdFeedbackDialog = () => {
+        setShowColdFeedback(false);
     };
 
     // Delete training by Id..............
@@ -1511,7 +1539,7 @@ const ManageTrainings = () => {
             onClose={hideAttendeeListDialog}
             PaperProps={{
                 sx: {
-                    minWidth: "800px",
+                    minWidth: "60%",
                     width: "auto",  
                     height: "auto", 
                     display: "flex",
@@ -1625,6 +1653,25 @@ const ManageTrainings = () => {
                                 }}
                             />
                         </LocalizationProvider>
+                        <Button sx={{
+                            color: 'white',
+                            backgroundColor: '#EA9696',
+                            borderRadius: '10px',
+                            textDecoration: 'none',
+                            fontWeight: 'bold',
+                            width: 'auto',
+                            height: '40px',
+                            marginTop: '10px',
+                            textTransform: "none",
+                            '&:hover': {
+                                backgroundColor: '#EAB8B8',
+                                color: 'white',
+                            },
+                        }} 
+                        onClick={showHotFeedbacksDialog}
+                        >
+                            {t("hot_feedbacks")}
+                        </Button>
                     </Box>
                     {filteredAttendance(training.trainees).map((trainee) => (
                         <Box 
@@ -1669,8 +1716,8 @@ const ManageTrainings = () => {
                                         <NotificationsActiveIcon/>
                                     </IconButton>
                                 </Tooltip>)}
-                                <Tooltip title={t("feedback")} arrow> 
-                                    <IconButton sx={{color:"#76C5E1"}} disabled={!traineesSetFeedbacks.includes(trainee._id)} onClick={() => showFeedbacksDialog(training._id, trainee._id)}>
+                                <Tooltip title={t("cold_feedback")} arrow> 
+                                    <IconButton sx={{color:"#76C5E1"}} disabled={!traineesSetColdFeedbacks.includes(trainee._id)} onClick={() => showColdFeedbackDialog(training._id, trainee._id)}>
                                         <FeedIcon/>
                                     </IconButton>
                                 </Tooltip>
@@ -1733,9 +1780,9 @@ const ManageTrainings = () => {
             </Box>
             </Dialog>
             <Dialog
-                open={showFeedbacks}
+                open={showHotFeedbacks}
                 disableScrollLock={true}
-                onClose={hideFeedbacksDialog}
+                onClose={hideHotFeedbacksDialog}
                 PaperProps={{
                     sx: {
                         minWidth: "50%",  
@@ -1749,7 +1796,61 @@ const ManageTrainings = () => {
                     }
                 }}
             >
-            <DialogTitle>{feedbackType === "cold" ? t("cold_feedback") : t("hot_feedback")}</DialogTitle>
+            <DialogTitle>{t("hot_feedbacks")}</DialogTitle>
+            {trainings.filter(training => training && training._id === selectedTrainingId)
+                .map((training) => (
+                <Box key={training._id}
+                    sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        gap: "20px",
+                        width: "100%",
+                    }}
+                >
+                {filteredAttendance(training.trainees).map((trainee, index) => (
+                    <Box 
+                        key={trainee._id} 
+                        sx={{
+                            width: '750px',
+                            display: 'flex',
+                            flexDirection: 'row',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            backgroundColor: "background.paper",
+                            boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.25)",
+                            borderRadius: '10px',
+                            paddingTop: '20px',
+                            paddingBottom: '20px',
+                            paddingLeft: '10px',
+                            height: '50px',
+                            gap: '20px',
+                        }}
+                    >
+                        <Typography>
+                        {t("trainee")} {index + 1}
+                        </Typography>
+                        <Box sx={{ width: '30%',paddingRight: "10px", display: "flex", flexDirection: "row", justifyContent: "end" , alignItems:"center"}}>
+                            <Box
+                                sx={{
+                                    marginRight: '10px',
+                                    width: "20px",
+                                    height: "20px", 
+                                    backgroundColor: TraineeStatusColors[trainee?.status],
+                                    borderRadius: "50%",
+                                }}
+                            />
+                            <Tooltip title={t("hot_feedback")} arrow> 
+                                <IconButton sx={{color:"#76C5E1"}} disabled={!traineesSetHotFeedbacks.includes(trainee._id)} onClick={() => showHotFeedbackDialog(training._id, trainee._id)}>
+                                    <FeedIcon/>
+                                </IconButton>
+                            </Tooltip>
+                        </Box>
+                    </Box>
+                ))}
+            </Box>
+            ))}
             <Box 
                 sx={{
                     width: '100%',
@@ -1757,7 +1858,6 @@ const ManageTrainings = () => {
                     flexDirection: 'row',
                     justifyContent: 'center',
                     alignItems: 'center',
-                    marginBottom: "10px",
                     gap: '20px',
                 }}
             >
@@ -1767,7 +1867,7 @@ const ManageTrainings = () => {
                     borderRadius: '10px',
                     textDecoration: 'none',
                     fontWeight: 'bold',
-                    width: 'auto',
+                    width: '100px',
                     height: '40px',
                     marginTop: '10px',
                     textTransform: "none",
@@ -1776,30 +1876,30 @@ const ManageTrainings = () => {
                         color: 'white',
                     },
                 }} 
-                onClick={() => setFeedbackType("cold")}>
-                    {t("cold_feedback")}
-                </Button>
-                <Button sx={{
-                    color: 'white',
-                    backgroundColor: '#EA9696',
-                    borderRadius: '10px',
-                    textDecoration: 'none',
-                    fontWeight: 'bold',
-                    width: 'auto',
-                    height: '40px',
-                    marginTop: '10px',
-                    textTransform: "none",
-                    '&:hover': {
-                        backgroundColor: '#EAB8B8',
-                        color: 'white',
-                    },
-                }} 
-                onClick={() => setFeedbackType("hot")}
-                >
-                    {t("hot_feedback")}
+                onClick={hideHotFeedbacksDialog}>
+                    {t("ok")}
                 </Button>
             </Box>
-            {feedbackType === "cold" && feedbacks?.coldFeedback?.length !== 0 ? 
+            </Dialog>
+            <Dialog
+                open={showColdFeedback}
+                disableScrollLock={true}
+                onClose={hideColdFeedbackDialog}
+                PaperProps={{
+                    sx: {
+                        minWidth: "50%",  
+                        height: "auto", 
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "",
+                        alignItems: "center",
+                        borderRadius: "10px",
+                        padding: '20px',
+                    }
+                }}
+            >
+            <DialogTitle>{t("cold_feedback")}</DialogTitle>
+            {feedbacks?.coldFeedback?.length !== 0 ? 
             <Box
                 sx={{
                     width:"100%",
@@ -2102,7 +2202,7 @@ const ManageTrainings = () => {
                     }}
                 />
             </Box>
-            :feedbackType === "cold" && feedbacks?.coldFeedback?.length === 0 ?
+            :feedbacks?.coldFeedback?.length === 0 ?
             <Typography
                 sx={{
                     width: "100%",
@@ -2113,8 +2213,56 @@ const ManageTrainings = () => {
                 }}
             >
                 {t("cold_feedback_not_submited_yet")}
-            </Typography>
-            : feedbackType==="hot" && feedbacks?.hotFeedback?.length !== 0 ? 
+            </Typography>:null}           
+            <Box 
+                sx={{
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: '20px',
+                }}
+            >
+                <Button sx={{
+                    color: 'white',
+                    backgroundColor: '#2CA8D5',
+                    borderRadius: '10px',
+                    textDecoration: 'none',
+                    fontWeight: 'bold',
+                    width: '100px',
+                    height: '40px',
+                    marginTop: '10px',
+                    textTransform: "none",
+                    '&:hover': {
+                        backgroundColor: '#76C5E1',
+                        color: 'white',
+                    },
+                }} 
+                onClick={hideColdFeedbackDialog}>
+                    {t("ok")}
+                </Button>
+            </Box>
+            </Dialog>
+            <Dialog
+                open={showHotFeedback}
+                disableScrollLock={true}
+                onClose={hideHotFeedbackDialog}
+                PaperProps={{
+                    sx: {
+                        minWidth: "50%",  
+                        height: "auto", 
+                        display: "flex",
+                        flexDirection: "column",
+                        justifyContent: "",
+                        alignItems: "center",
+                        borderRadius: "10px",
+                        padding: '20px',
+                    }
+                }}
+            >
+            <DialogTitle>{t("hot_feedback")}</DialogTitle>
+            {feedbacks?.hotFeedback?.length !== 0 ? 
             <Box     
                 sx={{
                     width:"100%",
@@ -2268,7 +2416,7 @@ const ManageTrainings = () => {
                     }}
                 />
             </Box>
-            :feedbackType === "hot" && feedbacks?.hotFeedback?.length === 0 ?
+            :feedbacks?.hotFeedback?.length === 0 ?
             <Typography
                 sx={{
                     width: "100%",
@@ -2280,7 +2428,7 @@ const ManageTrainings = () => {
             >
                 {t("hot_feedback_not_submited_yet")}
             </Typography> 
-            :null}
+            :null}           
             <Box 
                 sx={{
                     width: '100%',
@@ -2306,7 +2454,7 @@ const ManageTrainings = () => {
                         color: 'white',
                     },
                 }} 
-                onClick={hideFeedbacksDialog}>
+                onClick={hideHotFeedbackDialog}>
                     {t("ok")}
                 </Button>
             </Box>

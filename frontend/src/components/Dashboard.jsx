@@ -379,6 +379,8 @@ const Navbar = () => {
       fetchSessions();
     }, []);
     
+    // Chartss.............
+
     useEffect(() => {
       const skillChartInstance = skillTypeChart.current && echarts.init(skillTypeChart.current);
       const hoursChartInstance = hoursChart.current && echarts.init(hoursChart.current);
@@ -386,10 +388,13 @@ const Navbar = () => {
       const activityChartInstance = activityChart.current && echarts.init(activityChart.current);
       const gradeChartInstance = gradeChart.current && echarts.init(gradeChart.current);
       const registChartInstance = regisChart.current && echarts.init(regisChart.current);
-    
+
       const skillType = {
         title: {
           text: t("total_number_of_trainings") + " : " + numberOfTrainings,
+          textStyle: {
+            color: "text.primary",
+          },
         },
         tooltip: {
           trigger: "item",
@@ -718,8 +723,6 @@ const Navbar = () => {
       if (numberOfFeedbacks === 0) numberOfFeedbacks++;
       return Math.round(score / numberOfFeedbacks);
     }; 
-    
-    
 
     const [completedTrainings, setCompletedTrainings] = useState([]);
 

@@ -51,7 +51,11 @@ const createSession = async (req, res) => {
 
 const updateSessionById = async (req, res) => {
     try {
-        const session = await Session.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const session = await Session.findByIdAndUpdate(
+          req.params.id,
+          { $set: req.body }, 
+          { new: true }
+        );
         if (!session) return res.status(404).json({ message: "Session not found" });
           res.json(session);
           } catch (err) {

@@ -28,8 +28,16 @@ const getTrainingById = async (req, res) => {
 
 const createTraining = async (req, res) => {
   try {
+    const { date, month, nbOfHours } = req.body;
+
+    const existingTraining = await Training.findOne();
+    const trainingsCost = existingTraining?.trainingsCost || 50;
+
     const training = await Training.create(req.body);
-    const { date, month } = req.body;
+
+    if (nbOfHours) {
+      training.costPerTrainer = trainingsCost * nbOfHours;
+    }
     const firstDate = await getFirstSessionDateFromBody(date, month);
     if (firstDate) {
       training.registrationDeadline = new Date(firstDate.getTime() - 24 * 60 * 60 * 1000);
@@ -72,13 +80,24 @@ const deleteTrainingById = async (req, res) => {
 
 const updateAll = async (req, res) => {
   try {
-    const updateResult = await Training.updateMany({}, req.body);
-    res.json({ message: "All trainings updated successfully", result: updateResult });
+    const { trainingsCost } = req.body;
+    const trainings = await Training.find({});
+
+    for (let training of trainings) {
+      training.trainingsCost = trainingsCost;
+      if (training.nbOfHours) {
+        training.costPerTrainer = trainingsCost * training.nbOfHours;
+      }
+      await training.save();
+    }
+
+    res.json({ message: "All trainings updated successfully" });
   } catch (err) {
     console.error("Error updating all trainings:", err);
     res.status(500).json({ message: err.message });
   }
 };
+
 
 // Trainee
 
@@ -365,13 +384,35 @@ const getFirstSessionDateFromBody = (daysString, monthName) => {
     const firstDay = Math.min(...daysArray);
 
     const firstDate = new Date(currentYear, monthIndex, firstDay);
-    console.log('✅ First session date:', firstDate);
+    console.log('First session date:', firstDate);
     return firstDate;
   } catch (error) {
-    console.error('❌ Error parsing session date from body:', error);
+    console.error('Error parsing session date from body:', error);
     return null;
   }
 };
+
+const getFirstSessionPresentTraineesCount = async (trainingId) => {
+  try {
+    const firstSession = await Session.find({ training: trainingId })
+      .sort({ date: 1 })
+      .limit(1)
+      .populate("presenttrainees");
+
+    if (!firstSession.length) {
+      console.log("No sessions found for this training.");
+      return 0;
+    }
+
+    const count = firstSession[0].presenttrainees?.length || 0;
+    console.log(`Present trainees in first session: ${count}`);
+    return count;
+  } catch (error) {
+    console.error("Error getting present trainees in first session:", error);
+    return 0;
+  }
+};
+
 
 cron.schedule('* * * * *', async () => {
   try {
@@ -389,6 +430,12 @@ cron.schedule('* * * * *', async () => {
         const training = await Training.findById(trainingId);
         if (!training) continue;
         training.delivered = true;
+        const presentCount = await getFirstSessionPresentTraineesCount(trainingId);
+        if (presentCount > 0) {
+          training.costPerTrainee = training.costPerTrainer / presentCount;
+        } else {
+          training.costPerTrainee = 0;
+        }
         await training.save();
       }
     }

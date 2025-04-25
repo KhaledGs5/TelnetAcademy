@@ -83,7 +83,7 @@ const ManageSessions = () => {
                 ...training,
                 modified: false,
                 sessions: [],
-                full: training.nbOfAcceptedRequests >= training.nbOfParticipants,
+                full: training.nbOfConfirmedRequests >= training.nbOfParticipants,
             }));
 
             setTrainings(trainingsWithModified);

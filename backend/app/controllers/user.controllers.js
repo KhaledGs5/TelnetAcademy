@@ -26,20 +26,17 @@ const getUserById = async (req, res) => {
 };
 
 const signUser = async (req, res) => {
-  const { email, password, role } = req.body;
+  const { email, password} = req.body;
   const user = await User.findOne({ email });
   if (!user) return res.status(401).json({ message: "email_not_found" });
 
   const passwordMatch = (password === user.password); 
-  const roleMatch = (role === user.role || (user.role === "trainee_trainer" && role !== "manager"));
-
   if (!passwordMatch) return res.status(401).json({ message: "incorrect_password" });
-  if (!roleMatch) return res.status(401).json({ message: "role_not_allowed" });
 
   const token = jwt.sign(
     { id: user._id, role: user.role },
     process.env.PRIVATE_KEY,
-    { expiresIn: '1d' }
+    { expiresIn: '5d' }
   );
 
   res.json({ token, user });

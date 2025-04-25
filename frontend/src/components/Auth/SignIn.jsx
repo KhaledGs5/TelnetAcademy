@@ -57,11 +57,7 @@ const SignIn = () => {
             const errorMessage = error.response.data.message;
             setShowsSignInAlert(true);
             setSignInAlertMessage(errorMessage);
-            if (errorMessage === "wrongRole") {
-                setSignInAlert("warning");
-            }else{
-                setSignInAlert("error");
-            }
+            setSignInAlert("error");
           }
         }
     };
@@ -137,7 +133,7 @@ const SignIn = () => {
 
     const inputStyle = (loc) => ({
         position: "absolute",
-        top: loc === 'email' ? "20%" : "35%",
+        top: loc === 'email' ? "20%" : "40%",
         width: "80%",
     });
 
@@ -176,7 +172,7 @@ const SignIn = () => {
             <Box
                 sx={{
                     width: '30%',
-                    height: '500px',
+                    height: '400px',
                     backgroundColor: "background.paper",
                     display: "flex",
                     flexDirection: "column",
@@ -187,6 +183,7 @@ const SignIn = () => {
                     position: "absolute",
                     left: '35%',
                     top: '20%',
+                    gap: "20px",
                 }}
             >  
                 <Typography
@@ -213,7 +210,6 @@ const SignIn = () => {
                         label="Email...."
                     />
                 </FormControl>
-
                 <FormControl variant="outlined" sx={inputStyle("password")}>
                     <InputLabel required>{t("password")}</InputLabel>
                     <OutlinedInput
@@ -230,97 +226,10 @@ const SignIn = () => {
                         }
                     />
                 </FormControl>
-                <Typography   
-                    sx={{
-                        fontSize: 15,
-                        fontWeight: "bold",
-                        textAlign: "center",
-                        color: "text.primary",
-                        position: "absolute",
-                        left: '10%',
-                        top: '50%',
-                    }}>
-                    {t("select_your_role")}
-                </Typography>
-                <Box
-                    sx={{
-                        position: "absolute",
-                        left: '15%',
-                        top: '55%',
-                        display: "flex",
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: "25px",
-                    }}
-                >
-                    <Box
-                        sx={{
-                            display: "flex",
-                            flexDirection: "row",
-                            alignItems: "center",
-                        }}
-                    >
-                        <Radio
-                            checked={selectedRole === 'manager'}
-                            onChange={handleRoleChange}
-                            value="manager"
-                        />
-                        <Typography   
-                            sx={{
-                                fontSize: 15,
-                                textAlign: "center",
-                                color: "text.primary",
-                            }}>
-                            {t("manager")}
-                        </Typography>
-                    </Box>
-                    <Box
-                        sx={{
-                            display: "flex",
-                            flexDirection: "row",
-                            alignItems: "center",
-                        }}
-                    >
-                        <Radio
-                            checked={selectedRole === 'trainer'}
-                            onChange={handleRoleChange}
-                            value="trainer"
-                        />
-                        <Typography   
-                            sx={{
-                                fontSize: 15,
-                                textAlign: "center",
-                                color: "text.primary",
-                            }}>
-                            {t("trainer")}
-                        </Typography>
-                    </Box>
-                    <Box
-                        sx={{
-                            display: "flex",
-                            flexDirection: "row",
-                            alignItems: "center",
-                        }}
-                    >
-                        <Radio
-                            checked={selectedRole === 'trainee'}
-                            onChange={handleRoleChange}
-                            value="trainee"
-                        />
-                        <Typography   
-                            sx={{
-                                fontSize: 15,
-                                textAlign: "center",
-                                color: "text.primary",
-                            }}>
-                            {t("trainee")}
-                        </Typography>
-                    </Box>
-                </Box>
                 <Box sx={{
                         position: "absolute",
                         left: '15%',
-                        top: '65%',
+                        top: '60%',
                         color: "Black",
                         display: 'flex',
                         flexDirection: 'row',

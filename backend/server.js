@@ -44,9 +44,6 @@ app.get("/", (req, res) => {
 const userRoutes = require("./app/routes/user.routes");
 app.use("/api", userRoutes);
 
-const adminRoutes = require("./app/routes/admin.routes");
-app.use("/api", adminRoutes);
-
 const trainingRoutes = require("./app/routes/training.routes");
 app.use("/api", trainingRoutes);
 

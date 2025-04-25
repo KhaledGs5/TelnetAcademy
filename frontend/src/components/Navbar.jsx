@@ -654,7 +654,8 @@ const Navbar = () => {
                 sx={linkStyle((user.role === "trainer" || user.role === "trainee_trainer"&& chosenRole === "trainer") ? '/trainersession' : (user.role === "trainee" || user.role === "trainee_trainer" && chosenRole === "trainee") ? '/traineesession' : user.role === 'manager' ? '/managesessions' : '')}>{t("sessions")}</Link>
                 </Badge>
                 {user.role === "manager" ? <Link href="/managetrainings" sx={linkStyle('/managetrainings')}>{t("trainings")}</Link>:null}
-                {!(user.role) ?  <Link href="/manageusers" sx={linkStyle('/manageusers')}>{t("users")}</Link> : 
+                {user.role === "manager" ? <Link href="/feedbacks" sx={linkStyle('/feedbacks')}>{t("feedbacks")}</Link>:null}
+                {user.role === "admin" ?  <Link href="/manageusers" sx={linkStyle('/manageusers')}>{t("users")}</Link> : 
                 (user.role === "manager")? 
                 <Badge badgeContent={numberOfTrainingRequests + numberOfTraineeRequests} color="primary"
                 sx={{ 
@@ -846,7 +847,7 @@ const Navbar = () => {
                         <Typography variant="body1">{user.name}</Typography>
                         <Typography variant="caption" color="text.secondary">{user.role ? t(user.role) : t("admin")}</Typography>
                     </MenuItem>
-                    {!(user.role) ? <MenuItem onClick={() => window.location.href = "/manageusers"} sx={menuStyle("/manageusers")}><ManageAccountsIcon sx={{marginRight:'10px'}}/>{t("manage")}</MenuItem> : null}
+                    {user.role === "admin" ? <MenuItem onClick={() => window.location.href = "/manageusers"} sx={menuStyle("/manageusers")}><ManageAccountsIcon sx={{marginRight:'10px'}}/>{t("manage")}</MenuItem> : null}
                     {(user.role === "trainee_trainer") ? 
                     <MenuItem 
                         onClick={(e) => {

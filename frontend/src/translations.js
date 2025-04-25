@@ -345,7 +345,7 @@ const translations = {
       "participation_rate_by_activity": "Participation Rate By Activity",
       "participation_rate_by_grade": "Participation Rate By Grade",
       "participation_rate": "Participation Rate",
-      "statistics": "Satistics",
+      "statistics": "Statistics",
       "upcoming_sessions": "Upcoming Sessions",
       "next_week": "Next Week",
       "later_this_month": "Later This Month",
@@ -371,6 +371,7 @@ const translations = {
       "select_visibility": "Select Visibility",
       "trainings_per_page": "Trainings Per Page",
       "users_per_page": "Users Per Page",
+      "hot_feedbacks" : "Hot FeedBacks",
     },
     "fr": {
       "name": "Nom",
@@ -743,6 +744,7 @@ const translations = {
       "select_visibility": "Sélectionner la visibilité",
       "trainings_per_page": "Formations par page",
       "users_per_page": "Utilisateurs par page",
+      "hot_feedbacks": "Avis urgents",
     }
   };
   

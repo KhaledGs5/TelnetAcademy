@@ -60,18 +60,6 @@ const Home = () => {
                 >
                     {t("telnet_academy")}
                 </Typography>
-                <Typography   
-                    sx={{
-                        fontSize: 20,
-                        fontWeight: "bold",
-                        textAlign: "center",
-                        color: "text.primary",
-                        position: "absolute",
-                        left: '6%',
-                        top: '40%',
-                    }}>
-                    {t("choose_your_position")}
-                </Typography>
                 <Box
                     sx={{
                         userSelect: "none",
@@ -88,11 +76,8 @@ const Home = () => {
                         gap: '20px'
                     }}
                     >
-                    <Link href='/verify' sx={buttonStyle}>
-                        {t("admin")}
-                    </Link>
                     <Link href='/signin' sx={buttonStyle}>
-                        {t("user")}
+                        {t("signin")}
                     </Link>
                 </Box>
             </Box>
