@@ -62,6 +62,10 @@ app.use("/api", ColdFeedbackRoutes);
 const HotFeedbackRoutes = require("./app/routes/hotfeedback.routes");
 app.use("/api", HotFeedbackRoutes);
 
+const dynamicFormRoutes = require("./app/routes/dynamicform.routes");
+app.use("/api", dynamicFormRoutes);
+
+
 
 // Automatic Mail Sending ..........
 const transporter = nodemailer.createTransport({

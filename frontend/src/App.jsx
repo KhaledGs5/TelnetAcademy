@@ -18,7 +18,7 @@ import ManageTrainings from './components/manage/ManageTrainings.jsx';
 import TraineeTrainings from './components/TraineeTrainings.jsx';
 import { getCookie } from './components/Cookies.jsx';
 import TraineeRequest from './components/manage/TraineeRequest.jsx';
-import ManagerFeedbackView from './components/manage/Feedbakcs.jsx';
+import FormBuilder from './components/manage/Feedbakcs.jsx';
 import { NavbarProvider } from './NavbarContext.js';
 import { ThemeProviderWrapper } from './themecontext.js';
 import './index.css';
@@ -60,7 +60,7 @@ function App() {
                 <Route path="/requests/trainer" element={<TrainerRequest />} />
                 <Route path="/calendar" element={<Calendar />} />
                 <Route path="/account" element={<Profile />} />
-                <Route path="/feedbacks" element={<ManagerFeedbackView />} />
+                <Route path="/feedbacks" element={<FormBuilder />} />
               </>
             )}
 

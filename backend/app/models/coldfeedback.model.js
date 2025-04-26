@@ -10,26 +10,26 @@ const coldfeedbackSchema = new mongoose.Schema({
     matricule: {type: String, required: true},
     function: {type: String, required: true},
     service: {type: String, required: true}, 
-    appliedKnowledge: { type: Boolean, required: true },
-    knowledge: { type: String, required: false },
-    whyNotApplied : { type: String, required: false, enum: [
-        "Lack of time",
-        "Modules not acquired",
-        "Training not suitable",
-        "Lack of resources",
-        "Other"
-      ],
-    },
-    otherWhyNotApplied: { type: String, required: false },
-    improvedWorkEfficiency: { type: Boolean, required: true },
-    improvment: { type: String, required: false },
-    whyNotImproved: { type: String, required: false },
-    trainingImprovementsSuggested: { type: String },
-    comments: { type: String },
+    // appliedKnowledge: { type: Boolean, required: true },
+    // knowledge: { type: String, required: false },
+    // whyNotApplied : { type: String, required: false, enum: [
+    //     "Lack of time",
+    //     "Modules not acquired",
+    //     "Training not suitable",
+    //     "Lack of resources",
+    //     "Other"
+    //   ],
+    // },
+    // otherWhyNotApplied: { type: String, required: false },
+    // improvedWorkEfficiency: { type: Boolean, required: true },
+    // improvment: { type: String, required: false },
+    // whyNotImproved: { type: String, required: false },
+    // trainingImprovementsSuggested: { type: String },
+    // comments: { type: String },
     trainee: { type: mongoose.Schema.Types.ObjectId,ref: "User" },
     training: { type: mongoose.Schema.Types.ObjectId,ref: "Training" },
     sentimentScore: { type: Number, required: false },
-    extras: [{ type: mongoose.Schema.Types.Mixed }]
+    fields: [{ type: mongoose.Schema.Types.Mixed }]
 }, { collection: "coldfeedback" ,timestamps: true });
 
 const ColdFeedback = mongoose.model("ColdFeedback", coldfeedbackSchema);

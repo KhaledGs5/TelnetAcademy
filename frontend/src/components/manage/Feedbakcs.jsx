@@ -1,314 +1,385 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import FormPreview from '../FormPreview';
 import { useLanguage } from "../../languagecontext";
 import {
   Box,
-  Typography,
-  TextField,
   Button,
-  Checkbox,
-  FormControlLabel,
-  Rating,
+  TextField,
   Select,
   MenuItem,
-  InputLabel,
   FormControl,
+  InputLabel,
+  Checkbox,
+  FormControlLabel,
+  Radio,
+  RadioGroup,
+  Rating,
+  Typography,
+  Divider,
+  Paper,
   IconButton,
-  Divider
+  Snackbar,
+  Alert
 } from '@mui/material';
-import { AddCircle, Delete } from '@mui/icons-material';
+import {
+  Add as AddIcon,
+  Delete as DeleteIcon
+} from '@mui/icons-material';
+import axios from "axios";
 
-const ManagerFeedbackView = ({ 
-  coldFeedbacks = [], 
-  hotFeedbacks = [],
-  onSaveFeedback,
-}) => {
+const FormBuilder = () => {
   const { t } = useLanguage();
-  const [feedbackType, setFeedbackType] = useState('cold');
-  const [customFields, setCustomFields] = useState([]);
-  const [newFieldType, setNewFieldType] = useState('text');
-  const [newFieldLabel, setNewFieldLabel] = useState('');
-  const [newFieldRequired, setNewFieldRequired] = useState(false);
-  const [feedbackData, setFeedbackData] = useState({});
-  const [editingFeedback, setEditingFeedback] = useState(null);
+
+  
+  const [showsVerificationAlert, setShowsVerifificationAlert] = useState(false);
+  const [verifyAlertMessage, setVerifyAlertMessage] = useState("");
+  const [verifyAlert, setVerifyAlert] = useState("error");
+  const handleVerificationAlertClose = () => {
+      setShowsVerifificationAlert(false);
+  };
+
+  const [formFields, setFormFields] = useState([]);
+  const [fieldValues, setFieldValues] = useState({});
+  const types = ["cold_feedback", "hot_feedback"];
+  const [formType, setFormType] = useState("cold_feedback");
+
+  const submitForm = async () => {
+    try {
+      const response = await axios.post("http://localhost:5000/api/dynamicform/changeforms", {
+        type: formType,
+        fields: formFields,
+      });
+      console.log('Form submitted successfully:', response.data);
+      setVerifyAlert("success");
+      setVerifyAlertMessage("form_updated_successfully");
+      setShowsVerifificationAlert(true);
+      return response.data;
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      setVerifyAlert("error");
+      setVerifyAlertMessage("error updating form");
+      setShowsVerifificationAlert(true);
+      throw error;
+    }
+  };
+
+  const fetchForms = async () => {
+    try {
+      const response = await axios.get("http://localhost:5000/api/dynamicform/forms")
+      const form =  response.data.forms.filter((form) => form.type === formType);
+      setFormFields(form[0].fields);
+    } catch (error) {
+      console.error('Error getting forms', error);
+      throw error;
+    }
+  };
 
   useEffect(() => {
-    if (editingFeedback) {
-      setFeedbackData(editingFeedback.data);
-      setCustomFields(editingFeedback.fields || []);
-      setFeedbackType(editingFeedback.type);
-    } else {
-      setFeedbackData({});
-      setCustomFields([]);
-    }
-  }, [editingFeedback]);
+    fetchForms();
+  }, [formType]);
 
-  const handleAddField = () => {
-    if (!newFieldLabel.trim()) return;
-    
-    const field = {
+  const fieldTypes = [
+    { value: 'text', label: 'Text Input' },
+    { value: 'rating', label: 'Rating' },
+    { value: 'checkbox', label: 'Checkbox' },
+    { value: 'radio', label: 'Radio Group' },
+  ];
+
+  const addField = () => {
+    const newField = {
       id: Date.now().toString(),
-      type: newFieldType,
-      label: newFieldLabel,
-      required: newFieldRequired
+      label: '',
+      type: 'text',
+      required: false,
+      options: [],
     };
-    
-    setCustomFields([...customFields, field]);
-    setNewFieldLabel('');
-    setNewFieldRequired(false);
+    setFormFields(prevFields => [...prevFields, newField]);
   };
 
-  const handleRemoveField = (id) => {
-    setCustomFields(customFields.filter(field => field.id !== id));
-    const newData = {...feedbackData};
-    delete newData[id];
-    setFeedbackData(newData);
+  const updateField = (id, updates) => {
+    setFormFields(prevFields => 
+      prevFields.map(field => 
+        field.id === id ? { ...field, ...updates } : field
+      )
+    );
   };
 
-  const handleFieldChange = (fieldId, value) => {
-    setFeedbackData({
-      ...feedbackData,
-      [fieldId]: value
-    });
+  const deleteField = (id) => {
+    setFormFields(prevFields => prevFields.filter(field => field.id !== id));
   };
 
-  const renderFieldInput = (field) => {
-    switch (field.type) {
-      case 'text':
-        return (
-          <TextField
-            fullWidth
-            label={field.label}
-            value={feedbackData[field.id] || ''}
-            onChange={(e) => handleFieldChange(field.id, e.target.value)}
-            required={field.required}
-            multiline
-          />
-        );
-      case 'number':
-        return (
-          <TextField
-            fullWidth
-            type="number"
-            label={field.label}
-            value={feedbackData[field.id] || ''}
-            onChange={(e) => handleFieldChange(field.id, e.target.value)}
-            required={field.required}
-          />
-        );
-      case 'rating':
-        return (
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography>{field.label}</Typography>
-            <Rating
-              value={Number(feedbackData[field.id]) || 0}
-              onChange={(e, newValue) => handleFieldChange(field.id, newValue)}
+  const addOption = (fieldId) => {
+    setFormFields(prevFields => 
+      prevFields.map(field => {
+        if (field.id === fieldId) {
+          return {
+            ...field,
+            options: [...field.options, { label: '', value: `option_${Date.now()}` }]
+          };
+        }
+        return field;
+      })
+    );
+  };
+
+  const updateOption = (fieldId, optionIndex, value) => {
+    setFormFields(prevFields => 
+      prevFields.map(field => {
+        if (field.id === fieldId) {
+          const newOptions = [...field.options];
+          newOptions[optionIndex] = { ...newOptions[optionIndex], label: value };
+          return { ...field, options: newOptions };
+        }
+        return field;
+      })
+    );
+  };
+
+  const deleteOption = (fieldId, optionIndex) => {
+    setFormFields(prevFields => 
+      prevFields.map(field => {
+        if (field.id === fieldId) {
+          const newOptions = [...field.options];
+          newOptions.splice(optionIndex, 1);
+          return { ...field, options: newOptions };
+        }
+        return field;
+      })
+    );
+  };
+
+  const renderField = (field) => {
+    const isRadioOrCheckbox = field.type === 'radio' || field.type === 'checkbox';
+
+    return (
+      <Paper key={field.id} sx={{ p: 2, mt: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+          <Box sx={{ flexGrow: 1, mr: 2 }}>
+            <TextField
+              label="Field Label"
+              value={field.label}
+              onChange={(e) => updateField(field.id, { label: e.target.value })}
+              fullWidth
+              size="small"
+              sx={{ mb: 2 }}
             />
-          </Box>
-        );
-      case 'checkbox':
-        return (
-          <FormControlLabel
-            control={
-              <Checkbox
-                checked={Boolean(feedbackData[field.id])}
-                onChange={(e) => handleFieldChange(field.id, e.target.checked)}
-              />
-            }
-            label={field.label}
-          />
-        );
-      default:
-        return null;
-    }
-  };
-
-  const handleSave = () => {
-    const feedback = {
-      type: feedbackType,
-      data: feedbackData,
-      fields: customFields,
-      createdAt: new Date().toISOString()
-    };
-    
-    onSaveFeedback(feedback);
-    setEditingFeedback(null);
-    setFeedbackData({});
-    setCustomFields([]);
-  };
-
-  return (
-    <Box sx={{ width: '100%', p: 3 }}>
-      <Typography variant="h5" gutterBottom>
-        {t('managerFeedbackTitle')}
-      </Typography>
-      
-      {/* Feedback type selector */}
-      <FormControl fullWidth sx={{ mb: 3 }}>
-        <InputLabel>{t('feedbackType')}</InputLabel>
-        <Select
-          value={feedbackType}
-          onChange={(e) => setFeedbackType(e.target.value)}
-          label={t('feedbackType')}
-        >
-          <MenuItem value="cold">{t('coldFeedback')}</MenuItem>
-          <MenuItem value="hot">{t('hotFeedback')}</MenuItem>
-          <MenuItem value="custom">{t('customFeedback')}</MenuItem>
-        </Select>
-      </FormControl>
-      
-      {/* Existing feedbacks */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h6" gutterBottom>
-          {t('existingFeedbacks')}
-        </Typography>
-        
-        <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-          <Button 
-            variant={feedbackType === 'cold' ? 'contained' : 'outlined'}
-            onClick={() => setFeedbackType('cold')}
-          >
-            {t('coldFeedbacks')} ({coldFeedbacks.length})
-          </Button>
-          <Button 
-            variant={feedbackType === 'hot' ? 'contained' : 'outlined'}
-            onClick={() => setFeedbackType('hot')}
-          >
-            {t('hotFeedbacks')} ({hotFeedbacks.length})
-          </Button>
-        </Box>
-        
-        {(feedbackType === 'cold' ? coldFeedbacks : hotFeedbacks).map((fb, index) => (
-          <Box 
-            key={index} 
-            sx={{ 
-              p: 2, 
-              mb: 2, 
-              border: '1px solid #ddd', 
-              borderRadius: 1,
-              cursor: 'pointer',
-              '&:hover': { backgroundColor: '#f5f5f5' }
-            }}
-            onClick={() => setEditingFeedback(fb)}
-          >
-            <Typography variant="subtitle1">
-              {fb.data?.theme || t('untitledFeedback')}
-            </Typography>
-            <Typography variant="body2" color="textSecondary">
-              {new Date(fb.createdAt).toLocaleString()}
-            </Typography>
-          </Box>
-        ))}
-      </Box>
-      
-      {/* Custom form builder */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h6" gutterBottom>
-          {editingFeedback ? t('editFeedback') : t('createNewFeedback')}
-        </Typography>
-        
-        {/* Form fields */}
-        {customFields.map((field) => (
-          <Box key={field.id} sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Box sx={{ flexGrow: 1 }}>
-              {renderFieldInput(field)}
-            </Box>
-            <IconButton onClick={() => handleRemoveField(field.id)}>
-              <Delete color="error" />
-            </IconButton>
-          </Box>
-        ))}
-        
-        {/* Add new field */}
-        <Box sx={{ 
-          p: 2, 
-          border: '1px dashed #ccc', 
-          borderRadius: 1,
-          mb: 3
-        }}>
-          <Typography variant="subtitle2" gutterBottom>
-            {t('addNewField')}
-          </Typography>
-          
-          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 2 }}>
-            <FormControl sx={{ minWidth: 120 }}>
-              <InputLabel>{t('fieldType')}</InputLabel>
+            
+            <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+              <InputLabel>Field Type</InputLabel>
               <Select
-                value={newFieldType}
-                onChange={(e) => setNewFieldType(e.target.value)}
-                label={t('fieldType')}
+                value={field.type}
+                label="Field Type"
+                onChange={(e) => updateField(field.id, { type: e.target.value, options: [] })}
               >
-                <MenuItem value="text">{t('textField')}</MenuItem>
-                <MenuItem value="number">{t('numberField')}</MenuItem>
-                <MenuItem value="rating">{t('ratingField')}</MenuItem>
-                <MenuItem value="checkbox">{t('checkboxField')}</MenuItem>
+                {fieldTypes.map((type) => (
+                  <MenuItem key={type.value} value={type.value}>
+                    {type.label}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
-            
-            <TextField
-              label={t('fieldLabel')}
-              value={newFieldLabel}
-              onChange={(e) => setNewFieldLabel(e.target.value)}
-              sx={{ flexGrow: 1 }}
-            />
             
             <FormControlLabel
               control={
                 <Checkbox
-                  checked={newFieldRequired}
-                  onChange={(e) => setNewFieldRequired(e.target.checked)}
+                  checked={field.required}
+                  onChange={(e) => updateField(field.id, { required: e.target.checked })}
                 />
               }
-              label={t('required')}
+              label="Required"
             />
-            
-            <IconButton onClick={handleAddField} color="primary">
-              <AddCircle />
-            </IconButton>
           </Box>
-        </Box>
-        
-        {/* Basic info for the feedback */}
-        <TextField
-          fullWidth
-          label={t('feedbackTitle')}
-          value={feedbackData.title || ''}
-          onChange={(e) => handleFieldChange('title', e.target.value)}
-          sx={{ mb: 2 }}
-        />
-        
-        <TextField
-          fullWidth
-          label={t('description')}
-          value={feedbackData.description || ''}
-          onChange={(e) => handleFieldChange('description', e.target.value)}
-          multiline
-          rows={3}
-          sx={{ mb: 2 }}
-        />
-      </Box>
-      
-      {/* Action buttons */}
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-        {editingFeedback && (
-          <Button 
-            variant="outlined" 
-            color="error"
-            onClick={() => setEditingFeedback(null)}
+          
+          <IconButton 
+            onClick={() => deleteField(field.id)}
+            sx={{
+              color: "#EA9696",
+            }}
           >
-            {t('cancel')}
-          </Button>
+            <DeleteIcon />
+          </IconButton>
+        </Box>
+
+        {isRadioOrCheckbox && (
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="subtitle2">Options</Typography>
+            {field.options.map((option, index) => (
+              <Box key={option.value} sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 1 }}>
+                <TextField
+                  value={option.label}
+                  onChange={(e) => updateOption(field.id, index, e.target.value)}
+                  size="small"
+                  fullWidth
+                  label={`Option ${index + 1}`}
+                />
+                <IconButton onClick={() => deleteOption(field.id, index)} size="small">
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            ))}
+            <Button
+              onClick={() => addOption(field.id)}
+              startIcon={<AddIcon />}
+              size="small"
+              sx={{ mt: 1 }}
+            >
+              Add Option
+            </Button>
+          </Box>
         )}
-        
-        <Button 
-          variant="contained" 
-          onClick={handleSave}
-          disabled={customFields.length === 0}
+      </Paper>
+    );
+  };
+
+  return (
+    <Box
+      sx={{
+        width: "96%",
+        display: "flex",
+        flexDirection: "row",
+        alignItems: "start",
+        justifyContent: "center",
+        position: "absolute",
+        top: '15%',
+        left: "2%",
+        gap : "20px",
+      }}
+    >
+    <Box
+        sx={{
+        width: '100%',
+        height: 'auto',
+        boxSizing: 'border-box',
+        backgroundColor: "background.paper",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "start",
+        justifyContent: "start",
+        boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.25)",
+        borderRadius: '10px',
+        padding: '30px',
+        gap: "10px",
+    }}
+    >
+      <Typography 
+        sx={{
+          fontSize: 34,
+          fontWeight: "bold",
+          textAlign: "center",
+          letterSpacing: 0.2,
+          lineHeight: 1,
+          userSelect: "none",
+          cursor: "pointer",
+          color: "#2CA8D5",
+          marginLeft: 5,
+      }}>
+        {t("manage_feedbacks")}
+      </Typography>
+      <FormControl size="small" sx={{ mb: 1, mt: 2 }}>
+        <InputLabel>{t("feedback_type")}</InputLabel>
+        <Select
+          value={formType}
+          label={t("feedback_type")}
+          onChange={(e) => setFormType(e.target.value)}
         >
-          {editingFeedback ? t('updateFeedback') : t('saveFeedback')}
-        </Button>
+          {types.map((type) => (
+            <MenuItem key={type} value={type}>
+              {t(type)}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+      
+      {formFields.length > 0 ? (
+        formFields.map(field => renderField(field))
+      ) : (
+        <Typography variant="body1" color="text.secondary" sx={{ my: 2 }}>
+          {t("no_fields_message")}
+        </Typography>
+      )}
+      <Box 
+          sx={{
+              width: '100%',
+              display: 'flex',
+              flexDirection: 'row',
+              justifyContent: 'center',
+              alignItems: 'center',
+              gap: '20px',
+          }}
+      >
+          <Button sx={{
+              color: 'white',
+              backgroundColor: '#2CA8D5',
+              borderRadius: '10px',
+              textDecoration: 'none',
+              fontWeight: 'bold',
+              width: 'auto',
+              height: '40px',
+              marginTop: '10px',
+              padding: "10px",
+              textTransform: "none",
+              '&:hover': {
+                  backgroundColor: '#76C5E1',
+                  color: 'white',
+              },
+          }} 
+          onClick={addField}
+          startIcon={<AddIcon />}
+          >
+              {t("add_field")}
+          </Button>
+          <Button sx={{
+              color: 'white',
+              backgroundColor: '#2CA8D5',
+              borderRadius: '10px',
+              textDecoration: 'none',
+              fontWeight: 'bold',
+              width: 'auto',
+              height: '40px',
+              marginTop: '10px',
+              padding: "10px",
+              textTransform: "none",
+              '&:hover': {
+                  backgroundColor: '#76C5E1',
+                  color: 'white',
+              },
+          }}
+          onClick={submitForm} 
+          >
+              {t("save")}
+          </Button>
       </Box>
+    </Box>
+    <Box
+        sx={{
+        width: '100%',
+        height: 'auto',
+        boxSizing: 'border-box',
+        backgroundColor: "background.paper",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "start",
+        justifyContent: "start",
+        boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.25)",
+        borderRadius: '10px',
+        padding: '30px',
+        gap: "10px",
+        position: "sticky",
+        top: '0px',
+    }}
+    >
+      <FormPreview 
+        formFields={formFields} 
+        onFieldValuesChange={setFieldValues} 
+      />
+    </Box>
+    <Snackbar open={showsVerificationAlert} autoHideDuration={3000} onClose={handleVerificationAlertClose}>
+        <Alert onClose={handleVerificationAlertClose} severity={verifyAlert} variant="filled">
+            {t(verifyAlertMessage)}
+        </Alert>
+    </Snackbar>
     </Box>
   );
 };
 
-export default ManagerFeedbackView;
+export default FormBuilder;

@@ -372,6 +372,11 @@ const translations = {
       "trainings_per_page": "Trainings Per Page",
       "users_per_page": "Users Per Page",
       "hot_feedbacks" : "Hot FeedBacks",
+      "manage_feedbacks": "Manage Feedbacks",
+      "feedbacks": "Feedbacks",
+      "form_updated_successfully": "Form Updated Successfully",
+      "add_field": "Add Field",
+      "no_fields_message": "No fields added yet. Click the button below to add your first field.",
     },
     "fr": {
       "name": "Nom",
@@ -745,6 +750,11 @@ const translations = {
       "trainings_per_page": "Formations par page",
       "users_per_page": "Utilisateurs par page",
       "hot_feedbacks": "Avis urgents",
+      "manage_feedbacks": "Gérer les avis",
+      "feedbacks": "Avis",
+      "form_updated_successfully": "Formulaire mis à jour avec succès",
+      "add_field": "Ajouter un champ",
+      "no_fields_message": "Aucun champ ajouté pour le moment. Cliquez sur le bouton ci-dessous pour ajouter votre premier champ.",
     }
   };
   
