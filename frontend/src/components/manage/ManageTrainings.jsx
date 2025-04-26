@@ -21,6 +21,7 @@ import Dialog from '@mui/material/Dialog';
 import { useNavbar } from '../../NavbarContext';
 import { StaticDatePicker, LocalizationProvider , DateTimePicker} from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import FormPreview from '../FormPreview';
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import dayjs from 'dayjs';
 import axios from "axios";
@@ -191,6 +192,7 @@ const ManageTrainings = () => {
       
 
     const showAttendeeListDialog = (trainingId) => {
+        setFeedbackType("cold_feedback");
         setSelectedTrainingId(trainingId);
         fetchTraineesFeedbacks(trainingId);
         setShowAttendeeList(true);
@@ -305,6 +307,27 @@ const ManageTrainings = () => {
     const [feedbacks, setFeedbacks] = useState([]);
     const [trainingsHaveFeedbacks, setTrainingsHaveFeedbacks] = useState([]);
     const { numberOfNewFeedbacks, setNumberOfNewFeedbacks } = useNavbar();
+    const [feedbackType, setFeedbackType]= useState("cold_feedback");
+
+    const [formFields, setFormFields] = useState([]);
+    const [fieldValues, setFieldValues] = useState({});
+
+    console.log(fieldValues);
+
+    const fetchForms = async () => {
+        try {
+            const response = await axios.get("http://localhost:5000/api/dynamicform/forms")
+            const form =  response.data.forms.filter((form) => form.type === feedbackType);
+            setFormFields(form[0].fields);
+        } catch (error) {
+            console.error('Error getting forms', error);
+            throw error;
+        }
+        };
+
+    useEffect(() => {
+        fetchForms();
+    }, [feedbackType]);
 
     const handleOpenFeedbackNotification = async () => {
         try {
@@ -322,10 +345,12 @@ const ManageTrainings = () => {
           })
           .then((response) => {
             setFeedbacks(response.data);
-            if(type === "hot"){
+            if(type === "hot_feedback"){
                 setShowHotFeedback(true);
-            }else if(type === "cold"){
+                setFieldValues(response.data.hotFeedback[0].responses);
+            }else if(type === "cold_feedback"){
                 setShowColdFeedback(true);
+                setFieldValues(response.data.coldFeedback[0].responses);
             }
             console.log("Fetched feedbacks:", response.data);
           })
@@ -359,15 +384,17 @@ const ManageTrainings = () => {
     const [showColdFeedback, setShowColdFeedback] = useState(false);
 
     const showHotFeedbacksDialog = () => {
+        setFeedbackType("hot_feedback");
         setShowHotFeedbacks(true);
     };
 
     const hideHotFeedbacksDialog = () => {
+        setFeedbackType("cold_feedback");
         setShowHotFeedbacks(false);
     };
 
     const showHotFeedbackDialog = (trainingId, traineeId) => {
-        fetchFeedbacks(trainingId,traineeId, "hot");
+        fetchFeedbacks(trainingId,traineeId, "hot_feedback");
         handleOpenFeedbackNotification();
     };
 
@@ -376,7 +403,7 @@ const ManageTrainings = () => {
     };
 
     const showColdFeedbackDialog = (trainingId, traineeId) => {
-        fetchFeedbacks(trainingId,traineeId, "cold");
+        fetchFeedbacks(trainingId,traineeId, "cold_feedback");
         handleOpenFeedbackNotification();
     };
 
@@ -2085,123 +2112,128 @@ const ManageTrainings = () => {
                 >
                     {t("participant")} {t("evaluation")} 
                 </Typography>
-                {feedbacks?.coldFeedback?.[0]?.appliedKnowledge && (
-                    <TextField
-                        label={t("knowledge")}
-                        value={feedbacks?.coldFeedback?.[0]?.knowledge || ""}
-                        sx={{ 
-                            width: "50%",
-                            cursor: "pointer", 
-                            "& .MuiInputBase-input": { cursor: "pointer" }, 
-                            "& .MuiOutlinedInput-root": { cursor: "pointer" } 
-                        }}
-                        InputProps={{
-                            readOnly: true, 
-                        }}
-                    />
-                )}
-                {!(feedbacks?.coldFeedback?.[0]?.appliedKnowledge) && (
-                <Box
-                    sx={{
-                        width: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        height: '100%',
-                        gap: '10px',
-                    }}
-                >
-                    <TextField
-                        label={t("why_didnt_apply")}
-                        value={feedbacks?.coldFeedback?.[0]?.otherWhyNotApplied || feedbacks?.coldFeedback?.[0]?.whyNotApplied}
-                        sx={{ 
-                            width: "50%",
-                            cursor: "pointer", 
-                            "& .MuiInputBase-input": { cursor: "pointer" }, 
-                            "& .MuiOutlinedInput-root": { cursor: "pointer" } 
-                        }}
-                        InputProps={{
-                            readOnly: true, 
-                        }}
-                    />
-                </Box>)
-                }
-                {feedbacks?.coldFeedback?.[0]?.improvedWorkEfficiency && (
-                    <Box
-                        sx={{
-                            width: '100%',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            height: '100%',
-                            gap: '10px',
-                        }}
-                    >
-                        <TextField
-                            label={t("improvment")}
-                            value={feedbacks?.coldFeedback?.[0]?.improvment || ""}
-                            sx={{ 
-                                width: "100%",
-                                cursor: "pointer", 
-                                "& .MuiInputBase-input": { cursor: "pointer" }, 
-                                "& .MuiOutlinedInput-root": { cursor: "pointer" } 
-                            }}
-                            InputProps={{
-                                readOnly: true, 
-                            }}
-                        />
-                    </Box>
-                )}
-                {!feedbacks?.coldFeedback?.[0]?.improvedWorkEfficiency && (
-                    <Box
-                        sx={{
-                            width: '100%',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            height: '100%',
-                            gap: '10px',
-                        }}
-                    >
-                        <TextField
-                            label={t("why_not_improved")}
-                            value={feedbacks?.coldFeedback?.[0]?.whyNotImproved || ""}
-                            sx={{ 
-                                width: "100%",
-                                cursor: "pointer", 
-                                "& .MuiInputBase-input": { cursor: "pointer" }, 
-                                "& .MuiOutlinedInput-root": { cursor: "pointer" } 
-                            }}
-                            InputProps={{
-                                readOnly: true, 
-                            }}
-                        />
-                    </Box>
-                )}
-                <TextField
-                    label={t("suggestion")}
-                    value={feedbacks?.coldFeedback?.[0]?.trainingImprovementsSuggested || ""}
-                    sx={{ 
-                        width: "100%",
-                        cursor: "pointer", 
-                        "& .MuiInputBase-input": { cursor: "pointer" }, 
-                        "& .MuiOutlinedInput-root": { cursor: "pointer" } 
-                    }}
-                    InputProps={{
-                        readOnly: true, 
-                    }}
-                />
-                <TextField
-                    label={t("comments")}
-                    value={feedbacks?.coldFeedback?.[0]?.comments || ""}
-                    sx={{ 
-                        width: "100%",
-                        cursor: "pointer", 
-                        "& .MuiInputBase-input": { cursor: "pointer" }, 
-                        "& .MuiOutlinedInput-root": { cursor: "pointer" } 
-                    }}
-                    InputProps={{
-                        readOnly: true, 
-                    }}
+                <FormPreview 
+                    formFields={formFields} 
+                    fieldValues={fieldValues} 
                 />
             </Box>
+            //     {feedbacks?.coldFeedback?.[0]?.appliedKnowledge && (
+            //         <TextField
+            //             label={t("knowledge")}
+            //             value={feedbacks?.coldFeedback?.[0]?.knowledge || ""}
+            //             sx={{ 
+            //                 width: "50%",
+            //                 cursor: "pointer", 
+            //                 "& .MuiInputBase-input": { cursor: "pointer" }, 
+            //                 "& .MuiOutlinedInput-root": { cursor: "pointer" } 
+            //             }}
+            //             InputProps={{
+            //                 readOnly: true, 
+            //             }}
+            //         />
+            //     )}
+            //     {!(feedbacks?.coldFeedback?.[0]?.appliedKnowledge) && (
+            //     <Box
+            //         sx={{
+            //             width: '100%',
+            //             display: 'flex',
+            //             flexDirection: 'column',
+            //             height: '100%',
+            //             gap: '10px',
+            //         }}
+            //     >
+            //         <TextField
+            //             label={t("why_didnt_apply")}
+            //             value={feedbacks?.coldFeedback?.[0]?.otherWhyNotApplied || feedbacks?.coldFeedback?.[0]?.whyNotApplied}
+            //             sx={{ 
+            //                 width: "50%",
+            //                 cursor: "pointer", 
+            //                 "& .MuiInputBase-input": { cursor: "pointer" }, 
+            //                 "& .MuiOutlinedInput-root": { cursor: "pointer" } 
+            //             }}
+            //             InputProps={{
+            //                 readOnly: true, 
+            //             }}
+            //         />
+            //     </Box>)
+            //     }
+            //     {feedbacks?.coldFeedback?.[0]?.improvedWorkEfficiency && (
+            //         <Box
+            //             sx={{
+            //                 width: '100%',
+            //                 display: 'flex',
+            //                 flexDirection: 'column',
+            //                 height: '100%',
+            //                 gap: '10px',
+            //             }}
+            //         >
+            //             <TextField
+            //                 label={t("improvment")}
+            //                 value={feedbacks?.coldFeedback?.[0]?.improvment || ""}
+            //                 sx={{ 
+            //                     width: "100%",
+            //                     cursor: "pointer", 
+            //                     "& .MuiInputBase-input": { cursor: "pointer" }, 
+            //                     "& .MuiOutlinedInput-root": { cursor: "pointer" } 
+            //                 }}
+            //                 InputProps={{
+            //                     readOnly: true, 
+            //                 }}
+            //             />
+            //         </Box>
+            //     )}
+            //     {!feedbacks?.coldFeedback?.[0]?.improvedWorkEfficiency && (
+            //         <Box
+            //             sx={{
+            //                 width: '100%',
+            //                 display: 'flex',
+            //                 flexDirection: 'column',
+            //                 height: '100%',
+            //                 gap: '10px',
+            //             }}
+            //         >
+            //             <TextField
+            //                 label={t("why_not_improved")}
+            //                 value={feedbacks?.coldFeedback?.[0]?.whyNotImproved || ""}
+            //                 sx={{ 
+            //                     width: "100%",
+            //                     cursor: "pointer", 
+            //                     "& .MuiInputBase-input": { cursor: "pointer" }, 
+            //                     "& .MuiOutlinedInput-root": { cursor: "pointer" } 
+            //                 }}
+            //                 InputProps={{
+            //                     readOnly: true, 
+            //                 }}
+            //             />
+            //         </Box>
+            //     )}
+            //     <TextField
+            //         label={t("suggestion")}
+            //         value={feedbacks?.coldFeedback?.[0]?.trainingImprovementsSuggested || ""}
+            //         sx={{ 
+            //             width: "100%",
+            //             cursor: "pointer", 
+            //             "& .MuiInputBase-input": { cursor: "pointer" }, 
+            //             "& .MuiOutlinedInput-root": { cursor: "pointer" } 
+            //         }}
+            //         InputProps={{
+            //             readOnly: true, 
+            //         }}
+            //     />
+            //     <TextField
+            //         label={t("comments")}
+            //         value={feedbacks?.coldFeedback?.[0]?.comments || ""}
+            //         sx={{ 
+            //             width: "100%",
+            //             cursor: "pointer", 
+            //             "& .MuiInputBase-input": { cursor: "pointer" }, 
+            //             "& .MuiOutlinedInput-root": { cursor: "pointer" } 
+            //         }}
+            //         InputProps={{
+            //             readOnly: true, 
+            //         }}
+            //     />
+            // </Box>
             :feedbacks?.coldFeedback?.length === 0 ?
             <Typography
                 sx={{
@@ -2370,7 +2402,11 @@ const ManageTrainings = () => {
                 >
                     {t("evaluation")}
                 </Typography>
-                {[
+                <FormPreview 
+                    formFields={formFields} 
+                    fieldValues={fieldValues} 
+                />
+                {/* {[
                     { label: t("objectivesCommunication"), field: "objectivesCommunication" },
                     { label: t("trainingOrganization"), field: "trainingOrganization" },
                     { label: t("groupComposition"), field: "groupComposition" },
@@ -2414,7 +2450,7 @@ const ManageTrainings = () => {
                     InputProps={{
                         readOnly: true, 
                     }}
-                />
+                /> */}
             </Box>
             :feedbacks?.hotFeedback?.length === 0 ?
             <Typography

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   Box,
   TextField,
@@ -9,87 +9,58 @@ import {
   Radio,
   Checkbox,
   Rating,
-  Typography,
-  Paper,
-  Divider
+  Typography
 } from '@mui/material';
+import { useLanguage } from "../languagecontext";
 
-const FormPreview = ({ formFields, onFieldValuesChange }) => {
-  const [fieldValues, setFieldValues] = useState({});
+const FormPreview = ({ formFields, fieldValues = [] }) => {
+  const { t } = useLanguage();
 
-  // Initialize field values when formFields change
-  useEffect(() => {
-    const initialValues = {};
-    formFields.forEach(field => {
-      if (field.type === 'checkbox') {
-        initialValues[field.id] = field.options.reduce((acc, opt) => {
-          acc[opt.value] = false;
-          return acc;
-        }, {});
-      } else if (field.type === 'radio' && field.options.length > 0) {
-        initialValues[field.id] = field.options[0].value;
-      } else {
-        initialValues[field.id] = '';
-      }
-    });
-    setFieldValues(initialValues);
-  }, [formFields]);
-
-  const handleValueChange = (fieldId, value) => {
-    const newValues = {
-      ...fieldValues,
-      [fieldId]: value
-    };
-    setFieldValues(newValues);
-    if (onFieldValuesChange) {
-      onFieldValuesChange(newValues);
-    }
-  };
-
-  const handleCheckboxChange = (fieldId, optionValue, isChecked) => {
-    const newCheckboxValues = {
-      ...fieldValues[fieldId],
-      [optionValue]: isChecked
-    };
-    handleValueChange(fieldId, newCheckboxValues);
-  };
+  const valuesMap = fieldValues.reduce((acc, response) => {
+    acc[response.fieldId] = response.value;
+    return acc;
+  }, {});
 
   const renderField = (field) => {
+    const value = valuesMap[field.id];
+    
     switch (field.type) {
       case 'text':
         return (
           <TextField
             key={field.id}
-            label={field.label || 'Text Field'}
+            label={field.label || t('text_field')}
             variant="outlined"
             fullWidth
             margin="normal"
-            required={field.required}
-            value={fieldValues[field.id] || ''}
-            onChange={(e) => handleValueChange(field.id, e.target.value)}
+            InputProps={{
+              readOnly: true,
+              sx: { cursor: 'pointer' }
+            }}
+            sx={{ '& .MuiInputBase-input': { cursor: 'pointer' } }}
+            value={value || ''}
           />
         );
-
       case 'rating':
         return (
           <Box key={field.id} sx={{ mt: 2, mb: 1 }}>
             <Typography component="legend">
-              {field.label || 'Rating'} {field.required && '*'}
+              {field.label || t('rating')} {field.required && '*'}
             </Typography>
             <Rating
               name={`rating-${field.id}`}
               precision={0.5}
-              value={Number(fieldValues[field.id]) || 0}
-              onChange={(e, newValue) => handleValueChange(field.id, newValue)}
+              value={Number(value) || 0}
+              readOnly
+              sx={{ '& .MuiRating-icon': { cursor: 'pointer' } }}
             />
           </Box>
         );
-
       case 'checkbox':
         return (
           <FormControl key={field.id} component="fieldset" sx={{ mt: 2, mb: 1 }}>
             <Typography component="legend">
-              {field.label || 'Checkbox'} {field.required && '*'}
+              {field.label || t('checkbox')} {field.required && '*'}
             </Typography>
             {field.options.length > 0 ? (
               field.options.map((option, index) => (
@@ -98,81 +69,95 @@ const FormPreview = ({ formFields, onFieldValuesChange }) => {
                   control={
                     <Checkbox
                       name={`${field.id}-${index}`}
-                      checked={fieldValues[field.id]?.[option.value] || false}
-                      onChange={(e) => handleCheckboxChange(
-                        field.id,
-                        option.value,
-                        e.target.checked
-                      )}
+                      checked={value?.[option.value] || false}
+                      readOnly
+                      sx={{ '& .MuiSvgIcon-root': { cursor: 'pointer' } }}
                     />
                   }
-                  label={option.label || `Option ${index + 1}`}
+                  label={option.label || `${t('option')} ${index + 1}`}
+                  sx={{ cursor: 'pointer' }}
                 />
               ))
             ) : (
               <FormControlLabel
                 control={
-                  <Checkbox
-                    checked={fieldValues[field.id] || false}
-                    onChange={(e) => handleValueChange(field.id, e.target.checked)}
+                  <Checkbox 
+                    checked={value || false} 
+                    readOnly 
+                    sx={{ '& .MuiSvgIcon-root': { cursor: 'pointer' } }}
                   />
                 }
-                label="Checkbox option"
+                label={t('checkbox_option')}
+                sx={{ cursor: 'pointer' }}
               />
             )}
           </FormControl>
         );
-
       case 'radio':
         return (
           <FormControl key={field.id} component="fieldset" sx={{ mt: 2, mb: 1 }}>
             <Typography component="legend">
-              {field.label || 'Radio Group'} {field.required && '*'}
+              {field.label || t('radio_group')} {field.required && '*'}
             </Typography>
-            <RadioGroup
-              value={fieldValues[field.id] || ''}
-              onChange={(e) => handleValueChange(field.id, e.target.value)}
-            >
+            <RadioGroup value={value || ''}>
               {field.options.length > 0 ? (
                 field.options.map((option, index) => (
                   <FormControlLabel
                     key={`${field.id}-${index}`}
                     value={option.value}
-                    control={<Radio />}
-                    label={option.label || `Option ${index + 1}`}
+                    control={
+                      <Radio 
+                        readOnly 
+                        sx={{ '& .MuiSvgIcon-root': { cursor: 'pointer' } }} 
+                      />
+                    }
+                    label={option.label || `${t('option')} ${index + 1}`}
+                    sx={{ cursor: 'pointer' }}
                   />
                 ))
               ) : (
                 <FormControlLabel
                   value="option1"
-                  control={<Radio />}
-                  label="Radio option"
+                  control={
+                    <Radio 
+                      readOnly 
+                      sx={{ '& .MuiSvgIcon-root': { cursor: 'pointer' } }} 
+                    />
+                  }
+                  label={t('radio_option')}
+                  sx={{ cursor: 'pointer' }}
                 />
               )}
             </RadioGroup>
           </FormControl>
         );
-
       default:
         return null;
     }
   };
-
   return (
-    <Paper sx={{ p: 3, mt: 4,width:"100%" }}>
-      <Typography variant="h6" gutterBottom>
-        Form Preview
-      </Typography>
-      <Divider sx={{ mb: 3 }} />
-      
+    <Box
+      sx={{
+        width: '100%',
+        height: 'auto',
+        boxSizing: 'border-box',
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "start",
+        justifyContent: "start",
+        borderRadius: '10px',
+        padding: '10px',
+        gap: "2px",
+      }}
+    >    
       {formFields.length > 0 ? (
         formFields.map(field => renderField(field))
       ) : (
         <Typography variant="body2" color="text.secondary">
-          No fields added yet. The preview will appear here.
+          {t("no_fields_preview_message")}
         </Typography>
       )}
-    </Paper>
+    </Box>
   );
 };
 

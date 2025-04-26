@@ -1,5 +1,10 @@
 const mongoose = require("mongoose");
 
+const fieldValueSchema = new mongoose.Schema({
+  fieldId: String,
+  value: mongoose.Schema.Types.Mixed 
+})
+
 const coldfeedbackSchema = new mongoose.Schema({
     theme: {type: String,required: true},
     association: {type: String,required: true},
@@ -29,7 +34,7 @@ const coldfeedbackSchema = new mongoose.Schema({
     trainee: { type: mongoose.Schema.Types.ObjectId,ref: "User" },
     training: { type: mongoose.Schema.Types.ObjectId,ref: "Training" },
     sentimentScore: { type: Number, required: false },
-    fields: [{ type: mongoose.Schema.Types.Mixed }]
+    responses: [fieldValueSchema],
 }, { collection: "coldfeedback" ,timestamps: true });
 
 const ColdFeedback = mongoose.model("ColdFeedback", coldfeedbackSchema);

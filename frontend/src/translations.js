@@ -377,6 +377,8 @@ const translations = {
       "form_updated_successfully": "Form Updated Successfully",
       "add_field": "Add Field",
       "no_fields_message": "No fields added yet. Click the button below to add your first field.",
+      "no_fields_preview_message": "No fields added yet. The preview will appear here.",
+      "form_preview": "Form Preview",
     },
     "fr": {
       "name": "Nom",
@@ -755,6 +757,8 @@ const translations = {
       "form_updated_successfully": "Formulaire mis à jour avec succès",
       "add_field": "Ajouter un champ",
       "no_fields_message": "Aucun champ ajouté pour le moment. Cliquez sur le bouton ci-dessous pour ajouter votre premier champ.",
+      "no_fields_preview_message": "Aucun champ ajouté pour le moment. L'aperçu apparaîtra ici.",
+      "form_preview": "Aperçu du formulaire",
     }
   };
   

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLanguage } from "../languagecontext";
+import FormSubmit from './FormSubmit';
 import { Box, TextField , Typography, Button,Input,IconButton, InputAdornment, Tooltip, OutlinedInput, FormControl, InputLabel, Pagination,Radio, Alert, Snackbar , Autocomplete, Popover,Table, TableBody, TableCell, TableContainer, 
     TableHead, TableRow, Paper, Checkbox, FormControlLabel,Rating, Badge, Grid, Select  } from "@mui/material";
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
@@ -257,7 +258,7 @@ const TraineeTrainings = () => {
 
     //Give feedback ...........
     const [showFeedback, setShowFeedback] = useState(false);
-    const [feedbackType, setFeedbackType] = useState("cold");
+    const [feedbackType, setFeedbackType] = useState("cold_feedback");
     const [canAddColdFeedback, setCanSendColdFeedback] = useState([]);
     const [canAddHotFeedback, setCanSendHotFeedback] = useState([]);
     const { numberOfNewFeedbacksReq ,setNumberOfNewFeedbacksReq } = useNavbar();
@@ -343,20 +344,20 @@ const TraineeTrainings = () => {
         trainer: "",
         trainingDate: "",
         location: "",
-        objectivesCommunication: 1,
-        trainingOrganization: 1,
-        groupComposition: 1,
-        materialAdequacy: 1,
-        programCompliance: 1,
-        contentClarity: 1,
-        materialQuality: 1,
-        trainingAnimation: 1,
-        trainingProgress: 1,
-        metExpectations: 1,
-        objectivesAchieved: 1,
-        exercisesRelevance: 1,
-        willApplySkills: 1,
-        comments: "",
+        // objectivesCommunication: 1,
+        // trainingOrganization: 1,
+        // groupComposition: 1,
+        // materialAdequacy: 1,
+        // programCompliance: 1,
+        // contentClarity: 1,
+        // materialQuality: 1,
+        // trainingAnimation: 1,
+        // trainingProgress: 1,
+        // metExpectations: 1,
+        // objectivesAchieved: 1,
+        // exercisesRelevance: 1,
+        // willApplySkills: 1,
+        // comments: "",
     });
     
 
@@ -370,16 +371,36 @@ const TraineeTrainings = () => {
         matricule: "",
         function: "", 
         service: "",
-        appliedKnowledge: false,
-        knowledge: "",
-        whyNotApplied: "", 
-        otherWhyNotApplied: "",
-        improvedWorkEfficiency: false,
-        improvment: "",
-        whyNotImproved: "",
-        trainingImprovementsSuggested: "",
-        comments: "",
+        // appliedKnowledge: false,
+        // knowledge: "",
+        // whyNotApplied: "", 
+        // otherWhyNotApplied: "",
+        // improvedWorkEfficiency: false,
+        // improvment: "",
+        // whyNotImproved: "",
+        // trainingImprovementsSuggested: "",
+        // comments: "",
     });
+
+    const [formFields, setFormFields] = useState([]);
+    const [fieldValues, setFieldValues] = useState({});
+    console.log(fieldValues);
+
+    const fetchForms = async () => {
+        try {
+          const response = await axios.get("http://localhost:5000/api/dynamicform/forms")
+          const form =  response.data.forms.filter((form) => form.type === feedbackType);
+          setFormFields(form[0].fields);
+        } catch (error) {
+          console.error('Error getting forms', error);
+          throw error;
+        }
+      };
+
+    useEffect(() => {
+        fetchForms();
+    }, [feedbackType]);
+
     
     const handleColdFeedbackChange = (field, value) => {
         setColdFeedback((prev) => ({ ...prev, [field]: value }));
@@ -408,11 +429,16 @@ const TraineeTrainings = () => {
     };
 
     const handleFeedbackSubmission = () => {
-        if(feedbackType === "cold"){
+        if(feedbackType === "cold_feedback"){
+            const responses = Object.entries(fieldValues).map(([fieldId, value]) => ({
+                fieldId,
+                value
+              }));
             axios.post("http://localhost:5000/api/coldfeedback", {
                 ...coldFeedback,
                 trainee: user._id,
                 training: selectedTrainingId,
+                responses,
             })
             .then(() => {
                 setVerifyAlert("success");
@@ -424,11 +450,16 @@ const TraineeTrainings = () => {
             .catch((error) => {
                 console.error("Error sending feedback:", error);
             });
-        }else if(feedbackType === "hot"){
+        }else if(feedbackType === "hot_feedback"){
+            const responses = Object.entries(fieldValues).map(([fieldId, value]) => ({
+                fieldId,
+                value
+              }));
             axios.post("http://localhost:5000/api/hotfeedback", {
                 ...hotFeedback,
                 trainee: user._id,
                 training: selectedTrainingId,
+                responses,
             })
             .then(() => {
                 setVerifyAlert("success");
@@ -1965,7 +1996,7 @@ const TraineeTrainings = () => {
                     }
                 }}
             >
-                <DialogTitle>{feedbackType === "cold" ? t("cold_feedback") : t("hot_feedback")}</DialogTitle>
+                <DialogTitle>{feedbackType === "cold_feedback" ? t("cold_feedback") : t("hot_feedback")}</DialogTitle>
                 <Box 
                     sx={{
                         width: '100%',
@@ -1993,7 +2024,7 @@ const TraineeTrainings = () => {
                         },
                     }} 
                     disabled={!canAddColdFeedback?.includes(selectedTrainingId)}
-                    onClick={() => setFeedbackType("cold")}>
+                    onClick={() => setFeedbackType("cold_feedback")}>
                         {t("cold_feedback")}
                     </Button>
                     <Badge badgeContent={(canAddHotFeedback?.includes(selectedTrainingId) && numberOfNewFeedbacksReq) ? 1 : 0} color="primary"
@@ -2025,7 +2056,7 @@ const TraineeTrainings = () => {
                         }} 
                         disabled={!canAddHotFeedback?.includes(selectedTrainingId)}
                         onClick={() => {
-                            setFeedbackType("hot");
+                            setFeedbackType("hot_feedback");
                             handleOpenHotFeedbackReqNotification();
                         }}
                         >
@@ -2033,7 +2064,7 @@ const TraineeTrainings = () => {
                         </Button>
                     </Badge>
                 </Box>
-                {feedbackType==="cold" && canAddColdFeedback?.includes(selectedTrainingId)? 
+                {feedbackType==="cold_feedback" && canAddColdFeedback?.includes(selectedTrainingId)? 
                 <Box
                     sx={{
                         width:"100%",
@@ -2191,6 +2222,11 @@ const TraineeTrainings = () => {
                     >
                         {t("quiz")} {t("participant")}
                     </Typography>
+                    <FormSubmit 
+                        formFields={formFields} 
+                        onFieldValuesChange={setFieldValues} 
+                    />
+                    {/* 
                     <Typography
                         sx={{   
                             width: "100%",
@@ -2408,9 +2444,9 @@ const TraineeTrainings = () => {
                         sx={{ 
                             width: "100%",
                         }}
-                    />
+                    /> */}
                 </Box>
-                : feedbackType==="hot" && canAddHotFeedback?.includes(selectedTrainingId)? 
+                : feedbackType==="hot_feedback" && canAddHotFeedback?.includes(selectedTrainingId)? 
                 <Box
                     sx={{
                         width:"100%",
@@ -2501,7 +2537,11 @@ const TraineeTrainings = () => {
                     >
                         {t("quiz")}
                     </Typography>
-                    <Typography
+                    <FormSubmit 
+                        formFields={formFields} 
+                        onFieldValuesChange={setFieldValues} 
+                    />
+                    {/* <Typography
                         sx={{   
                             width: "100%",
                             textAlign: "start",
@@ -2551,7 +2591,7 @@ const TraineeTrainings = () => {
                         sx={{ 
                             width: "100%",
                         }}
-                    />
+                    /> */}
                 </Box>
                 :null}
                 <Box 

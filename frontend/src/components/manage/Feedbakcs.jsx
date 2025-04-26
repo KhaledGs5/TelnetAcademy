@@ -368,6 +368,9 @@ const FormBuilder = () => {
         top: '0px',
     }}
     >
+      <Typography variant="h6" color="text.primary">
+        {t("form_preview")}
+      </Typography>
       <FormPreview 
         formFields={formFields} 
         onFieldValuesChange={setFieldValues} 
