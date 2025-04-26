@@ -41,7 +41,7 @@ function App() {
               <Route path="/" element={<Home />} />
             )}
             <Route path="/signin" element={<SignIn />} />
-            {signedIn && user.role==='admin' && (
+            {signedIn && user?.role==='admin' && (
               <>
                 <Route path="/manageusers" element={<ManageUsers />} />
                 <Route path="/dashboard" element={<Dashboard />} />
@@ -50,7 +50,7 @@ function App() {
               </>
             )}
 
-            {signedIn && user.role === 'manager' && (
+            {signedIn && user?.role === 'manager' && (
               <>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/managesessions" element={<ManageSessions />} />
@@ -64,7 +64,7 @@ function App() {
               </>
             )}
 
-            {signedIn && user.role === 'trainer' && (
+            {signedIn && user?.role === 'trainer' && (
               <>
                 <Route path="/trainertraining" element={<TrainerTraining />} />
                 <Route path="/trainersession" element={<TrainerSession />} />
@@ -75,7 +75,7 @@ function App() {
               </>
             )}
 
-            {signedIn && user.role === 'trainee' && (
+            {signedIn && user?.role === 'trainee' && (
               <>
                 <Route path="/traineesession" element={<TraineeSession />} />
                 <Route path="/enrolledtrainee" element={<TraineeTrainings />} />
@@ -86,7 +86,7 @@ function App() {
               </>
             )}
             
-            {signedIn && user.role === "trainee_trainer" && (
+            {signedIn && user?.role === "trainee_trainer" && (
               <>
                 <Route path="/trainertraining" element={<TrainerTraining />} />
                 <Route path="/trainersession" element={<TrainerSession />} />

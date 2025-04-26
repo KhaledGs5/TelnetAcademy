@@ -15,7 +15,6 @@ const SignIn = () => {
     // Sign In
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [selectedRole, setSelectedRole] = useState('trainer');
     const [showsSignInAlert, setShowsSignInAlert] = useState(false);
     const [signInAlert, setSignInAlert] = useState('error');
     const [signInAlertMessage, setSignInAlertMessage] = useState('email_not_found');
@@ -29,16 +28,12 @@ const SignIn = () => {
         setPassword(e.target.value);
     };
     
-    const handleRoleChange = (event) => {
-        setSelectedRole(event.target.value);
-    };
 
     const handleSignIn = async () => {
         try {
           const response = await axios.post("http://localhost:5000/api/users/sign-in", { 
             email, 
             password, 
-            role: selectedRole 
           });
           if (response.status == 200) {
             if(rememberMe) {

@@ -413,12 +413,67 @@ const getFirstSessionPresentTraineesCount = async (trainingId) => {
   }
 };
 
+const markTrainedUsers = async (trainingId) => {
+  try {
+    const sessions = await Session.find({ training: trainingId })
+      .sort({ date: 1 })
+      .populate({
+        path: 'presenttrainees',
+        select: '_id'
+      });
+
+    if (!sessions.length) {
+      console.log("No sessions found for this training.");
+      return { success: false, message: "No sessions found" };
+    }
+
+    const distinctTraineeIds = new Set();
+
+    sessions.forEach(session => {
+      if (session?.presenttrainees?.length) {
+        session.presenttrainees.forEach(trainee => {
+          if (trainee?._id) {
+            distinctTraineeIds.add(trainee._id.toString());
+          }
+        });
+      }
+    });
+
+    if (distinctTraineeIds.size === 0) {
+      console.log("No present trainees found in any session.");
+      return { success: false, message: "No trainees to mark" };
+    }
+
+    const uniqueTraineeIds = Array.from(distinctTraineeIds);
+
+    const updateResult = await User.updateMany(
+      { 
+        _id: { $in: uniqueTraineeIds },
+        isTrained: { $ne: true }
+      },
+      { $set: { isTrained: true, trainedAt: new Date() } }
+    );
+
+    console.log(`Marked ${updateResult.modifiedCount} users as trained (${uniqueTraineeIds.length} distinct trainees found)`);
+    return { 
+      success: true, 
+      modifiedCount: updateResult.modifiedCount,
+      distinctTraineeCount: distinctTraineeIds.size
+    };
+
+  } catch (error) {
+    console.error("Error marking users as trained:", error);
+    return { success: false, error: error.message };
+  }
+};
+
 
 cron.schedule('* * * * *', async () => {
   try {
     const trainingIds = await Session.distinct('training');
 
     for (const trainingId of trainingIds) {
+      markTrainedUsers(trainingId);
       const latestDate = await getLastSessionDate(trainingId);
       if (!latestDate) continue;
 

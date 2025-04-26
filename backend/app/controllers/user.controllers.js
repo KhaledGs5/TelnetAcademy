@@ -39,7 +39,19 @@ const signUser = async (req, res) => {
     { expiresIn: '5d' }
   );
 
-  res.json({ token, user });
+  const userResponse = {
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    activity: user.activity,
+    jobtitle: user.jobtitle,
+    gender: user.gender,
+    grade: user.grade,
+    type: user.type
+  };
+
+  res.json({ user: userResponse, token});
 };
 
 

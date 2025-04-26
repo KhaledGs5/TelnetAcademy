@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Box, Typography, List, ListItem, ListItemIcon, ListItemText, Button, Tooltip, IconButton, Rating } from "@mui/material";
+import { Box, Typography, List, ListItem, ListItemIcon, ListItemText, Button, Tooltip, IconButton, Rating,
+  TableContainer,Paper,Table,TableHead,TableRow,TableCell,TableBody
+ } from "@mui/material";
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
 import EventAvailableIcon from '@mui/icons-material/EventAvailable';
@@ -60,6 +62,11 @@ const Navbar = () => {
     const [rateOfM5Grade, setRateOfM5Grade] = useState(0);
     const [rateOfM6Grade, setRateOfM6Grade] = useState(0);
     const [numberOfTrainees, setNumberOfTrainees] = useState(0);
+    const [numberOfFTFTrainings, setNumberOfFTFTrainings] = useState(0);
+    const [numberOfOnlineTrainings, setNumberOfOnlineTrainings] = useState(0);
+    const [numberOfParticipants, setNumberOfParticipants] = useState(0);
+    const [numberOfTrainedEmployees, setNumberOfTrainedEmployees] = useState(0);
+    const [numberOfEmployees, setNumberOfEmployees] = useState(0);
 
     const getTraineeGender = async (id) => {
         try {
@@ -124,6 +131,8 @@ const Navbar = () => {
         try {
             const response = await axios.get("http://localhost:5000/api/trainings");
             setTrainings(response.data);
+            const filtered = response.data
+            .filter(training => training.delivered === true)
 
             let reqnumber = 0;
             let appnumber = 0;
@@ -139,10 +148,10 @@ const Navbar = () => {
             setNumberOfApproved(appnumber);
             setNumberOfConfirmed(confnumber);
 
-            const softSkills = response.data.filter(t => t.skillType === "soft_skill");
-            const internTechnicalSkills = response.data.filter(t => t.skillType === "technical_skill" && t.type === "internal");
-            const externTechnicalSkills = response.data.filter(t => t.skillType === "technical_skill" && t.type === "external");
-            const technicalSkills = response.data.filter(t => t.skillType === "technical_skill");
+            const softSkills = filtered.filter(t => t.skillType === "soft_skill");
+            const internTechnicalSkills = filtered.filter(t => t.skillType === "technical_skill" && t.type === "internal");
+            const externTechnicalSkills = filtered.filter(t => t.skillType === "technical_skill" && t.type === "external");
+            const technicalSkills = filtered.filter(t => t.skillType === "technical_skill");
             const confirmedTrainees = response.data
             .map(t => t.confirmedtrainees)
             .flat();
@@ -179,6 +188,17 @@ const Navbar = () => {
               })
             );
 
+            const FTFTrainings = response.data.filter(t => t.mode === "face_to_face");
+            const OnlineTrainings = response.data.filter(t => t.mode === "online");
+
+            let nbofparticipants = 0;
+
+            response.data.map((training) => {
+              nbofparticipants += (training.nbOfParticipants || 0);
+            });
+
+            setNumberOfParticipants(nbofparticipants);
+
             setNumberOfSoftSkillsTrainings(softSkills.length);
             setNumberOfInternTechnicalSkillsTrainings(internTechnicalSkills.length);
             setNumberOfExternTechnicalSkillsTrainings(externTechnicalSkills.length);
@@ -208,8 +228,17 @@ const Navbar = () => {
             setRateOfM4Grade((grades.filter(g => g.grade === "M4").length / confirmedTrainees.length) * 100);
             setRateOfM5Grade((grades.filter(g => g.grade === "M5").length / confirmedTrainees.length) * 100);
             setRateOfM6Grade((grades.filter(g => g.grade === "M6").length / confirmedTrainees.length) * 100);
+            setNumberOfFTFTrainings(FTFTrainings.length);
+            setNumberOfOnlineTrainings(OnlineTrainings.length);
 
-            
+            const users = await axios.get("http://localhost:5000/api/users");
+
+            const TrainedEmployees = users.data.filter((u) => u.isTrained);
+            const Employees = users.data.filter((u) => (u.role !== "manager") && (u.role !== "admin"));
+
+            setNumberOfTrainedEmployees(TrainedEmployees.length);
+            setNumberOfEmployees(Employees.length)
+
         } catch (error) {
             console.error("Error fetching trainings data:", error);
         }
@@ -378,6 +407,7 @@ const Navbar = () => {
       fetchData();
       fetchSessions();
     }, []);
+
     
     // Chartss.............
 
@@ -810,7 +840,32 @@ const Navbar = () => {
       );
     };
     
-
+    const metrics = [
+      { name: 'Total Number of planned trainings', recap: numberOfTrainings, objGap: '' },
+      { name: 'Total Number of delivered Trainings', recap: completedTrainings.length, objGap: '' },
+      { name: 'Total Number of delivered Soft skills Trainings', recap: numberOfSoftSkillsTrainigs, objGap: '' },
+      { name: 'Total Number of delivered Technical skills Trainings conducted by Internal trainers', recap: numberOfInternTechnicalSkillsTrainigs, objGap: '' },
+      { name: 'Total Number of delivered Technical skills Trainings conducted by External trainers', recap: numberOfExternTechnicalSkillsTrainigs, objGap: '' },
+      { name: 'Training Completion rate (Delivered/Planned) (obj 80%)', recap: ((completedTrainings.length / numberOfTrainings) * 100).toFixed(2) + '%', objGap: (80 - (completedTrainings.length / numberOfTrainings) * 100).toFixed(2) + '%'},
+      { name: 'Total number of face to face trainings', recap: numberOfFTFTrainings, objGap: '' },
+      { name: 'Percentage of face to face Trainings (Obj 75%)', recap: ((numberOfFTFTrainings/numberOfTrainings)*100).toFixed(2) + '%', objGap: (75 - (numberOfFTFTrainings/numberOfTrainings)*100).toFixed(2) +'%' },
+      { name: 'Total number of online trainings', recap: numberOfOnlineTrainings, objGap: '' },
+      { name: 'Percentage of online trainings (Obj 25%)', recap: ((numberOfOnlineTrainings/numberOfTrainings)*100).toFixed(2) + '%', objGap: (25 - (numberOfOnlineTrainings/numberOfTrainings)*100).toFixed(2) + '%' },
+      { name: 'Number of participants', recap: numberOfParticipants, objGap: '' },
+      { name: 'Total Hours of Soft skills training', recap: numberOfSoftSkillsHours, objGap: '' },
+      { name: 'Total Hours of Technical skills training', recap: numberOfTechnicalSkillsHours, objGap: '' },
+      { name: 'Total number of Training hours', recap: numberOfSoftSkillsHours + numberOfTechnicalSkillsHours, objGap: '' },
+      { name: 'Total Number of trained employees per one training', recap: Math.round(numberOfTrainedEmployees / completedTrainings.length), objGap: '' },
+      { name: 'Percentage of participation (number of trained employees/HC)', recap: ((numberOfTrainedEmployees/numberOfEmployees)*100).toFixed(2) + '%', objGap: '' },
+      { name: 'Total number of hours per trainees', recap: ((numberOfSoftSkillsHours + numberOfTechnicalSkillsHours)/numberOfTrainedEmployees), objGap: '' },
+      { name: 'Average Number of hours per Trained employee', recap: '', objGap: '' },
+      { name: 'Average Training Duration by participant(number of training hours per part/ Number of trained Employees)', recap: '', objGap: '' },
+      { name: 'Current internal trainers number', recap: '', objGap: '' },
+      { name: 'Internal Trainers Ratio ( number of trainers/current HC)', recap: '', objGap: '' },
+      { name: 'Current External Trainers', recap: '', objGap: '' },
+      { name: 'Number of Satisfactorily Evaluated Trainings en 2024', recap: '', objGap: '' },
+      { name: 'Training Effectiveness Rate in 2024 (obj 80%)', recap: '', objGap: '' },
+    ];
 
 
     // Styles .............
@@ -1018,6 +1073,28 @@ const Navbar = () => {
                 sx={paperStyle}
                 ref={genderChart}
               />
+              <TableContainer component={Paper} sx={{ marginTop: 4 }}>
+                <Table sx={{ minWidth: 400 }} aria-label="training metrics table">
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '60%' }}>Recap</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '20%' }}>Total -25</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '20%' }}>Obj Gap</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {metrics.map((metric, index) => (
+                      <TableRow key={index}>
+                        <TableCell component="th" scope="row">
+                          <Typography variant="body2">{metric.name}</Typography>
+                        </TableCell>
+                        <TableCell align="center">{metric.recap}</TableCell>
+                        <TableCell align="center">{metric.objGap}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
             </Box>:null}
             {view === "trainings" ? 
             <Box

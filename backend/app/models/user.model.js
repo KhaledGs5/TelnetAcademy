@@ -55,7 +55,8 @@ const userSchema = new mongoose.Schema({
     },
     scorePreTraining: { type: Number , default: 0 },
     scorePostTraining: { type: Number , default: 0 },
-  }],  
+  }], 
+  isTrained: { type : Boolean, required: false }, 
 }, { collection: 'users', timestamps: true });
 
 const User = mongoose.model("User", userSchema);
