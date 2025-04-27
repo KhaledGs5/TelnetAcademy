@@ -239,6 +239,7 @@ const TraineeTrainings = () => {
                 setVerifyAlertMessage("attendance_confirmed_successfully");
                 setShowsVerifificationAlert(true);
                 hideVerifyAttendanceDialog();
+                fetchTrainings();
             })
     }
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Box, Typography, List, ListItem, ListItemIcon, ListItemText, Button, Tooltip, IconButton, Rating,
-  TableContainer,Paper,Table,TableHead,TableRow,TableCell,TableBody
+  TableContainer,Paper,Table,TableHead,TableRow,TableCell,TableBody,OutlinedInput,InputLabel,FormControl,
+  DialogTitle,Dialog
  } from "@mui/material";
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
@@ -12,6 +13,11 @@ import * as echarts from 'echarts';
 import { Divider } from '@mui/material';
 import axios from "axios";
 import dayjs from "dayjs";
+import * as htmlToImage from 'html-to-image';
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 
 
 const Navbar = () => {
@@ -19,6 +25,89 @@ const Navbar = () => {
     const { t } = useLanguage();  
 
     const [view, setView] = useState("statistics");
+    const [startMonth, setStartMonth] = useState(null);
+    const [endMonth, setEndMonth] = useState(null); 
+
+    //Export To Word
+    const [fileName, setFileName] = useState("");
+    const [exportWord, setExportWord] = useState(false);
+
+    const showExportWord = () => {
+      setExportWord(true);
+    };
+
+    const hideExportWord = () => {
+      setExportWord(false);
+    };
+
+    const exportToWord = async () => {
+      try {
+        const sectionIds = ['section1', 'section2', 'section3','section4','section5','section6','section7']; 
+
+        const imagesWithSizes = await Promise.all(
+          sectionIds.map(async (id) => {
+            const section = document.getElementById(id);
+            if (section) {
+              const rect = section.getBoundingClientRect();
+              const image = await htmlToImage.toPng(section);
+              return { image, width: rect.width, height: rect.height, id };
+            }
+            return null;
+          })
+        );
+   
+        const validImages = imagesWithSizes.filter(item => item !== null);
+    
+        const html = `
+          <html xmlns:o='urn:schemas-microsoft-com:office:office' 
+                xmlns:w='urn:schemas-microsoft-com:office:word'>
+          <head>
+            <title>Training Recap</title>
+            <style>
+              body { font-family: Arial; margin: 0; padding: 20px; }
+              h1 { text-align: center; }
+              .page { page-break-after: always; }
+              img {
+                display: block;
+                max-width: 100%;
+                height: auto;
+                object-fit: contain;
+              }
+            </style>
+          </head>
+          <body>
+            <h1>EMV Training Recap</h1>
+            ${validImages.map(({ image, width, height, id }, i) => {
+              const scaleWidthFactor = (id === 'section6' || id === 'section7') ? 0.5 : 1; 
+              const scaleHeightFactor = (id === 'section6' || id === 'section7') ? 0.6 : 1;
+              const newWidth = width * scaleWidthFactor;
+              const newHeight = height * scaleHeightFactor;
+              return `
+                <div class="${i < validImages.length - 1 ? 'page' : 'last-page'}">
+                  <img src="${image}" width="${newWidth}" height="${newHeight}" />
+                </div>
+              `;
+            }).join('')}
+          </body>
+          </html>
+        `;
+
+        const blob = new Blob(['\ufeff', html], { 
+          type: 'application/msword' 
+        });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `${fileName}.doc`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        hideExportWord();
+        
+      } catch (error) {
+        console.error('Export failed:', error);
+      }
+    };
 
         
     // Filters ................
@@ -67,6 +156,8 @@ const Navbar = () => {
     const [numberOfParticipants, setNumberOfParticipants] = useState(0);
     const [numberOfTrainedEmployees, setNumberOfTrainedEmployees] = useState(0);
     const [numberOfEmployees, setNumberOfEmployees] = useState(0);
+    const [numberOfAttendedHours, setNumberOfAttendedHours]= useState(0);
+    const [numberOfInternalTrainers, setNumberOfInternalTrainers] = useState(0);
 
     const getTraineeGender = async (id) => {
         try {
@@ -130,9 +221,18 @@ const Navbar = () => {
     const fetchData = async () => {
         try {
             const response = await axios.get("http://localhost:5000/api/trainings");
-            setTrainings(response.data);
-            const filtered = response.data
-            .filter(training => training.delivered === true)
+            const filteredTrainings = response.data
+            .filter(training => {  
+              const currentYear = dayjs().year();
+              const trainingMonthDate = dayjs(training.month.charAt(0).toUpperCase() + training.month.slice(1).toLowerCase() + ` ${currentYear}`, 'MMMM YYYY');
+          
+              const inRange =
+                (startMonth === null || trainingMonthDate.isAfter(startMonth)) &&
+                (endMonth === null || trainingMonthDate.isBefore(endMonth));
+          
+              return inRange;
+            });
+            setTrainings(filteredTrainings);
 
             let reqnumber = 0;
             let appnumber = 0;
@@ -148,13 +248,15 @@ const Navbar = () => {
             setNumberOfApproved(appnumber);
             setNumberOfConfirmed(confnumber);
 
-            const softSkills = filtered.filter(t => t.skillType === "soft_skill");
-            const internTechnicalSkills = filtered.filter(t => t.skillType === "technical_skill" && t.type === "internal");
-            const externTechnicalSkills = filtered.filter(t => t.skillType === "technical_skill" && t.type === "external");
-            const technicalSkills = filtered.filter(t => t.skillType === "technical_skill");
-            const confirmedTrainees = response.data
+            const softSkills = filteredTrainings.filter(t => t.skillType === "soft_skill" && t.delivered);
+            const internTechnicalSkills = filteredTrainings.filter(t => t.skillType === "technical_skill" && t.type === "internal" && t.delivered);
+            const externTechnicalSkills = filteredTrainings.filter(t => t.skillType === "technical_skill" && t.type === "external" && t.delivered);
+            const technicalSkills = filteredTrainings.filter(t => t.skillType === "technical_skill" && t.delivered);
+
+            const confirmedTrainees = filteredTrainings
             .map(t => t.confirmedtrainees)
             .flat();
+
             const genders = await Promise.all(
               confirmedTrainees.map(async (id) => {
                 const gender = await getTraineeGender(id);
@@ -188,12 +290,12 @@ const Navbar = () => {
               })
             );
 
-            const FTFTrainings = response.data.filter(t => t.mode === "face_to_face");
-            const OnlineTrainings = response.data.filter(t => t.mode === "online");
+            const FTFTrainings = filteredTrainings.filter(t => t.mode === "face_to_face");
+            const OnlineTrainings = filteredTrainings.filter(t => t.mode === "online");
 
             let nbofparticipants = 0;
 
-            response.data.map((training) => {
+            filteredTrainings.map((training) => {
               nbofparticipants += (training.nbOfParticipants || 0);
             });
 
@@ -235,9 +337,25 @@ const Navbar = () => {
 
             const TrainedEmployees = users.data.filter((u) => u.isTrained);
             const Employees = users.data.filter((u) => (u.role !== "manager") && (u.role !== "admin"));
+            const InternalTraines = users.data.filter((u) => (u.type === "internal") && (u.role !== "manager") && (u.role !== "admin"));
 
             setNumberOfTrainedEmployees(TrainedEmployees.length);
-            setNumberOfEmployees(Employees.length)
+            setNumberOfEmployees(Employees.length);
+            setNumberOfInternalTrainers(InternalTraines.length);
+
+            const sessions = await axios.get("http://localhost:5000/api/sessions");
+
+            let attendedhours = 0;
+
+            sessions.data
+            .filter(session => 
+              filteredTrainings.some(training => training._id === session.training)
+            )
+            .map((session) => {
+              attendedhours += ((session.presenttrainees.length * session.duration) || 0);
+            });
+
+            setNumberOfAttendedHours(attendedhours);
 
         } catch (error) {
             console.error("Error fetching trainings data:", error);
@@ -406,7 +524,7 @@ const Navbar = () => {
     useEffect(() => {
       fetchData();
       fetchSessions();
-    }, []);
+    }, [startMonth,endMonth]);
 
     
     // Chartss.............
@@ -422,9 +540,6 @@ const Navbar = () => {
       const skillType = {
         title: {
           text: t("total_number_of_trainings") + " : " + numberOfTrainings,
-          textStyle: {
-            color: "text.primary",
-          },
         },
         tooltip: {
           trigger: "item",
@@ -758,13 +873,13 @@ const Navbar = () => {
 
     useEffect(() => {
       const filtered = trainings
-        .filter(training => training.delivered === true)
+        .filter((t) => t.delivered)
         .map(training => ({
           ...training,
           showDetails: false
         }));
       setCompletedTrainings(filtered);
-    }, [trainings]);
+    }, [trainings,startMonth,endMonth]);
     
     const updateShowDetails = (trainingId, value) => {
       setCompletedTrainings(prevTrainings =>
@@ -777,21 +892,30 @@ const Navbar = () => {
     };    
   
     const [scores, setScores] = useState({});
+    const [numberOfSatisfactorilyEvaluatedTrainings, setNumberOfSatisfactorilyEvaluatedTrainings] = useState(0);
 
     useEffect(() => {
       const fetchScores = async () => {
         const newScores = {};
+        let satCount = 0;
+        
         for (let training of trainings) {
           const score = await getTrainingScore(training._id);
           newScores[training._id] = score;
+          
+          if (score >= 3) {
+            satCount++;
+          }
         }
+        
         setScores(newScores);
+        setNumberOfSatisfactorilyEvaluatedTrainings(satCount);
       };
     
       if (trainings.length > 0) {
         fetchScores();
       }
-    }, [trainings]);
+    }, [trainings,startMonth,endMonth]); 
     
     const renderTraining = (training) => {
       const score = scores[training._id];
@@ -840,7 +964,7 @@ const Navbar = () => {
       );
     };
     
-    const metrics = [
+    const firstmetrics = [
       { name: 'Total Number of planned trainings', recap: numberOfTrainings, objGap: '' },
       { name: 'Total Number of delivered Trainings', recap: completedTrainings.length, objGap: '' },
       { name: 'Total Number of delivered Soft skills Trainings', recap: numberOfSoftSkillsTrainigs, objGap: '' },
@@ -857,16 +981,32 @@ const Navbar = () => {
       { name: 'Total number of Training hours', recap: numberOfSoftSkillsHours + numberOfTechnicalSkillsHours, objGap: '' },
       { name: 'Total Number of trained employees per one training', recap: Math.round(numberOfTrainedEmployees / completedTrainings.length), objGap: '' },
       { name: 'Percentage of participation (number of trained employees/HC)', recap: ((numberOfTrainedEmployees/numberOfEmployees)*100).toFixed(2) + '%', objGap: '' },
-      { name: 'Total number of hours per trainees', recap: ((numberOfSoftSkillsHours + numberOfTechnicalSkillsHours)/numberOfTrainedEmployees), objGap: '' },
-      { name: 'Average Number of hours per Trained employee', recap: '', objGap: '' },
+      { name: 'Total number of hours per trainees', recap: numberOfAttendedHours, objGap: '' },
+      { name: 'Average Number of hours per Trained employee', recap: (numberOfAttendedHours/numberOfTrainedEmployees), objGap: '' },
       { name: 'Average Training Duration by participant(number of training hours per part/ Number of trained Employees)', recap: '', objGap: '' },
-      { name: 'Current internal trainers number', recap: '', objGap: '' },
-      { name: 'Internal Trainers Ratio ( number of trainers/current HC)', recap: '', objGap: '' },
-      { name: 'Current External Trainers', recap: '', objGap: '' },
-      { name: 'Number of Satisfactorily Evaluated Trainings en 2024', recap: '', objGap: '' },
-      { name: 'Training Effectiveness Rate in 2024 (obj 80%)', recap: '', objGap: '' },
+      { name: 'Current internal trainers number', recap: numberOfInternalTrainers, objGap: '' },
+      { name: 'Internal Trainers Ratio ( number of trainers/current HC)', recap: numberOfInternalTrainers/numberOfEmployees , objGap: '' },
+      { name: 'Current External Trainers', recap: numberOfEmployees - numberOfInternalTrainers, objGap: '' },
+      { name: `Number of Satisfactorily Evaluated Trainings en ${new Date().getFullYear()}`, recap: numberOfSatisfactorilyEvaluatedTrainings, objGap: '' },
+      { name: `Training Effectiveness Rate in ${new Date().getFullYear()} (obj 80%)`, recap: ((numberOfSatisfactorilyEvaluatedTrainings/completedTrainings.length)*100).toFixed(2) + '%', objGap: (80 - ((numberOfSatisfactorilyEvaluatedTrainings/completedTrainings.length)*100).toFixed(2)) + '%'},
     ];
 
+    const secondmetrics = [
+      { name: 'Type', recap: numberOfTrainings, objGap: '' },
+      { name: 'Location', recap: completedTrainings.length, objGap: '' },
+      { name: 'Number of hours', recap: numberOfSoftSkillsTrainigs, objGap: '' },
+      { name: 'Number of received requests', recap: numberOfInternTechnicalSkillsTrainigs, objGap: '' },
+      { name: 'Number of invited participants (enrolled individuals)', recap: numberOfExternTechnicalSkillsTrainigs, objGap: '' },
+      { name: 'NB of attendees', recap: ((completedTrainings.length / numberOfTrainings) * 100).toFixed(2) + '%', objGap: (80 - (completedTrainings.length / numberOfTrainings) * 100).toFixed(2) + '%'},
+      { name: 'Attendance rate( Nb of attendees/ nb of invited participants)', recap: numberOfFTFTrainings, objGap: '' },
+      { name: 'Number of attendees who completed the training', recap: ((numberOfFTFTrainings/numberOfTrainings)*100).toFixed(2) + '%', objGap: (75 - (numberOfFTFTrainings/numberOfTrainings)*100).toFixed(2) +'%' },
+      { name: 'Hot Evaluation total rate (Objective 80%)', recap: numberOfOnlineTrainings, objGap: '' },
+      { name: 'Cold Evaluation total rate (Objective 70%)', recap: ((numberOfOnlineTrainings/numberOfTrainings)*100).toFixed(2) + '%', objGap: (25 - (numberOfOnlineTrainings/numberOfTrainings)*100).toFixed(2) + '%' },
+      { name: 'Training fill rate (Number of Attendees/available seats=12)', recap: numberOfParticipants, objGap: '' },
+      { name: 'Completion rate (Number of attendees who completed/ nb of attendees)', recap: numberOfSoftSkillsHours, objGap: '' },
+      { name: 'Training cost per trainer (TND)', recap: numberOfTechnicalSkillsHours, objGap: '' },
+      { name: 'Training cost per trainee (TND)', recap: numberOfSoftSkillsHours + numberOfTechnicalSkillsHours, objGap: '' },
+    ];
 
     // Styles .............
 
@@ -934,8 +1074,9 @@ const Navbar = () => {
             display:"flex",
             flexDirection: "row",
             justifyContent:"start",
-            alignItems:"center",
+            alignItems:"start",
             padding:"10px",
+            minHeight: view === "statistics" ? "4000px": "auto",
           }}
         >
           <Box
@@ -948,6 +1089,8 @@ const Navbar = () => {
               alignItems:"center",
               padding:"20px",
               borderRight:"1px solid #ccc",
+              position: "sticky",
+              top : "20px",
             }}
           >
             <Typography
@@ -1003,22 +1146,69 @@ const Navbar = () => {
               padding: "20px",
             }}
           >
-            <Typography
+            <Box
               sx={{
-                  fontSize: 34,
-                  fontWeight: "bold",
-                  textAlign: "center",
-                  letterSpacing: 0.2,
-                  lineHeight: 1,
-                  userSelect: "none",
-                  cursor: "pointer",
-                  color: "#2CA8D5",
+                width:"100%",
+                display: "flex",
+                flexDirection: "row",
+                justifyContent: "space-between",
+                paddingLeft: "40px",
+                paddingRight: "40px",
               }}
             >
-                {t(view)}
-            </Typography>
+              <Typography
+                sx={{
+                    fontSize: 34,
+                    fontWeight: "bold",
+                    textAlign: "center",
+                    letterSpacing: 0.2,
+                    lineHeight: 1,
+                    userSelect: "none",
+                    cursor: "pointer",
+                    color: "#2CA8D5",
+                }}
+              >
+                  {t(view)}
+              </Typography>
+              <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DatePicker
+                    views={['month']}
+                    label="Start Month"
+                    minDate={dayjs().startOf('year')}
+                    maxDate={dayjs().endOf('year')}
+                    value={startMonth}
+                    onChange={(newValue) => setStartMonth(newValue)}
+                    sx={{ width: 150 }}
+                  />
+                  <DatePicker
+                    views={['month']}
+                    label="End Month"
+                    minDate={dayjs().startOf('year')}
+                    maxDate={dayjs().endOf('year')}
+                    value={endMonth}
+                    onChange={(newValue) => setEndMonth(newValue)}
+                    sx={{ width: 150 }}
+                  />
+                </LocalizationProvider>
+              </Box>
+              <Box
+                sx={{
+                  width:"20%",
+                }}
+              >
+                <Button 
+                  onClick={showExportWord}
+                  sx={buttonStyle} 
+                  startIcon={<FileDownloadIcon />}
+                >
+                  {t("download_statistics")}
+                </Button>
+              </Box>
+            </Box>
             {view === "statistics" ?
             <Box
+              id="statistics-container"
               sx={{
                 width: "100%",
                 height: 'auto',
@@ -1042,10 +1232,12 @@ const Navbar = () => {
                 }}
               >
                 <Box
+                    id="section1" 
                     sx={paperStyle}
                     ref={skillTypeChart}
                   />
                 <Box
+                    id="section2"
                     sx={paperStyle}
                     ref={hoursChart}
                   />
@@ -1061,19 +1253,22 @@ const Navbar = () => {
                 }}
               >
                 <Box
+                  id="section3"
                   sx={paperStyle}
                   ref={activityChart}
                 />
                 <Box
+                  id="section4"
                   sx={paperStyle}
                   ref={gradeChart}
                 />
               </Box>   
               <Box
+                id="section5"
                 sx={paperStyle}
                 ref={genderChart}
               />
-              <TableContainer component={Paper} sx={{ marginTop: 4 }}>
+              <TableContainer id="section6" component={Paper} >
                 <Table sx={{ minWidth: 400 }} aria-label="training metrics table">
                   <TableHead>
                     <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
@@ -1083,7 +1278,29 @@ const Navbar = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {metrics.map((metric, index) => (
+                    {firstmetrics.map((metric, index) => (
+                      <TableRow key={index}>
+                        <TableCell component="th" scope="row">
+                          <Typography variant="body2">{metric.name}</Typography>
+                        </TableCell>
+                        <TableCell align="center">{metric.recap}</TableCell>
+                        <TableCell align="center">{metric.objGap}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              <TableContainer id="section7" component={Paper}>
+                <Table sx={{ minWidth: 400 }} aria-label="training metrics table">
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '60%' }}>Recap</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '20%' }}>Total -25</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '20%' }}>Obj Gap</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {secondmetrics.map((metric, index) => (
                       <TableRow key={index}>
                         <TableCell component="th" scope="row">
                           <Typography variant="body2">{metric.name}</Typography>
@@ -1396,6 +1613,89 @@ const Navbar = () => {
             </Box>
             :null}
           </Box>
+          <Dialog
+              open={exportWord}
+              disableScrollLock={true}
+              onClose={hideExportWord}
+              PaperProps={{
+                  sx: {
+                      width: "auto",  
+                      height: "auto", 
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "",
+                      alignItems: "center",
+                      borderRadius: "10px",
+                      padding: '20px',
+                  }
+              }}
+          >
+              <DialogTitle>{t("download_statistics")} ?</DialogTitle>
+              <FormControl
+              variant="outlined"
+              sx={{
+                  width: '100%',
+              }}
+              >
+              <InputLabel>{t("name")}</InputLabel>
+              <OutlinedInput
+                  value={fileName}
+                  onChange={(e) => setFileName(e.target.value)}
+                  label={t("name")}
+                  sx={{
+                  alignItems: 'flex-start'
+                  }}
+              />
+              </FormControl>
+              <Box 
+                  sx={{
+                      width: '100%',
+                      display: 'flex',
+                      flexDirection: 'row',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      gap: '20px',
+                  }}
+              >
+                  <Button sx={{
+                      color: 'white',
+                      backgroundColor: '#EA9696',
+                      borderRadius: '10px',
+                      textDecoration: 'none',
+                      fontWeight: 'bold',
+                      width: 'auto',
+                      height: '40px',
+                      marginTop: '10px',
+                      textTransform: "none",
+                      '&:hover': {
+                          backgroundColor: '#EAB8B8',
+                          color: 'white',
+                      },
+                  }} 
+                  onClick={hideExportWord}>
+                      {t("cancel")}
+                  </Button>
+                  <Button sx={{
+                      color: 'white',
+                      backgroundColor: '#2CA8D5',
+                      borderRadius: '10px',
+                      textDecoration: 'none',
+                      fontWeight: 'bold',
+                      width: 'auto',
+                      height: '40px',
+                      marginTop: '10px',
+                      textTransform: "none",
+                      '&:hover': {
+                          backgroundColor: '#76C5E1',
+                          color: 'white',
+                      },
+                  }} 
+                  onClick={exportToWord}
+                  >
+                      {t("download")}
+                  </Button>
+              </Box>
+          </Dialog>
         </Box>
       );
 };

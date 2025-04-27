@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema({
   type: {
     type: String,
     required: function () {
-      return ["trainer", "trainee_trainer"].includes(this.role);
+      return ["trainer", "trainee_trainer","trainee"].includes(this.role);
     },
     default: "internal"
   },

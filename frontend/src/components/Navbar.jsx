@@ -707,7 +707,7 @@ const Navbar = () => {
                              <Link href="/enrolledtrainee" sx={linkStyle('/enrolledtrainee')}
                              >{t("trainings")}</Link></Badge> }
                 <Link href="/calendar" sx={linkStyle('/calendar')}>{t("calendar")}</Link>
-                <Link href="/contact" sx={linkStyle('/contact')}>{t("contact")}</Link>
+                {/* <Link href="/contact" sx={linkStyle('/contact')}>{t("contact")}</Link> */}
                 <Link href="/about" sx={linkStyle('/about')}>{t("about")}</Link>
             </Box> : null}
             {!signedIn ? 

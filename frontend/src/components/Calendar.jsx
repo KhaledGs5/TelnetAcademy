@@ -19,33 +19,46 @@ const Calendar = () => {
   const startWeek = startOfWeek(startMonth);
   const endWeek = endOfWeek(endMonth);
 
-  const handlePrevMonth = () => setCurrentMonth(addDays(startMonth, -1));
-  const handleNextMonth = () => setCurrentMonth(addDays(endMonth, 1));
+  const handlePrevMonth = () => {
+    const prevMonth = addDays(startMonth, -1);
+    if (prevMonth.getFullYear() === currentMonth.getFullYear()) {
+      setCurrentMonth(prevMonth);
+    }
+  };
 
-  const [traineeTrainings, setTraineeTrainings] = useState([]);
+  const handleNextMonth = () => {
+    const nextMonth = addDays(endMonth, 1);
+    if (nextMonth.getFullYear() === currentMonth.getFullYear()) {
+      setCurrentMonth(nextMonth);
+    }
+  };
 
-  const getTraineeTrainings = async () => {
-      try {
-          const trainings = await axios.post("http://localhost:5000/api/notifications/withtype", {
-              rec: user._id,
-              tp: "Trainee_Confirmed_Attendance"
-          });
-          trainings.data.notifications.forEach((notif) => {
-            axios.get(`http://localhost:5000/api/trainings/${notif.message}`)
-              .then((training) => {
-                setTraineeTrainings(prev => [...prev, training]);
-              })
-          });
-      } catch (error) {
-          console.error("Failed to fetch feedback notifications:", error);
-      }
-  }
+  const [trainings, setTrainings] = useState([]);
+
+  const getTrainings = async () => {
+    try {
+      const trainingResponse = await axios.get("http://localhost:5000/api/trainings");
+      
+      const trainingsWithSessions = await Promise.all(
+        trainingResponse.data.map(async (training) => {
+          const sessionsResponse = await axios.get(`http://localhost:5000/api/sessions/training/${training._id}`);
+          return {
+            ...training,
+            sessions: sessionsResponse.data,
+          };
+        })
+      );
+  
+      setTrainings((prev) => [...prev, ...trainingsWithSessions]);
+    } catch (error) {
+      console.error("Failed to fetch trainings:", error);
+    }
+  };
 
   useEffect(() => {
-    getTraineeTrainings();
+    setTrainings([]);
+    getTrainings();
   }, []);
-
-  console.log(traineeTrainings);
 
   const renderDays = () => {
     const days = [];
@@ -65,10 +78,19 @@ const Calendar = () => {
   const renderCells = () => {
     const monthDays = [];
     let day = startWeek;
+  
     while (day <= endWeek) {
       let week = [];
+  
       for (let i = 0; i < 7; i++) {
         const cloneDay = day;
+        const sessionsOnThisDay = trainings.filter(training => {
+          return training.sessions.some(session => {
+            const sessionDate = new Date(session.date);
+            return isSameDay(sessionDate, cloneDay); 
+          });
+        });
+  
         week.push(
           <Grid item xs key={cloneDay}>
             <Paper
@@ -89,27 +111,107 @@ const Calendar = () => {
               }}
               onClick={() => setSelectedDate(cloneDay)}
             >
-              <Typography variant="body1">{format(day, "d")}</Typography>
+              <Typography variant="body1" sx={{mb: 2}}>{format(cloneDay, "d")}</Typography>
+              {sessionsOnThisDay.map(training => {
+                // Determine the appropriate color based on conditions
+                let trainingColor = '';
+                if (training.confirmedtrainees?.includes(user._id) && !training.delivered) {
+                  trainingColor = "#4CAF50"; // Confirmed Attendance
+                } else if (training.acceptedtrainees?.includes(user._id) && !training.confirmedtrainees.includes(user._id)) {
+                  trainingColor = "#FF9800"; // Waiting for Confirmation
+                } else if (training.delivered) {
+                  trainingColor = "lightgrey"; // Completed Trainings
+                } else {
+                  trainingColor = "#2196F3"; // Available Trainings
+                }
+  
+                return (
+                  <div key={training._id}>
+                    <Typography variant="body2" align="center" sx={{ color: trainingColor }}>
+                      <strong>{training.title}</strong>
+                    </Typography>
+                    {training.sessions.map(session => {
+                      const sessionDate = new Date(session.date);
+                      if (isSameDay(sessionDate, cloneDay)) {
+                        return (
+                          <Typography key={session._id} variant="body2" align="center" sx={{ color: trainingColor }}>
+                            {session.name} ({format(sessionDate, 'h:mm a')})
+                          </Typography>
+                        );
+                      }
+                      return null;
+                    })}
+                  </div>
+                );
+              })}
             </Paper>
           </Grid>
         );
         day = addDays(day, 1);
       }
+  
       monthDays.push(
         <Grid container spacing={1} key={day}>
           {week}
         </Grid>
       );
     }
+  
     return monthDays;
   };
 
-  return (
-    <Box sx={{ maxWidth: "90%", margin: "auto", textAlign: "center", marginTop: "40px"}}>
-      <Typography variant="h5">{format(currentMonth, "MMMM yyyy" , { locale: (Language === "fr")?fr:enUS })}</Typography>
-      <Button onClick={handlePrevMonth}>⬅️ Prev</Button>
-      <Button onClick={handleNextMonth}>Next ➡️</Button>
 
+  return (
+    <Box sx={{ 
+        maxWidth: "90%",
+        margin: "auto",
+        textAlign: "center",
+        marginTop: "40px",
+        display : "flex",
+        flexDirection: "column",
+    }}
+    >
+      <Typography variant="h5">{format(currentMonth, "MMMM yyyy" , { locale: (Language === "fr")?fr:enUS })}</Typography>
+      <Box
+        sx={{ 
+          width: "100%",
+          margin: "auto",
+          textAlign: "center",
+          marginTop: "10px",
+          marginBottom: "10px",
+          display : "flex",
+          flexDirection: "row",
+          justifyContent: "space-between",
+      }}
+      >
+        <Button onClick={handlePrevMonth}>⬅️ Prev</Button>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+          {/* Confirmed Attendance */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Box sx={{ width: 20, height: 16, backgroundColor: "#4CAF50", borderRadius: "3px"}}></Box>
+            <Typography variant="body2">Confirmed Attendance</Typography>
+          </Box>
+          
+          {/* Waiting for Confirmation */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Box sx={{ width: 20, height: 16, backgroundColor: "#FF9800", borderRadius: "3px" }}></Box>
+            <Typography variant="body2">Waiting for Confirmation</Typography>
+          </Box>
+          
+          {/* Available Trainings */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Box sx={{ width: 20, height: 16, backgroundColor: "#2196F3", borderRadius: "3px" }}></Box>
+            <Typography variant="body2">Available Trainings</Typography>
+          </Box>
+
+          {/* Completed Trainings */}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Box sx={{ width: 20, height: 16, backgroundColor: "lightgrey", borderRadius: "3px" }}></Box>
+            <Typography variant="body2">Completed Trainings</Typography>
+          </Box>
+        </Box>
+        <Button onClick={handleNextMonth}>Next ➡️</Button>
+      </Box>
       <Grid container spacing={1}>{renderDays()}</Grid>
       {renderCells()}
     </Box>

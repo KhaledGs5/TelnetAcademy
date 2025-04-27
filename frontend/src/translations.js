@@ -379,6 +379,7 @@ const translations = {
       "no_fields_message": "No fields added yet. Click the button below to add your first field.",
       "no_fields_preview_message": "No fields added yet. The preview will appear here.",
       "form_preview": "Form Preview",
+      "download_statistics": "Download Statistics",
     },
     "fr": {
       "name": "Nom",
@@ -759,6 +760,7 @@ const translations = {
       "no_fields_message": "Aucun champ ajouté pour le moment. Cliquez sur le bouton ci-dessous pour ajouter votre premier champ.",
       "no_fields_preview_message": "Aucun champ ajouté pour le moment. L'aperçu apparaîtra ici.",
       "form_preview": "Aperçu du formulaire",
+      "download_statistics": "Télécharger les statistiques",
     }
   };
   
