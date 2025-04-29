@@ -12,8 +12,6 @@ const trainingSchema = new mongoose.Schema({
   nbOfAcceptedRequests: { type: Number },
   nbOfConfirmedRequests: { type: Number },
   nbOfParticipants: { type: Number, required: true },
-  nbOfAttendees: { type: Number},
-  nbOfAttendeesCompleted: { type: Number},
   hotEvalRate: { type: Number},
   coldEvalRate: { type: Number},
   trainingFillRate: { type: Number},

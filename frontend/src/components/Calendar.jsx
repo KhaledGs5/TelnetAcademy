@@ -5,9 +5,11 @@ import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth,
 import format from "date-fns/format";
 import { fr, enUS } from "date-fns/locale"; 
 import axios from "axios";
+import { useLanguage } from "../languagecontext";
 
 const Calendar = () => {
   const user = getCookie("User");
+  const { t } = useLanguage();
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -113,16 +115,15 @@ const Calendar = () => {
             >
               <Typography variant="body1" sx={{mb: 2}}>{format(cloneDay, "d")}</Typography>
               {sessionsOnThisDay.map(training => {
-                // Determine the appropriate color based on conditions
                 let trainingColor = '';
                 if (training.confirmedtrainees?.includes(user._id) && !training.delivered) {
-                  trainingColor = "#4CAF50"; // Confirmed Attendance
+                  trainingColor = "#4CAF50"; 
                 } else if (training.acceptedtrainees?.includes(user._id) && !training.confirmedtrainees.includes(user._id)) {
-                  trainingColor = "#FF9800"; // Waiting for Confirmation
+                  trainingColor = "#FF9800"; 
                 } else if (training.delivered) {
-                  trainingColor = "lightgrey"; // Completed Trainings
+                  trainingColor = "lightgrey"; 
                 } else {
-                  trainingColor = "#2196F3"; // Available Trainings
+                  trainingColor = "#2196F3"; 
                 }
   
                 return (
@@ -186,28 +187,24 @@ const Calendar = () => {
       >
         <Button onClick={handlePrevMonth}>⬅️ Prev</Button>
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          {/* Confirmed Attendance */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {user.role!=="manager" && user.role!=="admin" && user.role!=="trainer"?<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Box sx={{ width: 20, height: 16, backgroundColor: "#4CAF50", borderRadius: "3px"}}></Box>
-            <Typography variant="body2">Confirmed Attendance</Typography>
-          </Box>
+            <Typography variant="body2">{t("confrimed_attendance")}</Typography>
+          </Box>:null}
           
-          {/* Waiting for Confirmation */}
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {user.role!=="manager" && user.role!=="admin" && user.role!=="trainer"?<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Box sx={{ width: 20, height: 16, backgroundColor: "#FF9800", borderRadius: "3px" }}></Box>
-            <Typography variant="body2">Waiting for Confirmation</Typography>
-          </Box>
+            <Typography variant="body2">{t("waiting_for_confirmation")}</Typography>
+          </Box>:null}
           
-          {/* Available Trainings */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Box sx={{ width: 20, height: 16, backgroundColor: "#2196F3", borderRadius: "3px" }}></Box>
-            <Typography variant="body2">Available Trainings</Typography>
+            <Typography variant="body2">{t("available_trainings")}</Typography>
           </Box>
 
-          {/* Completed Trainings */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Box sx={{ width: 20, height: 16, backgroundColor: "lightgrey", borderRadius: "3px" }}></Box>
-            <Typography variant="body2">Completed Trainings</Typography>
+            <Typography variant="body2">{t("completed_trainings")}</Typography>
           </Box>
         </Box>
         <Button onClick={handleNextMonth}>Next ➡️</Button>

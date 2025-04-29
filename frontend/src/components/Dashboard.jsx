@@ -195,6 +195,8 @@ const Navbar = () => {
     const [numberOfReq, setNumberOfReq] = useState(0);
     const [numberOfApproved, setNumberOfApproved] = useState(0);
     const [numberOfConfirmed, setNumberOfConfirmed] = useState(0);
+    const [thirdmetrics , setThirdMetrics] = useState([]);
+    const [trainedEmployees , setTrainedEmployees] = useState([]);
 
     const formatDaysWithMonth = (dateString, month) => {
       if (!dateString) return "";
@@ -336,12 +338,14 @@ const Navbar = () => {
             const users = await axios.get("http://localhost:5000/api/users");
 
             const TrainedEmployees = users.data.filter((u) => u.isTrained);
+            setThirdMetrics(TrainedEmployees);
             const Employees = users.data.filter((u) => (u.role !== "manager") && (u.role !== "admin"));
             const InternalTraines = users.data.filter((u) => (u.type === "internal") && (u.role !== "manager") && (u.role !== "admin"));
 
             setNumberOfTrainedEmployees(TrainedEmployees.length);
             setNumberOfEmployees(Employees.length);
             setNumberOfInternalTrainers(InternalTraines.length);
+            setTrainedEmployees(TrainedEmployees);
 
             const sessions = await axios.get("http://localhost:5000/api/sessions");
 
@@ -1008,6 +1012,48 @@ const Navbar = () => {
       { name: 'Training cost per trainee (TND)', recap: numberOfSoftSkillsHours + numberOfTechnicalSkillsHours, objGap: '' },
     ];
 
+    const fourthmetrics = [
+      { grade: 'F1', nboftrainees: trainedEmployees.filter((e) => e.grade === "F1").length, employees: '', HCgradesdistribution: '', participationRate: '' },
+      { grade: 'F2', nboftrainees: trainedEmployees.filter((e) => e.grade === "F2").length, employees: '', HCgradesdistribution: '', participationRate: '' },
+      { grade: 'F3', nboftrainees: trainedEmployees.filter((e) => e.grade === "F3").length, employees: '', HCgradesdistribution: '', participationRate: '' },
+      { grade: 'F4', nboftrainees: trainedEmployees.filter((e) => e.grade === "F4").length, employees: '', HCgradesdistribution: '', participationRate: '' },
+      { grade: 'M1', nboftrainees: trainedEmployees.filter((e) => e.grade === "M1").length, employees: '', HCgradesdistribution: '', participationRate: '' },
+      { grade: 'M2', nboftrainees: trainedEmployees.filter((e) => e.grade === "M2").length, employees: '', HCgradesdistribution: '', participationRate: ''},
+      { grade: 'M3', nboftrainees: trainedEmployees.filter((e) => e.grade === "M3").length, employees: '', HCgradesdistribution: '', participationRate: '' },
+      { grade: 'M4', nboftrainees: trainedEmployees.filter((e) => e.grade === "M4").length, employees: '', HCgradesdistribution: '', participationRate: '' },
+      { grade: 'M5', nboftrainees: trainedEmployees.filter((e) => e.grade === "M5").length, employees: '', HCgradesdistribution: '', participationRate: '' },
+      { grade: 'M6', nboftrainees: trainedEmployees.filter((e) => e.grade === "M6").length, employees: '', HCgradesdistribution: '', participationRate: '' },
+    ];
+
+    const fivemetrics = [
+      { grade: 'F1', nboftrainees: trainedEmployees.filter((e) => e.grade === "F1").length, employees: '', HCgradesdistribution: '', participationRate: '' },
+      { grade: 'F2', nboftrainees: trainedEmployees.filter((e) => e.grade === "F2").length, employees: '', HCgradesdistribution: '', participationRate: '' },
+      { grade: 'F3', nboftrainees: trainedEmployees.filter((e) => e.grade === "F3").length, employees: '', HCgradesdistribution: '', participationRate: '' },
+      { grade: 'F4', nboftrainees: trainedEmployees.filter((e) => e.grade === "F4").length, employees: '', HCgradesdistribution: '', participationRate: '' },
+      { grade: 'M1', nboftrainees: trainedEmployees.filter((e) => e.grade === "M1").length, employees: '', HCgradesdistribution: '', participationRate: '' },
+      { grade: 'M2', nboftrainees: trainedEmployees.filter((e) => e.grade === "M2").length, employees: '', HCgradesdistribution: '', participationRate: ''},
+      { grade: 'M3', nboftrainees: trainedEmployees.filter((e) => e.grade === "M3").length, employees: '', HCgradesdistribution: '', participationRate: '' },
+      { grade: 'M4', nboftrainees: trainedEmployees.filter((e) => e.grade === "M4").length, employees: '', HCgradesdistribution: '', participationRate: '' },
+      { grade: 'M5', nboftrainees: trainedEmployees.filter((e) => e.grade === "M5").length, employees: '', HCgradesdistribution: '', participationRate: '' },
+      { grade: 'M6', nboftrainees: trainedEmployees.filter((e) => e.grade === "M6").length, employees: '', HCgradesdistribution: '', participationRate: '' },
+    ];
+
+    
+    const sixmetrics = [
+      { activity: 'Space', nboftrainees: trainedEmployees.filter((e) => e.activity === "space").length, employees: '', hcbyactivity: '', participationRate: '', participationRateByAct: ''},
+      { activity: 'Electronics', nboftrainees: trainedEmployees.filter((e) => e.activity === "slectronics").length, employees: '', hcbyactivity: '', participationRate: '', participationRateByAct: '' },
+      { activity: 'Media & Energy', nboftrainees: trainedEmployees.filter((e) => e.activity === "media&energy").length, employees: '', hcbyactivity: '', participationRate: '', participationRateByAct: '' },
+      { activity: 'E-paysys', nboftrainees: trainedEmployees.filter((e) => e.activity === "e-paysys").length, employees: '', hcbyactivity: '', participationRate: '', participationRateByAct: '' },
+      { activity: 'Quality', nboftrainees: trainedEmployees.filter((e) => e.activity === "quality").length, employees: '', hcbyactivity: '', participationRate: '', participationRateByAct: '' },
+      { activity: 'Telecom', nboftrainees: trainedEmployees.filter((e) => e.activity === "telecom").length, employees: '', hcbyactivity: '', participationRate: '', participationRateByAct: ''},
+      { activity: 'Databox', nboftrainees: trainedEmployees.filter((e) => e.activity === "databox").length, employees: '', hcbyactivity: '', participationRate: '', participationRateByAct: '' },
+      { activity: 'Information Systems', nboftrainees: trainedEmployees.filter((e) => e.activity === "formation_systems").length, employees: '', hcbyactivity: '', participationRate: '', participationRateByAct: '' },
+      { activity: 'Mechanical', nboftrainees: trainedEmployees.filter((e) => e.activity === "mechanical").length, employees: '', hcbyactivity: '', participationRate: '', participationRateByAct: '' },
+      { activity: 'Enablers', nboftrainees: trainedEmployees.filter((e) => e.activity === "enablers").length, employees: '', hcbyactivity: '', participationRate: '', participationRateByAct: '' },
+    ];
+
+
+
     // Styles .............
 
     const buttonStyle = (v) => ({
@@ -1076,7 +1122,7 @@ const Navbar = () => {
             justifyContent:"start",
             alignItems:"start",
             padding:"10px",
-            minHeight: view === "statistics" ? "4000px": "auto",
+            minHeight: view === "statistics" ? "6000px": "auto",
           }}
         >
           <Box
@@ -1307,6 +1353,140 @@ const Navbar = () => {
                         </TableCell>
                         <TableCell align="center">{metric.recap}</TableCell>
                         <TableCell align="center">{metric.objGap}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              <Typography
+                sx={{
+                    fontSize: 24,
+                    fontWeight: "bold",
+                    textAlign: "center",
+                    letterSpacing: 0.2,
+                    lineHeight: 1,
+                    userSelect: "none",
+                    cursor: "pointer",
+                }}
+              >
+                  {t("list_of_trained_employees")}
+              </Typography>
+              <TableContainer id="section8" component={Paper}>
+                <Table sx={{ minWidth: 400 }} aria-label="training metrics table">
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>NB</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Name</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Gender</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>{`Grade ${new Date().getFullYear()}`}</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>{`Job Title  ${new Date().getFullYear()}`}</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>N + 1</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {thirdmetrics.map((metric, index) => (
+                      <TableRow key={index}>
+                        <TableCell component="th" scope="row" sx={{textAlign:"center"}}>
+                          <Typography variant="body2">{index+1}</Typography>
+                        </TableCell>
+                        <TableCell align="center">{metric.name}</TableCell>
+                        <TableCell align="center">{t(metric.gender)}</TableCell>
+                        <TableCell align="center">{metric.grade}</TableCell>
+                        <TableCell align="center">{t(metric.jobtitle)}</TableCell>
+                        <TableCell align="center">N+1</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              <Typography
+                sx={{
+                    fontSize: 24,
+                    fontWeight: "bold",
+                    textAlign: "center",
+                    letterSpacing: 0.2,
+                    lineHeight: 1,
+                    userSelect: "none",
+                    cursor: "pointer",
+                }}
+              >
+                  {t("total_number_of_trained_employees")} {`in ${new Date().getFullYear()}`} : {numberOfTrainedEmployees}
+              </Typography>
+              <TableContainer id="section9" component={Paper}>
+                <Table sx={{ minWidth: 400 }} aria-label="training metrics table">
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Grade</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Total NB Of Trainees</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Employees</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>HC Grade'distribution</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Participation Rate</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {fourthmetrics.map((metric, index) => (
+                      <TableRow key={index}>
+                        <TableCell component="th" scope="row" sx={{textAlign:"center"}}>
+                          <Typography variant="body2">{metric.grade}</Typography>
+                        </TableCell>
+                        <TableCell align="center">{metric.nboftrainees}</TableCell>
+                        <TableCell align="center">{t(metric.employees)}</TableCell>
+                        <TableCell align="center">{metric.HCgradesdistribution}</TableCell>
+                        <TableCell align="center">{t(metric.participationRate)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              <TableContainer id="section10" component={Paper}>
+                <Table sx={{ minWidth: 400 }} aria-label="training metrics table">
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Grade</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Employees</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Participation Rate</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Total NB Of Trainees</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Participation Rate</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {fourthmetrics.map((metric, index) => (
+                      <TableRow key={index}>
+                        <TableCell component="th" scope="row" sx={{textAlign:"center"}}>
+                          <Typography variant="body2">{metric.grade}</Typography>
+                        </TableCell>
+                        <TableCell align="center">{t(metric.employees)}</TableCell>
+                        <TableCell align="center">{t(metric.participationRate)}</TableCell>
+                        <TableCell align="center">{metric.nboftrainees}</TableCell>
+                        <TableCell align="center">{t(metric.participationRate)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              <TableContainer id="section11" component={Paper}>
+                <Table sx={{ minWidth: 400 }} aria-label="training metrics table">
+                  <TableHead>
+                    <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Activity</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Total NB Of Trainees</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Employees</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>HC by activity</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Participation Rate</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Participation rate Distribution by Activity</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {sixmetrics.map((metric, index) => (
+                      <TableRow key={index}>
+                        <TableCell component="th" scope="row" sx={{textAlign:"center"}}>
+                          <Typography variant="body2">{metric.activity}</Typography>
+                        </TableCell>
+                        <TableCell align="center">{t(metric.nboftrainees)}</TableCell>
+                        <TableCell align="center">{t(metric.employees)}</TableCell>
+                        <TableCell align="center">{metric.hcbyactivity}</TableCell>
+                        <TableCell align="center">{t(metric.participationRate)}</TableCell>
+                        <TableCell align="center">{t(metric.participationRateDestByAct)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

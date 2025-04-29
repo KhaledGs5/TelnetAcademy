@@ -728,11 +728,6 @@ const Navbar = () => {
                     color: location.pathname === "/" ? "white" : "text.secondary",
                     backgroundColor: location.pathname === "/" ? "#2CA8D5" : "background.paper",
                 }}>{t("home")}</Link>
-                <Link href="/signin"  
-                sx={{...buttonStyle,                    
-                    color: location.pathname === "/signin" ? "white" : "text.secondary",
-                    backgroundColor: location.pathname === "/signin" ? "#2CA8D5" : "background.paper",
-                }}>{t("signin")}</Link>
                  <Box                
                     sx={{
                         position: 'absolute',

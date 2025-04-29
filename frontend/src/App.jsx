@@ -6,7 +6,6 @@ import Home from './components/Home.jsx';
 import ManageUsers from './components/handleusers/ManageUsers.jsx';
 import ManageSessions from './components/manage/ManageSessions.jsx';
 import TrainerSession from './components/TrainerSession.jsx';
-import SignIn from './components/Auth/SignIn.jsx';
 import Profile from './components/Profile.jsx';
 import Calendar from './components/Calendar.jsx';
 import TrainerRequest from './components/manage/TrainerRequest.jsx';
@@ -40,7 +39,6 @@ function App() {
             ) : (
               <Route path="/" element={<Home />} />
             )}
-            <Route path="/signin" element={<SignIn />} />
             {signedIn && user?.role==='admin' && (
               <>
                 <Route path="/manageusers" element={<ManageUsers />} />

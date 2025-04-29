@@ -380,6 +380,12 @@ const translations = {
       "no_fields_preview_message": "No fields added yet. The preview will appear here.",
       "form_preview": "Form Preview",
       "download_statistics": "Download Statistics",
+      "completed_trainings":"Completed Trainings",
+      "available_trainings": "Available Trainings",
+      "waiting_for_confirmation": "Waiting For Confirmation",
+      "confrimed_attendance": "Confirmed Attendance",
+      "list_of_trained_employees": "List Of Trained Employees",
+      "total_number_of_trained_employees": "Total Number Of Trained Employees",
     },
     "fr": {
       "name": "Nom",
@@ -761,6 +767,12 @@ const translations = {
       "no_fields_preview_message": "Aucun champ ajouté pour le moment. L'aperçu apparaîtra ici.",
       "form_preview": "Aperçu du formulaire",
       "download_statistics": "Télécharger les statistiques",
+      "completed_trainings": "Formations terminées",
+      "available_trainings": "Formations disponibles",
+      "waiting_for_confirmation": "En attente de confirmation",
+      "confirmed_attendance": "Présence confirmée",
+      "list_of_trained_employees": "Liste des employés formés",
+      "total_number_of_trained_employees": "Nombre total d'employés formés",
     }
   };
   

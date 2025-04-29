@@ -128,6 +128,32 @@ const updateUser = async (req, res) => {
     }
 };
 
+const updatePasswordByEmail = async (req, res) => {
+  try {
+    const { email } = req.params;
+    const { password } = req.body;
+
+    const updatedUser = await User.findOneAndUpdate(
+      { email }, 
+      { password }, 
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({ message: "Password updated successfully" });
+  } catch (err) {
+    if (err.name === 'ValidationError' && err.errors.password) {
+      return res.status(400).json({ error: 'wrong_password_format' });
+    }
+
+    res.status(500).json({ message: err.message });
+  }
+};
+
+
 const deleteUser = async (req, res) => {
     try {
       const { id: _id } = req.params;
@@ -317,4 +343,4 @@ const updateScore = async (req, res) => {
 
 
 
-module.exports = { getUsers,signUser,verifyEmail,createUser,updateUser,deleteUser, getUserById,callForTrainers,uploadQuiz,getQuizFile,updateScore, callForSpecifiedTrainers};
+module.exports = { getUsers,signUser,verifyEmail,createUser,updateUser,deleteUser, getUserById,callForTrainers,uploadQuiz,getQuizFile,updateScore, callForSpecifiedTrainers,updatePasswordByEmail};

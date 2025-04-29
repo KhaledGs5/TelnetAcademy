@@ -83,7 +83,7 @@ app.post("/password-reset", async (req, res) => {
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: toEmail,
-      subject: "Change Password",
+      subject: "New Password",
       text: `Message: ${message}`,
     });
 

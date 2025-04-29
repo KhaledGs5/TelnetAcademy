@@ -74,45 +74,25 @@ const Profile = () => {
         if(newName !== ""){updatedUser.name = newName};
         if(newPassword!== ""){updatedUser.password = newPassword};
 
-        if(user.role){
-            axios.put(`http://localhost:5000/api/users/${user._id}`, updatedUser)
-            .then((response) => {
-                if(response.status == 200){
-                    setCookie("User", response.data, 5);
-                    setNameChanged(false);
-                    setPasswordChanged(false);
-                    setUpdateAlert("user_updated_successfully");
-                    setShowUpdateAlert(true);
-                    setVerifyUpdateAlert("success")
-                }
-            })
-            .catch((error) => {
-                if (error.response) {
-                    const errorMessage = error.response.data.error;
-                    setUpdateAlert(errorMessage);
-                    setShowUpdateAlert(true);
-                    setVerifyUpdateAlert("error")
-                }
-            });
-        }else{
-            axios.put(`http://localhost:5000/api/admin/${user._id}`, updatedUser)
-            .then((response) => {
-                if(response.status == 200){
-                    setCookie("User", response.data, 5);
-                    setNameChanged(false);
-                    setPasswordChanged(false);
-                    setUpdateAlert("user_updated_successfully");
-                    setShowUpdateAlert(true);
-                    setVerifyUpdateAlert("success")
-                }
-            })
-            .catch((error) => {
+        axios.put(`http://localhost:5000/api/users/${user._id}`, updatedUser)
+        .then((response) => {
+            if(response.status == 200){
+                setCookie("User", response.data, 5);
+                setNameChanged(false);
+                setPasswordChanged(false);
+                setUpdateAlert("user_updated_successfully");
+                setShowUpdateAlert(true);
+                setVerifyUpdateAlert("success")
+            }
+        })
+        .catch((error) => {
+            if (error.response) {
                 const errorMessage = error.response.data.error;
                 setUpdateAlert(errorMessage);
                 setShowUpdateAlert(true);
                 setVerifyUpdateAlert("error")
-            });
-        }
+            }
+        });
     }
     
     // Forgot password
@@ -143,10 +123,35 @@ const Profile = () => {
 
     const validateEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
-    const resetpasswordmessage = "Your New Password is : Random";
+    function generateRandomPassword() {
+        const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const lower = 'abcdefghijklmnopqrstuvwxyz';
+        const digits = '0123456789';
+        const specials = '@$!%*?&';
+        
+        const required = [
+          upper[Math.floor(Math.random() * upper.length)],
+          lower[Math.floor(Math.random() * lower.length)],
+          digits[Math.floor(Math.random() * digits.length)],
+          specials[Math.floor(Math.random() * specials.length)]
+        ];
 
+        const allChars = upper + lower + digits + specials;
+        while (required.length < 8) {
+          required.push(allChars[Math.floor(Math.random() * allChars.length)]);
+        }
+
+        for (let i = required.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [required[i], required[j]] = [required[j], required[i]];
+        }
+      
+        return required.join('');
+    }
 
     const sendResetPasswordEmail = async () => {
+        const newPassword = generateRandomPassword();
+        const resetPasswordMessage = `Your New Password is: ${newPassword}`;
         try {
             const response = await axios.post("http://localhost:5000/api/users/verify-email", { email: verifyEmail });
 
@@ -154,12 +159,13 @@ const Profile = () => {
                 correctEmail();
                 const emailData = {
                     toEmail: verifyEmail,
-                    message: resetpasswordmessage,
+                    message: resetPasswordMessage,
                 };
-        
-                await axios.post("http://localhost:5000/password-reset", emailData, {
-                    headers: { "Content-Type": "application/json" },
-                });
+                const response = await axios.put(`http://localhost:5000/api/users/${verifyEmail}/password`, {
+                    password: newPassword,
+                  });
+                if(response.status === 200){
+                await axios.post("http://localhost:5000/password-reset", emailData);}
             };
 
         } catch (error) {
