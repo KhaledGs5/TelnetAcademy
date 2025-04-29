@@ -18,13 +18,17 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-
+import { getCookie } from "./Cookies";
+import { useNavbar } from '../NavbarContext';
 
 const Navbar = () => {
 
-    const { t } = useLanguage();  
+    const { t } = useLanguage(); 
+    const user = getCookie("User") || null;
+    const {selectedRole} = useNavbar();
 
-    const [view, setView] = useState("statistics");
+    const [view, setView] = useState("trainings");
+    const [statView, setStatView] = useState("charts");
     const [startMonth, setStartMonth] = useState(null);
     const [endMonth, setEndMonth] = useState(null); 
 
@@ -111,98 +115,101 @@ const Navbar = () => {
 
         
     // Filters ................
-    const [selectedFilter, setSelectedFiler] = useState("all");
+    const [selectedFilter, setSelectedFilter] = useState("all");
     const [registFilter, setRegistFilter] = useState("all");
-
-    // Get Trainings Data .................
+  
+    // Refs for charts
     const skillTypeChart = useRef(null);
     const hoursChart = useRef(null);
     const genderChart = useRef(null);
     const activityChart = useRef(null);
     const gradeChart = useRef(null);
     const regisChart = useRef(null);
+  
+    // State for all data
+    const [rawData, setRawData] = useState({
+      trainings: [],
+      sessions: [],
+      users: [],
+      feedbacks: {}
+    });
+  
+    // State for filtered data
+    const [filteredData, setFilteredData] = useState({
+      trainings: [],
+      sessions: [],
+      users: []
+    });
+  
+    // State for metrics
+    const [metrics, setMetrics] = useState({
+      // Training counts
+      numberOfTrainings: 0,
+      numberOfSoftSkillsTrainings: 0,
+      numberOfInternTechnicalSkillsTrainings: 0,
+      numberOfExternTechnicalSkillsTrainings: 0,
+      numberOfFTFTrainings: 0,
+      numberOfOnlineTrainings: 0,
+      numberOfSatisfactorilyEvaluatedTrainings: 0,
+  
+      // Hours
+      numberOfSoftSkillsHours: 0,
+      numberOfTechnicalSkillsHours: 0,
+      numberOfAttendedHours: 0,
+  
+      // Participants
+      numberOfTrainees: 0,
+      numberOfParticipants: 0,
+      numberOfTrainedEmployees: 0,
+      numberOfEmployees: 0,
+      numberOfInternalTrainers: 0,
+  
+      // Requests
+      numberOfReq: 0,
+      numberOfApproved: 0,
+      numberOfConfirmed: 0,
+      numberOfScheduled: 0,
+      numberOfInProgress: 0,
+      numberOfCompleted: 0,
+      requestsPerMonth: Array(12).fill(0),
+  
+      // Rates
+      rateOfMale: 0,
+      rateOfFemale: 0,
+      rateOfEnablersActivity: 0,
+      rateOfMechanicalActivity: 0,
+      rateOfInformationSystemsActivity: 0,
+      rateOfDataboxActivity: 0,
+      rateOfTelecomActivity: 0,
+      rateOfQualityActivity: 0,
+      rateOfEpaysysActivity: 0,
+      rateOfMediaAndEnergyActivity: 0,
+      rateOfElectronicsActivity: 0,
+      rateOfSpaceActivity: 0,
+      rateOfF1Grade: 0,
+      rateOfF2Grade: 0,
+      rateOfF3Grade: 0,
+      rateOfF4Grade: 0,
+      rateOfM1Grade: 0,
+      rateOfM2Grade: 0,
+      rateOfM3Grade: 0,
+      rateOfM4Grade: 0,
+      rateOfM5Grade: 0,
+      rateOfM6Grade: 0
+    });
 
-    const [numberOfSoftSkillsTrainigs, setNumberOfSoftSkillsTrainings] = useState(0);
-    const [numberOfInternTechnicalSkillsTrainigs, setNumberOfInternTechnicalSkillsTrainings] = useState(0);
-    const [numberOfExternTechnicalSkillsTrainigs, setNumberOfExternTechnicalSkillsTrainings] = useState(0);
-    const [numberOfTrainings, setNumberOfTrainings] = useState(0);
-    const [numberOfSoftSkillsHours, setNumberOfSoftSkillsHours] = useState(0);
-    const [numberOfTechnicalSkillsHours, setNumberOfTechnicalSkillsHours] = useState(0);
-    const [rateOfMale, setRateOfMale] = useState(0);
-    const [rateOfFemale, setRateOfFemale] = useState(0);
-    const [rateOfEnablersActivity, setRateOfEnablersActivity] = useState(0);
-    const [rateOfMechanicalActivity, setRateOfMechanicalActivity] = useState(0);
-    const [rateOfInformationSystemsActivity, setRateOfInformationSystemsActivity] = useState(0);
-    const [rateOfDataboxActivity, setRateOfDataboxActivity] = useState(0);
-    const [rateOfTelecomActivity, setRateOfTelecomActivity] = useState(0);
-    const [rateOfQualityActivity, setRateOfQualityActivity] = useState(0);
-    const [rateOfEpaysysActivity, setRateOfEpaysysActivity] = useState(0);
-    const [rateOfMediaAndEnergyActivity, setRateOfMediaAndEnergyActivity] = useState(0);
-    const [rateOfElectronicsActivity, setRateOfElectronicsActivity] = useState(0);
-    const [rateOfSpaceActivity, setRateOfSpaceActivity] = useState(0);
-    const [rateOfF1Grade, setRateOfF1Grade] = useState(0);
-    const [rateOfF2Grade, setRateOfF2Grade] = useState(0);
-    const [rateOfF3Grade, setRateOfF3Grade] = useState(0);
-    const [rateOfF4Grade, setRateOfF4Grade] = useState(0);
-    const [rateOfM1Grade, setRateOfM1Grade] = useState(0);
-    const [rateOfM2Grade, setRateOfM2Grade] = useState(0);
-    const [rateOfM3Grade, setRateOfM3Grade] = useState(0);
-    const [rateOfM4Grade, setRateOfM4Grade] = useState(0);
-    const [rateOfM5Grade, setRateOfM5Grade] = useState(0);
-    const [rateOfM6Grade, setRateOfM6Grade] = useState(0);
-    const [numberOfTrainees, setNumberOfTrainees] = useState(0);
-    const [numberOfFTFTrainings, setNumberOfFTFTrainings] = useState(0);
-    const [numberOfOnlineTrainings, setNumberOfOnlineTrainings] = useState(0);
-    const [numberOfParticipants, setNumberOfParticipants] = useState(0);
-    const [numberOfTrainedEmployees, setNumberOfTrainedEmployees] = useState(0);
-    const [numberOfEmployees, setNumberOfEmployees] = useState(0);
-    const [numberOfAttendedHours, setNumberOfAttendedHours]= useState(0);
-    const [numberOfInternalTrainers, setNumberOfInternalTrainers] = useState(0);
-
-    const getTraineeGender = async (id) => {
-        try {
-            const response = await axios.get(`http://localhost:5000/api/users/${id}`);
-            const gender = response.data.gender;
-            return gender;
-        } catch (error) {
-            console.error("Error fetching trainee gender", error);
-            return null;
-        }
-    }
-
-    const getTraineeActivity = async (id) => {
-        try {
-            const response = await axios.get(`http://localhost:5000/api/users/${id}`);
-            const activity = response.data.activity;
-            return activity;
-        } catch (error) {
-            console.error("Error fetching trainee activity", error);
-            return null;
-        }
-    }
-
-    const getTraineeGrade = async (id) => {
-      try {
-        const response = await axios.get(`http://localhost:5000/api/users/${id}`);
-        return response.data.grade;
-      } catch (error) {
-        console.error("Error fetching trainee grade", error);
-        return null;
-      }
-    };
-
-    const [trainings, setTrainings] = useState([]);
-    const [numberOfReq, setNumberOfReq] = useState(0);
-    const [numberOfApproved, setNumberOfApproved] = useState(0);
-    const [numberOfConfirmed, setNumberOfConfirmed] = useState(0);
-    const [thirdmetrics , setThirdMetrics] = useState([]);
-    const [trainedEmployees , setTrainedEmployees] = useState([]);
-
+    const [completedTrainings, setCompletedTrainings] = useState([]);
+    const [traineesData, setTraineesData] = useState({});
+    const [allRequests, setAllRequests] = useState([]);
+    const [scores, setScores] = useState({});
+    const [trainedEmployees, setTrainedEmployees] = useState([]);
+  
+    // formatDaysWithMonth
     const formatDaysWithMonth = (dateString, month) => {
       if (!dateString) return "";
     
       const days = dateString.split(" ").map(Number);
-
+  
       const getDayWithSuffix = (day) => {
         if (day >= 11 && day <= 13) return `${day}th`; 
         const lastDigit = day % 10;
@@ -219,320 +226,338 @@ const Navbar = () => {
     
       return `${finalDaysFormat} ${month}`;
     };
-
-    const fetchData = async () => {
-        try {
-            const response = await axios.get("http://localhost:5000/api/trainings");
-            const filteredTrainings = response.data
-            .filter(training => {  
-              const currentYear = dayjs().year();
-              const trainingMonthDate = dayjs(training.month.charAt(0).toUpperCase() + training.month.slice(1).toLowerCase() + ` ${currentYear}`, 'MMMM YYYY');
-          
-              const inRange =
-                (startMonth === null || trainingMonthDate.isAfter(startMonth)) &&
-                (endMonth === null || trainingMonthDate.isBefore(endMonth));
-          
-              return inRange;
-            });
-            setTrainings(filteredTrainings);
-
-            let reqnumber = 0;
-            let appnumber = 0;
-            let confnumber = 0;
-
-            response.data.map((training) => {
-              reqnumber += (training.nbOfReceivedRequests || 0);
-              appnumber += (training.nbOfAcceptedRequests || 0);
-              confnumber += (training.nbOfConfirmedRequests || 0);
-            })
-
-            setNumberOfReq(reqnumber);
-            setNumberOfApproved(appnumber);
-            setNumberOfConfirmed(confnumber);
-
-            const softSkills = filteredTrainings.filter(t => t.skillType === "soft_skill" && t.delivered);
-            const internTechnicalSkills = filteredTrainings.filter(t => t.skillType === "technical_skill" && t.type === "internal" && t.delivered);
-            const externTechnicalSkills = filteredTrainings.filter(t => t.skillType === "technical_skill" && t.type === "external" && t.delivered);
-            const technicalSkills = filteredTrainings.filter(t => t.skillType === "technical_skill" && t.delivered);
-
-            const confirmedTrainees = filteredTrainings
-            .map(t => t.confirmedtrainees)
-            .flat();
-
-            const genders = await Promise.all(
-              confirmedTrainees.map(async (id) => {
-                const gender = await getTraineeGender(id);
-                return { id, gender };
-              })
-            );
-            const maleTrainees = genders.filter(t => t.gender === "male").map(t => t.id);
-            const femaleTrainees = genders.filter(t => t.gender === "female").map(t => t.id);
-
-            const activities = await Promise.all(
-              confirmedTrainees.map(async (id) => {
-                const activity = await getTraineeActivity(id);
-                return { id, activity };
-              })
-            );
-            const enablersCount = activities.filter(a => a.activity === "enablers").length;
-            const mechanicalCount = activities.filter(a => a.activity === "mechanical").length;
-            const informationSystemsCount = activities.filter(a => a.activity === "formation_systems").length;
-            const databoxCount = activities.filter(a => a.activity === "databox").length;
-            const telecomCount = activities.filter(a => a.activity === "telecom").length;
-            const qualityCount = activities.filter(a => a.activity === "quality").length;
-            const epaysysCount = activities.filter(a => a.activity === "e-paysys").length;
-            const mediaEnergyCount = activities.filter(a => a.activity === "media&energy").length;
-            const electronicsCount = activities.filter(a => a.activity === "electronics").length;
-            const spaceCount = activities.filter(a => a.activity === "space").length;
-
-            const grades = await Promise.all(
-              confirmedTrainees.map(async (id) => {
-                const grade = await getTraineeGrade(id);
-                return { id, grade };
-              })
-            );
-
-            const FTFTrainings = filteredTrainings.filter(t => t.mode === "face_to_face");
-            const OnlineTrainings = filteredTrainings.filter(t => t.mode === "online");
-
-            let nbofparticipants = 0;
-
-            filteredTrainings.map((training) => {
-              nbofparticipants += (training.nbOfParticipants || 0);
-            });
-
-            setNumberOfParticipants(nbofparticipants);
-
-            setNumberOfSoftSkillsTrainings(softSkills.length);
-            setNumberOfInternTechnicalSkillsTrainings(internTechnicalSkills.length);
-            setNumberOfExternTechnicalSkillsTrainings(externTechnicalSkills.length);
-            setNumberOfTrainings(response.data.length);
-            setNumberOfTechnicalSkillsHours(technicalSkills.reduce((acc, t) => acc + t.nbOfHours, 0));
-            setNumberOfSoftSkillsHours(softSkills.reduce((acc, t) => acc + t.nbOfHours, 0));
-            setNumberOfTrainees(confirmedTrainees.length);
-            setRateOfMale((maleTrainees.length / confirmedTrainees.length) * 100);
-            setRateOfFemale((femaleTrainees.length / confirmedTrainees.length) * 100);
-            setRateOfEnablersActivity((enablersCount / confirmedTrainees.length) * 100);
-            setRateOfMechanicalActivity((mechanicalCount / confirmedTrainees.length) * 100);
-            setRateOfInformationSystemsActivity((informationSystemsCount / confirmedTrainees.length) * 100);
-            setRateOfDataboxActivity((databoxCount / confirmedTrainees.length) * 100);
-            setRateOfTelecomActivity((telecomCount / confirmedTrainees.length) * 100);
-            setRateOfQualityActivity((qualityCount / confirmedTrainees.length) * 100);
-            setRateOfEpaysysActivity((epaysysCount / confirmedTrainees.length) * 100);
-            setRateOfMediaAndEnergyActivity((mediaEnergyCount / confirmedTrainees.length) * 100);
-            setRateOfElectronicsActivity((electronicsCount / confirmedTrainees.length) * 100);
-            setRateOfSpaceActivity((spaceCount / confirmedTrainees.length) * 100);
-            setRateOfF1Grade((grades.filter(g => g.grade === "F1").length / confirmedTrainees.length) * 100);
-            setRateOfF2Grade((grades.filter(g => g.grade === "F2").length / confirmedTrainees.length) * 100);
-            setRateOfF3Grade((grades.filter(g => g.grade === "F3").length / confirmedTrainees.length) * 100);
-            setRateOfF4Grade((grades.filter(g => g.grade === "F4").length / confirmedTrainees.length) * 100);
-            setRateOfM1Grade((grades.filter(g => g.grade === "M1").length / confirmedTrainees.length) * 100);
-            setRateOfM2Grade((grades.filter(g => g.grade === "M2").length / confirmedTrainees.length) * 100);
-            setRateOfM3Grade((grades.filter(g => g.grade === "M3").length / confirmedTrainees.length) * 100);
-            setRateOfM4Grade((grades.filter(g => g.grade === "M4").length / confirmedTrainees.length) * 100);
-            setRateOfM5Grade((grades.filter(g => g.grade === "M5").length / confirmedTrainees.length) * 100);
-            setRateOfM6Grade((grades.filter(g => g.grade === "M6").length / confirmedTrainees.length) * 100);
-            setNumberOfFTFTrainings(FTFTrainings.length);
-            setNumberOfOnlineTrainings(OnlineTrainings.length);
-
-            const users = await axios.get("http://localhost:5000/api/users");
-
-            const TrainedEmployees = users.data.filter((u) => u.isTrained);
-            setThirdMetrics(TrainedEmployees);
-            const Employees = users.data.filter((u) => (u.role !== "manager") && (u.role !== "admin"));
-            const InternalTraines = users.data.filter((u) => (u.type === "internal") && (u.role !== "manager") && (u.role !== "admin"));
-
-            setNumberOfTrainedEmployees(TrainedEmployees.length);
-            setNumberOfEmployees(Employees.length);
-            setNumberOfInternalTrainers(InternalTraines.length);
-            setTrainedEmployees(TrainedEmployees);
-
-            const sessions = await axios.get("http://localhost:5000/api/sessions");
-
-            let attendedhours = 0;
-
-            sessions.data
-            .filter(session => 
-              filteredTrainings.some(training => training._id === session.training)
-            )
-            .map((session) => {
-              attendedhours += ((session.presenttrainees.length * session.duration) || 0);
-            });
-
-            setNumberOfAttendedHours(attendedhours);
-
-        } catch (error) {
-            console.error("Error fetching trainings data:", error);
-        }
-    }
-
+  
     const getTrainingById = (id) => {
-      return Object.values(trainings).find(training => training._id === id) || null;
+      return filteredData.trainings.find(training => training._id === id) || null;
     };
-
-    const [sessions, setSessions] = useState([]);
-    const [numberOfScheduled, setNumberOfScheduled] = useState(0);
-    const [numberOfInProgress, setNumberOfInProgress] = useState(0);
-    const [numberOfCompleted, setNumberOfCompleted] = useState(0);
-
-    const fetchSessions = async () =>  {
-      const response = await axios.get("http://localhost:5000/api/sessions");
-      setSessions(response.data);
+  
+    // Data fetching
+    const fetchAllData = async () => {
+      try {
+        const [trainingsRes, sessionsRes, usersRes] = await Promise.all([
+          axios.get("http://localhost:5000/api/trainings"),
+          axios.get("http://localhost:5000/api/sessions"),
+          axios.get("http://localhost:5000/api/users")
+        ]);
+  
+        setRawData({
+          trainings: trainingsRes.data,
+          sessions: sessionsRes.data,
+          users: usersRes.data,
+          feedbacks: {}
+        });
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+  
+    // Data filtering
+    const filterData = () => {
+      const isTrainer = (user.role === "trainer" || selectedRole === "trainer"); 
+      const isManager = (user.role === "manager");
+      const currentYear = dayjs().year();
+  
+      // Filter trainings
+      const filteredTrainings = rawData.trainings.filter(training => {  
+        const trainingMonthDate = dayjs(
+          training.month.charAt(0).toUpperCase() + 
+          training.month.slice(1).toLowerCase() + ` ${currentYear}`, 
+          'MMMM YYYY'
+        );
+        
+        const inRange =
+          (startMonth === null || trainingMonthDate.isAfter(startMonth)) &&
+          (endMonth === null || trainingMonthDate.isBefore(endMonth));
+  
+        const trainingsMatch = ((isTrainer && training.trainer === user._id) || (isManager && inRange)); 
+        
+        return trainingsMatch;
+      });
+  
+      // Filter sessions
+      const filteredSessions = rawData.sessions.filter(session => 
+        filteredTrainings.some(training => training._id === session.training)
+      );
+  
+      // Filter users
+      const filteredUsers = rawData.users.filter(user => 
+        (user.role !== "manager") && (user.role !== "admin")
+      );
+  
+      setFilteredData({
+        trainings: filteredTrainings,
+        sessions: filteredSessions,
+        users: filteredUsers
+      });
+    };
+  
+    // Calculate metrics
+    const calculateMetrics = async () => {
+      const {
+        trainings,
+        sessions,
+        users
+      } = filteredData;
+  
+      // Basic counts
+      const softSkills = trainings.filter(t => t.skillType === "soft_skill" && t.delivered);
+      const internTechnicalSkills = trainings.filter(t => t.skillType === "technical_skill" && t.type === "internal" && t.delivered);
+      const externTechnicalSkills = trainings.filter(t => t.skillType === "technical_skill" && t.type === "external" && t.delivered);
+      const technicalSkills = trainings.filter(t => t.skillType === "technical_skill" && t.delivered);
+      const FTFTrainings = trainings.filter(t => t.mode === "face_to_face");
+      const OnlineTrainings = trainings.filter(t => t.mode === "online");
+  
+      const confirmedTrainees = trainings
+        .map(t => t.confirmedtrainees)
+        .flat();
+  
+      // Gender rates
+      const genders = await Promise.all(
+        confirmedTrainees.map(async (id) => {
+          try {
+            const response = await axios.get(`http://localhost:5000/api/users/${id}`);
+            return { id, gender: response.data.gender };
+          } catch (error) {
+            console.error("Error fetching trainee gender", error);
+            return { id, gender: null };
+          }
+        })
+      );
+      const maleTrainees = genders.filter(t => t.gender === "male").map(t => t.id);
+      const femaleTrainees = genders.filter(t => t.gender === "female").map(t => t.id);
+  
+      // Activity rates
+      const activities = await Promise.all(
+        confirmedTrainees.map(async (id) => {
+          try {
+            const response = await axios.get(`http://localhost:5000/api/users/${id}`);
+            return { id, activity: response.data.activity };
+          } catch (error) {
+            console.error("Error fetching trainee activity", error);
+            return { id, activity: null };
+          }
+        })
+      );
+  
+      const activityCounts = {
+        enablers: activities.filter(a => a.activity === "enablers").length,
+        mechanical: activities.filter(a => a.activity === "mechanical").length,
+        informationSystems: activities.filter(a => a.activity === "formation_systems").length,
+        databox: activities.filter(a => a.activity === "databox").length,
+        telecom: activities.filter(a => a.activity === "telecom").length,
+        quality: activities.filter(a => a.activity === "quality").length,
+        epaysys: activities.filter(a => a.activity === "e-paysys").length,
+        mediaEnergy: activities.filter(a => a.activity === "media&energy").length,
+        electronics: activities.filter(a => a.activity === "electronics").length,
+        space: activities.filter(a => a.activity === "space").length
+      };
+  
+      // Grade rates
+      const grades = await Promise.all(
+        confirmedTrainees.map(async (id) => {
+          try {
+            const response = await axios.get(`http://localhost:5000/api/users/${id}`);
+            return { id, grade: response.data.grade };
+          } catch (error) {
+            console.error("Error fetching trainee grade", error);
+            return { id, grade: null };
+          }
+        })
+      );
+  
+      const gradeCounts = {
+        F1: grades.filter(g => g.grade === "F1").length,
+        F2: grades.filter(g => g.grade === "F2").length,
+        F3: grades.filter(g => g.grade === "F3").length,
+        F4: grades.filter(g => g.grade === "F4").length,
+        M1: grades.filter(g => g.grade === "M1").length,
+        M2: grades.filter(g => g.grade === "M2").length,
+        M3: grades.filter(g => g.grade === "M3").length,
+        M4: grades.filter(g => g.grade === "M4").length,
+        M5: grades.filter(g => g.grade === "M5").length,
+        M6: grades.filter(g => g.grade === "M6").length
+      };
+  
+      // Request counts
+      let reqnumber = 0;
+      let appnumber = 0;
+      let confnumber = 0;
+  
+      trainings.forEach((training) => {
+        reqnumber += (training.nbOfReceivedRequests || 0);
+        appnumber += (training.nbOfAcceptedRequests || 0);
+        confnumber += (training.nbOfConfirmedRequests || 0);
+      });
+  
+      // Session status counts
       let nbofsch = 0;
       let nbofinprog = 0;
       let nbofcomp = 0;
-
-      response.data.map((session) => {
-        if(session.status === "scheduled"){
+  
+      sessions.forEach((session) => {
+        if (session.status === "scheduled") {
           nbofsch++;
-        }else if(session.status === "in_progress"){
+        } else if (session.status === "in_progress") {
           nbofinprog++;
-        }else{
+        } else {
           nbofcomp++;
         }
-      })
+      });
+  
+      // Attended hours
+      let attendedhours = 0;
+      sessions.forEach((session) => {
+        attendedhours += ((session.presenttrainees.length * session.duration) || 0);
+      });
+  
+      // Participants count
+      let nbofparticipants = 0;
+      trainings.forEach((training) => {
+        nbofparticipants += (training.nbOfParticipants || 0);
+      });
+  
+      // User counts
+      const TrainedEmployees = users.filter((u) => u.isTrained);
+      const Employees = users.filter((u) => (u.role !== "manager") && (u.role !== "admin"));
+      const InternalTraines = users.filter((u) => (u.type === "internal") && (u.role !== "manager") && (u.role !== "admin"));
+      setTrainedEmployees(TrainedEmployees);
+  
+      // Requests per month
+      const requests = trainings
+        .flatMap((training) =>
+          training.requestshistory.map((request) => ({
+            ...request,
+            training,
+          }))
+        )
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
+  
+      const requestsByMonth = Array(12).fill(0); 
+      requests.forEach((req) => {
+        const monthIndex = new Date(req.date).getMonth(); 
+        requestsByMonth[monthIndex]++;
+      });
 
-      setNumberOfCompleted(nbofcomp);
-      setNumberOfInProgress(nbofinprog);
-      setNumberOfScheduled(nbofsch);
+      //Calculate Sat Trainings
 
-    }
+      const satTrainings = trainings.filter(t => (t.hotEvalRate + t.coldEvalRate)/2 >= 3);
+  
+      // Calculate rates
+      const totalTrainees = confirmedTrainees.length || 1;
+  
+      // Update metrics state
+      setMetrics(prev => ({
+        ...prev,
+        // Training counts
+        numberOfTrainings: trainings.length,
+        numberOfSoftSkillsTrainings: softSkills.length,
+        numberOfInternTechnicalSkillsTrainings: internTechnicalSkills.length,
+        numberOfExternTechnicalSkillsTrainings: externTechnicalSkills.length,
+        numberOfFTFTrainings: FTFTrainings.length,
+        numberOfOnlineTrainings: OnlineTrainings.length,
+  
+        // Hours
+        numberOfSoftSkillsHours: softSkills.reduce((acc, t) => acc + t.nbOfHours, 0),
+        numberOfTechnicalSkillsHours: technicalSkills.reduce((acc, t) => acc + t.nbOfHours, 0),
+        numberOfAttendedHours: attendedhours,
+  
+        // Participants
+        numberOfTrainees: confirmedTrainees.length,
+        numberOfParticipants: nbofparticipants,
+        numberOfTrainedEmployees: TrainedEmployees.length,
+        numberOfEmployees: Employees.length,
+        numberOfInternalTrainers: InternalTraines.length,
+  
+        // Requests
+        numberOfReq: reqnumber,
+        numberOfApproved: appnumber,
+        numberOfConfirmed: confnumber,
+        numberOfScheduled: nbofsch,
+        numberOfInProgress: nbofinprog,
+        numberOfCompleted: nbofcomp,
+        requestsPerMonth: requestsByMonth,
+        //Sat Trainings Number
 
-    const now = dayjs();
-    const nextWeek = now.add(7, 'day').endOf('day');
-    const nextMonth = now.add(1, 'month').endOf('day');
-
-    const sessionsNextWeek = sessions.filter(session =>
-      (selectedFilter === "all" || selectedFilter === session.status) &&
-      dayjs(session.date).isAfter(now) &&
-      dayjs(session.date).isBefore(nextWeek)
-    );
-
-    const sessionsLaterThisMonth = sessions.filter(session =>
-      (selectedFilter === "all" || selectedFilter === session.status) &&
-      dayjs(session.date).isAfter(nextWeek) &&
-      dayjs(session.date).isBefore(nextMonth)
-    );
-
-    const sessionsAfterOneMonth = sessions.filter(session =>
-      (selectedFilter === "all" || selectedFilter === session.status) &&
-      dayjs(session.date).isAfter(nextMonth)
-    );
-
-    const renderSession = (session) => {
-      const start = dayjs(session.date);
-      const end = start.add(session.duration, 'hour');
-
-      return (
-        <ListItem key={session.date} disableGutters sx={{width:"100%"}}>
-          <ListItemIcon>
-            <CalendarTodayIcon fontSize="medium" />
-          </ListItemIcon>
-          <ListItemText
-            primary={`${session.name}`}
-            secondary={
-              <>
-                <Typography variant="body2">
-                  {`${start.format("ddd D-MMM-YYYY h:mm A")} - ${end.format("h:mm A")} (${session.location})`}
-                </Typography>
-                <Typography variant="caption" color="text.primary" sx={{position:"absolute", right:0}}>
-                  {`${getTrainingById(session.training)?.nbOfParticipants - (getTrainingById(session.training)?.nbOfConfirmedRequests || 0)} places left (${(getTrainingById(session.training)?.nbOfConfirmedRequests || 0)}/${getTrainingById(session.training)?.nbOfParticipants})`}
-                </Typography>
-              </>
-            }
-          />
-        </ListItem>
+        numberOfSatisfactorilyEvaluatedTrainings:satTrainings.length,
+  
+        // Rates
+        rateOfMale: (maleTrainees.length / totalTrainees) * 100,
+        rateOfFemale: (femaleTrainees.length / totalTrainees) * 100,
+        rateOfEnablersActivity: (activityCounts.enablers / totalTrainees) * 100,
+        rateOfMechanicalActivity: (activityCounts.mechanical / totalTrainees) * 100,
+        rateOfInformationSystemsActivity: (activityCounts.informationSystems / totalTrainees) * 100,
+        rateOfDataboxActivity: (activityCounts.databox / totalTrainees) * 100,
+        rateOfTelecomActivity: (activityCounts.telecom / totalTrainees) * 100,
+        rateOfQualityActivity: (activityCounts.quality / totalTrainees) * 100,
+        rateOfEpaysysActivity: (activityCounts.epaysys / totalTrainees) * 100,
+        rateOfMediaAndEnergyActivity: (activityCounts.mediaEnergy / totalTrainees) * 100,
+        rateOfElectronicsActivity: (activityCounts.electronics / totalTrainees) * 100,
+        rateOfSpaceActivity: (activityCounts.space / totalTrainees) * 100,
+        rateOfF1Grade: (gradeCounts.F1 / totalTrainees) * 100,
+        rateOfF2Grade: (gradeCounts.F2 / totalTrainees) * 100,
+        rateOfF3Grade: (gradeCounts.F3 / totalTrainees) * 100,
+        rateOfF4Grade: (gradeCounts.F4 / totalTrainees) * 100,
+        rateOfM1Grade: (gradeCounts.M1 / totalTrainees) * 100,
+        rateOfM2Grade: (gradeCounts.M2 / totalTrainees) * 100,
+        rateOfM3Grade: (gradeCounts.M3 / totalTrainees) * 100,
+        rateOfM4Grade: (gradeCounts.M4 / totalTrainees) * 100,
+        rateOfM5Grade: (gradeCounts.M5 / totalTrainees) * 100,
+        rateOfM6Grade: (gradeCounts.M6 / totalTrainees) * 100
+      }));
+  
+      // Update trainees data
+      const traineeIds = [...new Set(requests.map((req) => req.trainee))];
+      const traineeDataArray = await Promise.all(
+        traineeIds.map((id) => axios.get(`http://localhost:5000/api/users/${id}`))
       );
+      const traineesData = Object.fromEntries(
+        traineeDataArray.map(({ data }) => [data._id, data])
+      );
+  
+      setTraineesData(traineesData);
+      setAllRequests(requests);
     };
-
-    const [allRequests, setAllRequests] = useState([]);
-    const [traineesData, setTraineesData] = useState({});
-    const [requestsPerMonth, setRequestsPerMonth] = useState([]);
   
+    // Initialize completed trainings
     useEffect(() => {
-      const fetchTrainee = async () => {
-        const requests = trainings
-          .flatMap((training) =>
-            training.requestshistory.map((request) => ({
-              ...request,
-              training,
-            }))
-          )
-          .sort((a, b) => new Date(b.date) - new Date(a.date));
+      const filtered = filteredData.trainings
+        .filter((t) => t.delivered)
+        .map(training => ({
+          ...training,
+          showDetails: false
+        }));
+      setCompletedTrainings(filtered);
+    }, [filteredData.trainings]);
   
-        const traineeIds = [...new Set(requests.map((req) => req.trainee))];
-  
-        const traineeDataArray = await Promise.all(
-          traineeIds.map((id) => axios.get(`http://localhost:5000/api/users/${id}`))
-        );
-  
-        const traineesData = Object.fromEntries(
-          traineeDataArray.map(({ data }) => [data._id, data])
-        );
-
-        const requestsByMonth = Array(12).fill(0); 
-
-        requests.forEach((req) => {
-          const monthIndex = new Date(req.date).getMonth(); 
-          requestsByMonth[monthIndex]++;
-        });
-
-        setRequestsPerMonth(requestsByMonth);
-        setAllRequests(requests);
-        setTraineesData(traineesData);
-      };
-  
-      fetchTrainee();
-    }, [trainings]); 
-  
-    const renderRegistration = (traineeId, training, date) => {
-      const trainee = traineesData[traineeId];
-      const traineeName = trainee?.name || "Unknown";
-  
-      return (
-        <ListItem disableGutters sx={{ width: "100%" }} key={`${traineeId}-${training._id}`}>
-          <ListItemIcon>
-            <PersonAddAlt1Icon fontSize="medium" />
-          </ListItemIcon>
-          <ListItemText
-            primary={
-              <>
-                <Box
-                  sx={{
-                    display: "flex",
-                    flexDirection: "row",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <Typography variant="body1">{traineeName}</Typography>
-                  <Typography variant="caption" color="text.primary" sx={{position:"absolute", right:0}}>
-                  {dayjs(date).format("DD-MM-YYYY HH:mm")}
-                  </Typography>
-                </Box>
-              </>
-              }
-            secondary={
-              <>
-                <Typography variant="body1">{training.title}</Typography>
-                <Typography variant="body2">
-                  {formatDaysWithMonth(training.date, training.month)}
-                </Typography>
-              </>
-            }
-          />
-        </ListItem>
+    const updateShowDetails = (trainingId, value) => {
+      setCompletedTrainings(prevTrainings =>
+        prevTrainings.map(training =>
+          training._id === trainingId
+            ? { ...training, showDetails: value }
+            : training
+        )
       );
     };    
-
+  
+    // Main data flow
     useEffect(() => {
-      fetchData();
-      fetchSessions();
-    }, [startMonth,endMonth]);
-
-    
-    // Chartss.............
-
+      fetchAllData();
+    }, []);
+  
+    useEffect(() => {
+      if (rawData.trainings.length > 0) {
+        filterData();
+      }
+    }, [rawData, startMonth, endMonth]);
+  
+    useEffect(() => {
+      if (filteredData.trainings.length > 0) {
+        calculateMetrics();
+      }
+    }, [filteredData]);
+  
+  
+    // Chart rendering
     useEffect(() => {
       const skillChartInstance = skillTypeChart.current && echarts.init(skillTypeChart.current);
       const hoursChartInstance = hoursChart.current && echarts.init(hoursChart.current);
@@ -540,10 +565,10 @@ const Navbar = () => {
       const activityChartInstance = activityChart.current && echarts.init(activityChart.current);
       const gradeChartInstance = gradeChart.current && echarts.init(gradeChart.current);
       const registChartInstance = regisChart.current && echarts.init(regisChart.current);
-
+  
       const skillType = {
         title: {
-          text: t("total_number_of_trainings") + " : " + numberOfTrainings,
+          text: t("total_number_of_trainings") + " : " + metrics.numberOfTrainings,
         },
         tooltip: {
           trigger: "item",
@@ -564,7 +589,7 @@ const Navbar = () => {
         series: [
           {
             name: t("soft skills"),
-            data: [numberOfSoftSkillsTrainigs, 0, 0],
+            data: [metrics.numberOfSoftSkillsTrainings, 0, 0],
             type: "bar",
             itemStyle: { color: "#91CC75" },
             barWidth: 60,
@@ -572,7 +597,7 @@ const Navbar = () => {
           },
           {
             name: t("internal tech"),
-            data: [0, numberOfInternTechnicalSkillsTrainigs, 0],
+            data: [0, metrics.numberOfInternTechnicalSkillsTrainings, 0],
             type: "bar",
             itemStyle: { color: "#FAC858" },
             barWidth: 60,
@@ -580,7 +605,7 @@ const Navbar = () => {
           },
           {
             name: t("external tech"),
-            data: [0, 0, numberOfExternTechnicalSkillsTrainigs],
+            data: [0, 0, metrics.numberOfExternTechnicalSkillsTrainings],
             type: "bar",
             itemStyle: { color: "#EE6666" },
             barWidth: 60,
@@ -588,6 +613,7 @@ const Navbar = () => {
           },
         ],
       };
+  
       const hours = {
         title: {
           text: t("trainings_per_hour"),
@@ -611,7 +637,7 @@ const Navbar = () => {
         series: [
           {
             name: t("total_hours_of_technical_skills_training"),
-            data: [numberOfTechnicalSkillsHours, 0],
+            data: [metrics.numberOfTechnicalSkillsHours, 0],
             type: "bar",
             itemStyle: { color: "#FAC858" },
             barWidth: 80,
@@ -619,7 +645,7 @@ const Navbar = () => {
           },
           {
             name: t("total_hours_of_soft_skills_training"),
-            data: [0, numberOfSoftSkillsHours],
+            data: [0, metrics.numberOfSoftSkillsHours],
             type: "bar",
             itemStyle: { color: "#EE6666" },
             barWidth: 80,
@@ -627,6 +653,7 @@ const Navbar = () => {
           },
         ],
       };
+  
       const gender = {
         title: {
           text: t("participation_rate_by_gender"),
@@ -644,8 +671,8 @@ const Navbar = () => {
             type: 'pie',
             radius: '50%',
             data: [
-              { value: rateOfMale, name: t("male") },
-              { value: rateOfFemale, name: t("female") },
+              { value: metrics.rateOfMale, name: t("male") },
+              { value: metrics.rateOfFemale, name: t("female") },
             ],
             emphasis: {
               itemStyle: {
@@ -656,7 +683,8 @@ const Navbar = () => {
             }
           }
         ]
-      }
+      };
+  
       const activity = {
         title: {
           text: t("participation_rate_by_activity"),
@@ -712,20 +740,21 @@ const Navbar = () => {
               focus: 'series'
             },
             data: [
-              rateOfEnablersActivity,
-              rateOfMechanicalActivity,
-              rateOfInformationSystemsActivity,
-              rateOfDataboxActivity,
-              rateOfTelecomActivity,
-              rateOfQualityActivity,
-              rateOfEpaysysActivity,
-              rateOfMediaAndEnergyActivity,
-              rateOfElectronicsActivity,
-              rateOfSpaceActivity
+              metrics.rateOfEnablersActivity,
+              metrics.rateOfMechanicalActivity,
+              metrics.rateOfInformationSystemsActivity,
+              metrics.rateOfDataboxActivity,
+              metrics.rateOfTelecomActivity,
+              metrics.rateOfQualityActivity,
+              metrics.rateOfEpaysysActivity,
+              metrics.rateOfMediaAndEnergyActivity,
+              metrics.rateOfElectronicsActivity,
+              metrics.rateOfSpaceActivity
             ]
           }
         ]
       };
+  
       const grade = {
         title: {
           text: t("participation_rate_by_grade"),
@@ -781,20 +810,21 @@ const Navbar = () => {
               focus: 'series'
             },
             data: [
-              rateOfF1Grade,
-              rateOfF2Grade,
-              rateOfF3Grade,
-              rateOfF4Grade,
-              rateOfM1Grade,
-              rateOfM2Grade,
-              rateOfM3Grade,
-              rateOfM4Grade,
-              rateOfM5Grade,
-              rateOfM6Grade,
+              metrics.rateOfF1Grade,
+              metrics.rateOfF2Grade,
+              metrics.rateOfF3Grade,
+              metrics.rateOfF4Grade,
+              metrics.rateOfM1Grade,
+              metrics.rateOfM2Grade,
+              metrics.rateOfM3Grade,
+              metrics.rateOfM4Grade,
+              metrics.rateOfM5Grade,
+              metrics.rateOfM6Grade,
             ]
           }
         ]
       };
+  
       const regist = {
         xAxis: {
           type: 'category',
@@ -805,7 +835,7 @@ const Navbar = () => {
         },
         series: [
           {
-            data: requestsPerMonth,
+            data: metrics.requestsPerMonth,
             type: 'bar'
           }
         ]
@@ -838,91 +868,98 @@ const Navbar = () => {
         gradeChartInstance?.dispose();
         registChartInstance?.dispose();
       };
-    }, [
-      numberOfTrainings,
-      numberOfSoftSkillsTrainigs,
-      numberOfInternTechnicalSkillsTrainigs,
-      numberOfExternTechnicalSkillsTrainigs,
-      numberOfSoftSkillsHours,
-      numberOfTechnicalSkillsHours,
-      rateOfFemale,
-      rateOfMale,
-      t,
-      view,
-    ]);
-
-    const getTrainingScore = async (trainingId) => {
-      let score = 0;
-      let numberOfFeedbacks = 0;
+    }, [metrics, t, view, statView]);
+  
+    // Session grouping
+    const now = dayjs();
+    const nextWeek = now.add(7, 'day').endOf('day');
+    const nextMonth = now.add(1, 'month').endOf('day');
+  
+    const sessionsNextWeek = filteredData.sessions.filter(session =>
+      (selectedFilter === "all" || selectedFilter === session.status) &&
+      dayjs(session.date).isAfter(now) &&
+      dayjs(session.date).isBefore(nextWeek)
+    );
+  
+    const sessionsLaterThisMonth = filteredData.sessions.filter(session =>
+      (selectedFilter === "all" || selectedFilter === session.status) &&
+      dayjs(session.date).isAfter(nextWeek) &&
+      dayjs(session.date).isBefore(nextMonth)
+    );
+  
+    const sessionsAfterOneMonth = filteredData.sessions.filter(session =>
+      (selectedFilter === "all" || selectedFilter === session.status) &&
+      dayjs(session.date).isAfter(nextMonth)
+    );
+  
+    // Render functions
+    const renderSession = (session) => {
+      const start = dayjs(session.date);
+      const end = start.add(session.duration, 'hour');
+  
+      return (
+        <ListItem key={session.date} disableGutters sx={{width:"100%"}}>
+          <ListItemIcon>
+            <CalendarTodayIcon fontSize="medium" />
+          </ListItemIcon>
+          <ListItemText
+            primary={`${session.name}`}
+            secondary={
+              <>
+                <Typography variant="body2">
+                  {`${start.format("ddd D-MMM-YYYY h:mm A")} - ${end.format("h:mm A")} (${session.location})`}
+                </Typography>
+                <Typography variant="caption" color="text.primary" sx={{position:"absolute", right:0}}>
+                  {`${getTrainingById(session.training)?.nbOfParticipants - (getTrainingById(session.training)?.nbOfConfirmedRequests || 0)} places left (${(getTrainingById(session.training)?.nbOfConfirmedRequests || 0)}/${getTrainingById(session.training)?.nbOfParticipants})`}
+                </Typography>
+              </>
+            }
+          />
+        </ListItem>
+      );
+    };
+  
+    const renderRegistration = (traineeId, training, date) => {
+      const trainee = traineesData[traineeId];
+      const traineeName = trainee?.name || "Unknown";
     
-      await axios.post(`http://localhost:5000/api/trainings/feedbacks/${trainingId}`)
-        .then((response) => {
-          const { coldFeedback, hotFeedback } = response.data;
-    
-          coldFeedback.forEach(feedback => {
-            score += feedback.sentimentScore || 0;
-            numberOfFeedbacks++;
-          });
-    
-          hotFeedback.forEach(feedback => {
-            score += feedback.sentimentScore || 0;
-            numberOfFeedbacks++;
-          });
-        });
-      if (numberOfFeedbacks === 0) numberOfFeedbacks++;
-      return Math.round(score / numberOfFeedbacks);
-    }; 
-
-    const [completedTrainings, setCompletedTrainings] = useState([]);
-
-    useEffect(() => {
-      const filtered = trainings
-        .filter((t) => t.delivered)
-        .map(training => ({
-          ...training,
-          showDetails: false
-        }));
-      setCompletedTrainings(filtered);
-    }, [trainings,startMonth,endMonth]);
-    
-    const updateShowDetails = (trainingId, value) => {
-      setCompletedTrainings(prevTrainings =>
-        prevTrainings.map(training =>
-          training._id === trainingId
-            ? { ...training, showDetails: value }
-            : training
-        )
+      return (
+        <ListItem disableGutters sx={{ width: "100%" }} key={`${traineeId}-${training._id}`}>
+          <ListItemIcon>
+            <PersonAddAlt1Icon fontSize="medium" />
+          </ListItemIcon>
+          <ListItemText
+            primary={
+              <>
+                <Box
+                  sx={{
+                    display: "flex",
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <Typography variant="body1">{traineeName}</Typography>
+                  <Typography variant="caption" color="text.primary" sx={{position:"absolute", right:0}}>
+                  {dayjs(date).format("DD-MM-YYYY HH:mm")}
+                  </Typography>
+                </Box>
+              </>
+              }
+            secondary={
+              <>
+                <Typography variant="body1">{training.title}</Typography>
+                <Typography variant="body2">
+                  {formatDaysWithMonth(training.date, training.month)}
+                </Typography>
+              </>
+            }
+          />
+        </ListItem>
       );
     };    
-  
-    const [scores, setScores] = useState({});
-    const [numberOfSatisfactorilyEvaluatedTrainings, setNumberOfSatisfactorilyEvaluatedTrainings] = useState(0);
 
-    useEffect(() => {
-      const fetchScores = async () => {
-        const newScores = {};
-        let satCount = 0;
-        
-        for (let training of trainings) {
-          const score = await getTrainingScore(training._id);
-          newScores[training._id] = score;
-          
-          if (score >= 3) {
-            satCount++;
-          }
-        }
-        
-        setScores(newScores);
-        setNumberOfSatisfactorilyEvaluatedTrainings(satCount);
-      };
-    
-      if (trainings.length > 0) {
-        fetchScores();
-      }
-    }, [trainings,startMonth,endMonth]); 
-    
     const renderTraining = (training) => {
-      const score = scores[training._id];
       return (
         <Box
           key={training._id}
@@ -954,7 +991,7 @@ const Navbar = () => {
                 </>
               }
             />
-            <Rating name="Score" value={score} readOnly />
+            <Rating name="Score" value={Math.round((training.hotEvalRate+training.coldEvalRate)/2)} readOnly />
             <Tooltip title={training.showDetails ? t("hide_details") : t("view_details")} arrow>
               <IconButton
                 sx={{ color: "darkgrey" }}
@@ -967,49 +1004,50 @@ const Navbar = () => {
         </Box>
       );
     };
-    
+
+    // Tables ..............
     const firstmetrics = [
-      { name: 'Total Number of planned trainings', recap: numberOfTrainings, objGap: '' },
+      { name: 'Total Number of planned trainings', recap: metrics.numberOfTrainings, objGap: '' },
       { name: 'Total Number of delivered Trainings', recap: completedTrainings.length, objGap: '' },
-      { name: 'Total Number of delivered Soft skills Trainings', recap: numberOfSoftSkillsTrainigs, objGap: '' },
-      { name: 'Total Number of delivered Technical skills Trainings conducted by Internal trainers', recap: numberOfInternTechnicalSkillsTrainigs, objGap: '' },
-      { name: 'Total Number of delivered Technical skills Trainings conducted by External trainers', recap: numberOfExternTechnicalSkillsTrainigs, objGap: '' },
-      { name: 'Training Completion rate (Delivered/Planned) (obj 80%)', recap: ((completedTrainings.length / numberOfTrainings) * 100).toFixed(2) + '%', objGap: (80 - (completedTrainings.length / numberOfTrainings) * 100).toFixed(2) + '%'},
-      { name: 'Total number of face to face trainings', recap: numberOfFTFTrainings, objGap: '' },
-      { name: 'Percentage of face to face Trainings (Obj 75%)', recap: ((numberOfFTFTrainings/numberOfTrainings)*100).toFixed(2) + '%', objGap: (75 - (numberOfFTFTrainings/numberOfTrainings)*100).toFixed(2) +'%' },
-      { name: 'Total number of online trainings', recap: numberOfOnlineTrainings, objGap: '' },
-      { name: 'Percentage of online trainings (Obj 25%)', recap: ((numberOfOnlineTrainings/numberOfTrainings)*100).toFixed(2) + '%', objGap: (25 - (numberOfOnlineTrainings/numberOfTrainings)*100).toFixed(2) + '%' },
-      { name: 'Number of participants', recap: numberOfParticipants, objGap: '' },
-      { name: 'Total Hours of Soft skills training', recap: numberOfSoftSkillsHours, objGap: '' },
-      { name: 'Total Hours of Technical skills training', recap: numberOfTechnicalSkillsHours, objGap: '' },
-      { name: 'Total number of Training hours', recap: numberOfSoftSkillsHours + numberOfTechnicalSkillsHours, objGap: '' },
-      { name: 'Total Number of trained employees per one training', recap: Math.round(numberOfTrainedEmployees / completedTrainings.length), objGap: '' },
-      { name: 'Percentage of participation (number of trained employees/HC)', recap: ((numberOfTrainedEmployees/numberOfEmployees)*100).toFixed(2) + '%', objGap: '' },
-      { name: 'Total number of hours per trainees', recap: numberOfAttendedHours, objGap: '' },
-      { name: 'Average Number of hours per Trained employee', recap: (numberOfAttendedHours/numberOfTrainedEmployees), objGap: '' },
+      { name: 'Total Number of delivered Soft skills Trainings', recap: metrics.numberOfSoftSkillsTrainings, objGap: '' },
+      { name: 'Total Number of delivered Technical skills Trainings conducted by Internal trainers', recap: metrics.numberOfInternTechnicalSkillsTrainings, objGap: '' },
+      { name: 'Total Number of delivered Technical skills Trainings conducted by External trainers', recap: metrics.numberOfExternTechnicalSkillsTrainings, objGap: '' },
+      { name: 'Training Completion rate (Delivered/Planned) (obj 80%)', recap: ((completedTrainings.length / metrics.numberOfTrainings) * 100).toFixed(2) + '%', objGap: (80 - (completedTrainings.length / metrics.numberOfTrainings) * 100).toFixed(2) + '%'},
+      { name: 'Total number of face to face trainings', recap: metrics.numberOfFTFTrainings, objGap: '' },
+      { name: 'Percentage of face to face Trainings (Obj 75%)', recap: ((metrics.numberOfFTFTrainings/metrics.numberOfTrainings)*100).toFixed(2) + '%', objGap: (75 - (metrics.numberOfFTFTrainings/metrics.numberOfTrainings)*100).toFixed(2) +'%' },
+      { name: 'Total number of online trainings', recap: metrics.numberOfOnlineTrainings, objGap: '' },
+      { name: 'Percentage of online trainings (Obj 25%)', recap: ((metrics.numberOfOnlineTrainings/metrics.numberOfTrainings)*100).toFixed(2) + '%', objGap: (25 - (metrics.numberOfOnlineTrainings/metrics.numberOfTrainings)*100).toFixed(2) + '%' },
+      { name: 'Number of participants', recap: metrics.numberOfParticipants, objGap: '' },
+      { name: 'Total Hours of Soft skills training', recap: metrics.numberOfSoftSkillsHours, objGap: '' },
+      { name: 'Total Hours of Technical skills training', recap: metrics.numberOfTechnicalSkillsHours, objGap: '' },
+      { name: 'Total number of Training hours', recap: metrics.numberOfSoftSkillsHours + metrics.numberOfTechnicalSkillsHours, objGap: '' },
+      { name: 'Total Number of trained employees per one training', recap: Math.round(metrics.numberOfTrainedEmployees / completedTrainings.length), objGap: '' },
+      { name: 'Percentage of participation (number of trained employees/HC)', recap: ((metrics.numberOfTrainedEmployees/metrics.numberOfEmployees)*100).toFixed(2) + '%', objGap: '' },
+      { name: 'Total number of hours per trainees', recap: metrics.numberOfAttendedHours, objGap: '' },
+      { name: 'Average Number of hours per Trained employee', recap: (metrics.numberOfAttendedHours/metrics.numberOfTrainedEmployees), objGap: '' },
       { name: 'Average Training Duration by participant(number of training hours per part/ Number of trained Employees)', recap: '', objGap: '' },
-      { name: 'Current internal trainers number', recap: numberOfInternalTrainers, objGap: '' },
-      { name: 'Internal Trainers Ratio ( number of trainers/current HC)', recap: numberOfInternalTrainers/numberOfEmployees , objGap: '' },
-      { name: 'Current External Trainers', recap: numberOfEmployees - numberOfInternalTrainers, objGap: '' },
-      { name: `Number of Satisfactorily Evaluated Trainings en ${new Date().getFullYear()}`, recap: numberOfSatisfactorilyEvaluatedTrainings, objGap: '' },
-      { name: `Training Effectiveness Rate in ${new Date().getFullYear()} (obj 80%)`, recap: ((numberOfSatisfactorilyEvaluatedTrainings/completedTrainings.length)*100).toFixed(2) + '%', objGap: (80 - ((numberOfSatisfactorilyEvaluatedTrainings/completedTrainings.length)*100).toFixed(2)) + '%'},
+      { name: 'Current internal trainers number', recap: metrics.numberOfInternalTrainers, objGap: '' },
+      { name: 'Internal Trainers Ratio ( number of trainers/current HC)', recap: metrics.numberOfInternalTrainers/metrics.numberOfEmployees , objGap: '' },
+      { name: 'Current External Trainers', recap: metrics.numberOfEmployees - metrics.numberOfInternalTrainers, objGap: '' },
+      { name: `Number of Satisfactorily Evaluated Trainings en ${new Date().getFullYear()}`, recap: metrics.numberOfSatisfactorilyEvaluatedTrainings, objGap: '' },
+      { name: `Training Effectiveness Rate in ${new Date().getFullYear()} (obj 80%)`, recap: ((metrics.numberOfSatisfactorilyEvaluatedTrainings/completedTrainings.length)*100).toFixed(2) + '%', objGap: (80 - ((metrics.numberOfSatisfactorilyEvaluatedTrainings/completedTrainings.length)*100).toFixed(2)) + '%'},
     ];
 
     const secondmetrics = [
-      { name: 'Type', recap: numberOfTrainings, objGap: '' },
+      { name: 'Type', recap: metrics.numberOfTrainings, objGap: '' },
       { name: 'Location', recap: completedTrainings.length, objGap: '' },
-      { name: 'Number of hours', recap: numberOfSoftSkillsTrainigs, objGap: '' },
-      { name: 'Number of received requests', recap: numberOfInternTechnicalSkillsTrainigs, objGap: '' },
-      { name: 'Number of invited participants (enrolled individuals)', recap: numberOfExternTechnicalSkillsTrainigs, objGap: '' },
-      { name: 'NB of attendees', recap: ((completedTrainings.length / numberOfTrainings) * 100).toFixed(2) + '%', objGap: (80 - (completedTrainings.length / numberOfTrainings) * 100).toFixed(2) + '%'},
-      { name: 'Attendance rate( Nb of attendees/ nb of invited participants)', recap: numberOfFTFTrainings, objGap: '' },
-      { name: 'Number of attendees who completed the training', recap: ((numberOfFTFTrainings/numberOfTrainings)*100).toFixed(2) + '%', objGap: (75 - (numberOfFTFTrainings/numberOfTrainings)*100).toFixed(2) +'%' },
-      { name: 'Hot Evaluation total rate (Objective 80%)', recap: numberOfOnlineTrainings, objGap: '' },
-      { name: 'Cold Evaluation total rate (Objective 70%)', recap: ((numberOfOnlineTrainings/numberOfTrainings)*100).toFixed(2) + '%', objGap: (25 - (numberOfOnlineTrainings/numberOfTrainings)*100).toFixed(2) + '%' },
-      { name: 'Training fill rate (Number of Attendees/available seats=12)', recap: numberOfParticipants, objGap: '' },
-      { name: 'Completion rate (Number of attendees who completed/ nb of attendees)', recap: numberOfSoftSkillsHours, objGap: '' },
-      { name: 'Training cost per trainer (TND)', recap: numberOfTechnicalSkillsHours, objGap: '' },
-      { name: 'Training cost per trainee (TND)', recap: numberOfSoftSkillsHours + numberOfTechnicalSkillsHours, objGap: '' },
+      { name: 'Number of hours', recap: metrics.numberOfSoftSkillsTrainigs, objGap: '' },
+      { name: 'Number of received requests', recap: metrics.numberOfInternTechnicalSkillsTrainigs, objGap: '' },
+      { name: 'Number of invited participants (enrolled individuals)', recap: metrics.numberOfExternTechnicalSkillsTrainigs, objGap: '' },
+      { name: 'NB of attendees', recap: ((completedTrainings.length / metrics.numberOfTrainings) * 100).toFixed(2) + '%', objGap: (80 - (completedTrainings.length / metrics.numberOfTrainings) * 100).toFixed(2) + '%'},
+      { name: 'Attendance rate( Nb of attendees/ nb of invited participants)', recap: metrics.numberOfFTFTrainings, objGap: '' },
+      { name: 'Number of attendees who completed the training', recap: ((metrics.numberOfFTFTrainings/metrics.numberOfTrainings)*100).toFixed(2) + '%', objGap: (75 - (metrics.numberOfFTFTrainings/metrics.numberOfTrainings)*100).toFixed(2) +'%' },
+      { name: 'Hot Evaluation total rate (Objective 80%)', recap: metrics.numberOfOnlineTrainings, objGap: '' },
+      { name: 'Cold Evaluation total rate (Objective 70%)', recap: ((metrics.numberOfOnlineTrainings/metrics.numberOfTrainings)*100).toFixed(2) + '%', objGap: (25 - (metrics.numberOfOnlineTrainings/metrics.numberOfTrainings)*100).toFixed(2) + '%' },
+      { name: 'Training fill rate (Number of Attendees/available seats=12)', recap: metrics.numberOfParticipants, objGap: '' },
+      { name: 'Completion rate (Number of attendees who completed/ nb of attendees)', recap: metrics.numberOfSoftSkillsHours, objGap: '' },
+      { name: 'Training cost per trainer (TND)', recap: metrics.numberOfTechnicalSkillsHours, objGap: '' },
+      { name: 'Training cost per trainee (TND)', recap: metrics.numberOfSoftSkillsHours + metrics.numberOfTechnicalSkillsHours, objGap: '' },
     ];
 
     const fourthmetrics = [
@@ -1038,7 +1076,6 @@ const Navbar = () => {
       { grade: 'M6', nboftrainees: trainedEmployees.filter((e) => e.grade === "M6").length, employees: '', HCgradesdistribution: '', participationRate: '' },
     ];
 
-    
     const sixmetrics = [
       { activity: 'Space', nboftrainees: trainedEmployees.filter((e) => e.activity === "space").length, employees: '', hcbyactivity: '', participationRate: '', participationRateByAct: ''},
       { activity: 'Electronics', nboftrainees: trainedEmployees.filter((e) => e.activity === "slectronics").length, employees: '', hcbyactivity: '', participationRate: '', participationRateByAct: '' },
@@ -1113,6 +1150,28 @@ const Navbar = () => {
       }
     };
 
+    const subButtonStyle = (v) => ({
+      color: 'text.primary',
+      backgroundColor: v === statView ? 'button.primary' :'button.tertiary',
+      borderRadius: '10px',
+      textDecoration: 'none',
+      textAlign: 'start',
+      fontWeight: 'bold',
+      fontSize: '16px',
+      lineHeight: 1.2,
+      display: 'flex',
+      justifyContent: 'start',
+      alignItems: 'center',
+      width: '70%',
+      height: '50px',
+      fontWeight: 'bold',
+      textTransform: "none",
+      padding: '10px 20px',
+      '&:hover': {
+        backgroundColor: '#76C5E1',
+      }
+    });
+
     return (
         <Box
           sx={{
@@ -1122,7 +1181,7 @@ const Navbar = () => {
             justifyContent:"start",
             alignItems:"start",
             padding:"10px",
-            minHeight: view === "statistics" ? "6000px": "auto",
+            minHeight: view === "statistics" ? "2500px": "auto",
           }}
         >
           <Box
@@ -1167,17 +1226,49 @@ const Navbar = () => {
               }}
             >
               <Button
-                sx={buttonStyle("statistics")}
-                onClick={() => setView("statistics")}
-              >
-                {t("statistics")}
-              </Button>
-              <Button
                 sx={buttonStyle("trainings")}
                 onClick={() => setView("trainings")}
               >
                 {t("trainings")}
               </Button>
+              {user.role === "manager"?
+              <Button
+                sx={buttonStyle("statistics")}
+                onClick={() => setView("statistics")}
+              >
+                {t("statistics")}
+              </Button>:null}
+              {view === "statistics" ?
+              <Box
+                sx={{
+                  width:"100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  gap: "10px",
+                }}
+              >
+                <Button
+                  sx={subButtonStyle("charts")}
+                  onClick={() => setStatView("charts")}
+                >
+                  {t("charts")}
+                </Button>
+                <Button
+                  sx={subButtonStyle("recap")}
+                  onClick={() => setStatView("recap")}
+                >
+                  {t("recap")}
+                </Button>
+                <Button
+                  sx={subButtonStyle("employees")}
+                  onClick={() => setStatView("employees")}
+                >
+                  {t("employees")}
+                </Button>
+              </Box>
+              :null}
             </Box>
           </Box>
           <Box
@@ -1216,7 +1307,7 @@ const Navbar = () => {
               >
                   {t(view)}
               </Typography>
-              <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+              {user.role === "manager"?<Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                   <DatePicker
                     views={['month']}
@@ -1237,8 +1328,8 @@ const Navbar = () => {
                     sx={{ width: 150 }}
                   />
                 </LocalizationProvider>
-              </Box>
-              <Box
+              </Box>:null}
+              {user.role === "manager"?<Box
                 sx={{
                   width:"20%",
                 }}
@@ -1250,9 +1341,9 @@ const Navbar = () => {
                 >
                   {t("download_statistics")}
                 </Button>
-              </Box>
+              </Box>:null}
             </Box>
-            {view === "statistics" ?
+            {view === "statistics" && user.role === "manager"?
             <Box
               id="statistics-container"
               sx={{
@@ -1267,7 +1358,7 @@ const Navbar = () => {
                 padding:"20px",
               }}
             >
-              <Box
+              {statView === "charts"?<Box
                 sx={{
                   width:"100%",
                   display: "flex",
@@ -1287,8 +1378,8 @@ const Navbar = () => {
                     sx={paperStyle}
                     ref={hoursChart}
                   />
-              </Box>
-              <Box
+              </Box>:null}
+              {statView === "charts"?<Box
                 sx={{
                   width:"100%",
                   display: "flex",
@@ -1308,13 +1399,13 @@ const Navbar = () => {
                   sx={paperStyle}
                   ref={gradeChart}
                 />
-              </Box>   
-              <Box
+              </Box>:null}  
+              {statView === "charts"?<Box
                 id="section5"
                 sx={paperStyle}
                 ref={genderChart}
-              />
-              <TableContainer id="section6" component={Paper} >
+              />:null} 
+              {statView === "recap"?<TableContainer id="section6" component={Paper} >
                 <Table sx={{ minWidth: 400 }} aria-label="training metrics table">
                   <TableHead>
                     <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
@@ -1335,8 +1426,8 @@ const Navbar = () => {
                     ))}
                   </TableBody>
                 </Table>
-              </TableContainer>
-              <TableContainer id="section7" component={Paper}>
+              </TableContainer>:null} 
+              {statView === "recap"?<TableContainer id="section7" component={Paper}>
                 <Table sx={{ minWidth: 400 }} aria-label="training metrics table">
                   <TableHead>
                     <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
@@ -1357,8 +1448,8 @@ const Navbar = () => {
                     ))}
                   </TableBody>
                 </Table>
-              </TableContainer>
-              <Typography
+              </TableContainer>:null} 
+              {statView === "employees"?<Typography
                 sx={{
                     fontSize: 24,
                     fontWeight: "bold",
@@ -1370,8 +1461,8 @@ const Navbar = () => {
                 }}
               >
                   {t("list_of_trained_employees")}
-              </Typography>
-              <TableContainer id="section8" component={Paper}>
+              </Typography>:null}
+              {statView === "employees"?<TableContainer id="section8" component={Paper}>
                 <Table sx={{ minWidth: 400 }} aria-label="training metrics table">
                   <TableHead>
                     <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
@@ -1384,7 +1475,7 @@ const Navbar = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {thirdmetrics.map((metric, index) => (
+                    {trainedEmployees.map((metric, index) => (
                       <TableRow key={index}>
                         <TableCell component="th" scope="row" sx={{textAlign:"center"}}>
                           <Typography variant="body2">{index+1}</Typography>
@@ -1398,8 +1489,8 @@ const Navbar = () => {
                     ))}
                   </TableBody>
                 </Table>
-              </TableContainer>
-              <Typography
+              </TableContainer>:null}
+              {statView === "employees"?<Typography
                 sx={{
                     fontSize: 24,
                     fontWeight: "bold",
@@ -1410,9 +1501,9 @@ const Navbar = () => {
                     cursor: "pointer",
                 }}
               >
-                  {t("total_number_of_trained_employees")} {`in ${new Date().getFullYear()}`} : {numberOfTrainedEmployees}
-              </Typography>
-              <TableContainer id="section9" component={Paper}>
+                  {t("total_number_of_trained_employees")} {`in ${new Date().getFullYear()}`} : {metrics.numberOfTrainedEmployees}
+              </Typography>:null}
+              {statView === "employees"?<TableContainer id="section9" component={Paper}>
                 <Table sx={{ minWidth: 400 }} aria-label="training metrics table">
                   <TableHead>
                     <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
@@ -1437,8 +1528,8 @@ const Navbar = () => {
                     ))}
                   </TableBody>
                 </Table>
-              </TableContainer>
-              <TableContainer id="section10" component={Paper}>
+              </TableContainer>:null}
+              {statView === "employees"?<TableContainer id="section10" component={Paper}>
                 <Table sx={{ minWidth: 400 }} aria-label="training metrics table">
                   <TableHead>
                     <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
@@ -1463,8 +1554,8 @@ const Navbar = () => {
                     ))}
                   </TableBody>
                 </Table>
-              </TableContainer>
-              <TableContainer id="section11" component={Paper}>
+              </TableContainer>:null}
+              {statView === "employees"?<TableContainer id="section11" component={Paper}>
                 <Table sx={{ minWidth: 400 }} aria-label="training metrics table">
                   <TableHead>
                     <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
@@ -1491,7 +1582,7 @@ const Navbar = () => {
                     ))}
                   </TableBody>
                 </Table>
-              </TableContainer>
+              </TableContainer>:null}
             </Box>:null}
             {view === "trainings" ? 
             <Box
@@ -1545,7 +1636,7 @@ const Navbar = () => {
                 >
                     <Button 
                         sx={filterStyle}
-                        onClick={() => setSelectedFiler("all")}
+                        onClick={() => setSelectedFilter("all")}
                     >
                     {selectedFilter === "all" && (
                         <Box
@@ -1565,7 +1656,7 @@ const Navbar = () => {
                     </Button>
                     <Button 
                         sx={{...filterStyle, backgroundColor : "#E0E0E0"}}
-                        onClick={() => setSelectedFiler("scheduled")}
+                        onClick={() => setSelectedFilter("scheduled")}
                     >
                     {selectedFilter === "scheduled" && (
                         <Box
@@ -1581,7 +1672,7 @@ const Navbar = () => {
                         }}
                         />
                     )}
-                        {numberOfScheduled}<br/>{t("scheduled")}
+                        {metrics.numberOfScheduled}<br/>{t("scheduled")}
                     </Button>
                     <Button 
                     sx={{
@@ -1589,7 +1680,7 @@ const Navbar = () => {
                         backgroundColor: "#90CAF9",
                         position: "relative",
                     }}
-                    onClick={() => setSelectedFiler("in_progress")}
+                    onClick={() => setSelectedFilter("in_progress")}
                     >
                     {selectedFilter === "in_progress" && (
                         <Box
@@ -1605,12 +1696,12 @@ const Navbar = () => {
                         }}
                         />
                     )}
-                    {numberOfInProgress}<br/>{t("in_progress")}
+                    {metrics.numberOfInProgress}<br/>{t("in_progress")}
                     <br />
                     </Button>
                     <Button 
                         sx={{...filterStyle, backgroundColor:"#A5D6A7"}}
-                        onClick={() => setSelectedFiler("completed")}
+                        onClick={() => setSelectedFilter("completed")}
                     >
                     {selectedFilter === "completed" && (
                         <Box
@@ -1626,7 +1717,7 @@ const Navbar = () => {
                         }}
                         />
                     )}
-                    {numberOfCompleted}<br/>{t("completed")}
+                    {metrics.numberOfCompleted}<br/>{t("completed")}
                     </Button>
                 </Box>
                 {sessionsNextWeek.length > 0 && (
@@ -1727,7 +1818,7 @@ const Navbar = () => {
                       <Button 
                           sx={{...filterStyle, backgroundColor : "#E0E0E0"}}
                       >
-                          {numberOfReq}<br/>{t("requests")}
+                          {metrics.numberOfReq}<br/>{t("requests")}
                       </Button>
                       <Button 
                       sx={{
@@ -1736,14 +1827,14 @@ const Navbar = () => {
                           position: "relative",
                       }}
                       >
-                      {numberOfApproved}<br/>{t("approved")}
+                      {metrics.numberOfApproved}<br/>{t("approved")}
                       <br />
                       </Button>
                       <Button 
                           sx={{...filterStyle, backgroundColor:"#A5D6A7"}}
                           onClick={() => setRegistFilter("attendance")}
                       >
-                      {numberOfConfirmed}<br/>{t("confirmed")}
+                      {metrics.numberOfConfirmed}<br/>{t("confirmed")}
                       </Button>
                   </Box>
                   <Typography variant="body2" sx={{marginTop: "20px",fontWeight:"bold",marginBottom:"5px"}}>

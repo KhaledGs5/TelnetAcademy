@@ -1,9 +1,10 @@
 const HotFeedback = require("../models/hotfeedback.model");
 const User = require("../models/user.model");
 const DynamicForm = require("../models/dynamicform.model");
+const Training = require("../models/training.model");
 const vader = require('vader-sentiment');
 const translate = require('@vitalets/google-translate-api');
-const { notifyManagers, deleteNotifFromManagers } = require("../controllers/notification.controllers");
+const { notifyManagers } = require("../controllers/notification.controllers");
 
 const getHotFeedback = async (req, res) => {
     try {
@@ -115,11 +116,19 @@ const addHotFeedback = async (req, res) => {
         const { trainee, training } = req.body;
         const user = await User.findById(trainee);
         user.trainingsCanSendHotFeedback = user.trainingsCanSendHotFeedback.filter(t => t.toString() !== training.toString());
-
-        notifyManagers(trainee, 'New_Feedback', training.toString());
-        deleteNotifFromManagers(trainee, "Request_Hot_Feedback");
-
         await user.save();
+
+        const allFeedbacks = await HotFeedback.find({ training });
+        const totalScore = allFeedbacks.reduce((sum, fb) => sum + fb.sentimentScore, 0);
+        const averageScore = totalScore / allFeedbacks.length;
+    
+        const tr = await Training.findById(training);
+        tr.hotEvalRate = averageScore;
+        await tr.save();
+        
+        notifyManagers(trainee, 'New_Feedback', training.toString());
+
+        
         res.status(201).json(hotfeedback);
     } catch (err) {
         console.log(err);

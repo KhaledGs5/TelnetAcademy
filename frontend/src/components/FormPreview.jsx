@@ -139,7 +139,7 @@ const FormPreview = ({ formFields, fieldValues = [] }) => {
 <Box
   sx={{
     width: '100%',
-    height: '700px', 
+    height: 'auto', 
     boxSizing: 'border-box',
     display: "flex",
     flexDirection: "column",
@@ -148,7 +148,6 @@ const FormPreview = ({ formFields, fieldValues = [] }) => {
     borderRadius: '10px',
     padding: '10px',
     gap: "2px",
-    overflowY: 'auto', 
   }}
 >    
       {formFields.length > 0 ? (

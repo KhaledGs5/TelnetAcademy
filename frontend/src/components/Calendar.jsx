@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Grid, Paper, Typography, Button , Box} from "@mui/material";
 import { getCookie } from './Cookies';
+import { useNavbar } from '../NavbarContext';
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay } from "date-fns";
 import format from "date-fns/format";
 import { fr, enUS } from "date-fns/locale"; 
@@ -13,6 +14,7 @@ const Calendar = () => {
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const {selectedRole} = useNavbar();
 
   const Language = getCookie("Language");
 
@@ -114,18 +116,31 @@ const Calendar = () => {
               onClick={() => setSelectedDate(cloneDay)}
             >
               <Typography variant="body1" sx={{mb: 2}}>{format(cloneDay, "d")}</Typography>
-              {sessionsOnThisDay.map(training => {
-                let trainingColor = '';
-                if (training.confirmedtrainees?.includes(user._id) && !training.delivered) {
-                  trainingColor = "#4CAF50"; 
-                } else if (training.acceptedtrainees?.includes(user._id) && !training.confirmedtrainees.includes(user._id)) {
-                  trainingColor = "#FF9800"; 
-                } else if (training.delivered) {
-                  trainingColor = "lightgrey"; 
-                } else {
-                  trainingColor = "#2196F3"; 
-                }
-  
+              {sessionsOnThisDay
+                .filter(training => {
+                  if (selectedRole === "trainer" || user.role === "trainer") {
+                    return training.trainer === user._id;
+                  }else if(selectedRole === "trainee"){
+                    return training.trainer !== user._id;
+                  }
+                  return true;
+                })
+                .map(training => {
+                  let trainingColor = '';
+
+                  if (training.confirmedtrainees?.includes(user._id) && !training.delivered) {
+                    trainingColor = "#4CAF50"; 
+                  } else if (
+                    training.acceptedtrainees?.includes(user._id) &&
+                    !training.confirmedtrainees.includes(user._id)
+                  ) {
+                    trainingColor = "#FF9800"; 
+                  } else if (training.delivered) {
+                    trainingColor = "lightgrey"; 
+                  } else {
+                    trainingColor = "#2196F3"; 
+                  }
+                
                 return (
                   <div key={training._id}>
                     <Typography variant="body2" align="center" sx={{ color: trainingColor }}>
@@ -187,20 +202,25 @@ const Calendar = () => {
       >
         <Button onClick={handlePrevMonth}>⬅️ Prev</Button>
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          {user.role!=="manager" && user.role!=="admin" && user.role!=="trainer"?<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {user.role!=="manager" && user.role!=="admin" && user.role!=="trainer" && selectedRole !== "trainer"?<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Box sx={{ width: 20, height: 16, backgroundColor: "#4CAF50", borderRadius: "3px"}}></Box>
             <Typography variant="body2">{t("confrimed_attendance")}</Typography>
           </Box>:null}
           
-          {user.role!=="manager" && user.role!=="admin" && user.role!=="trainer"?<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {user.role!=="manager" && user.role!=="admin" && user.role!=="trainer" && selectedRole !== "trainer"?<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Box sx={{ width: 20, height: 16, backgroundColor: "#FF9800", borderRadius: "3px" }}></Box>
             <Typography variant="body2">{t("waiting_for_confirmation")}</Typography>
           </Box>:null}
           
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {user.role !== "trainer" && selectedRole !== "trainer"?<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Box sx={{ width: 20, height: 16, backgroundColor: "#2196F3", borderRadius: "3px" }}></Box>
             <Typography variant="body2">{t("available_trainings")}</Typography>
-          </Box>
+          </Box>:null}
+
+          {user.role === "trainer" || selectedRole === "trainer"?<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Box sx={{ width: 20, height: 16, backgroundColor: "#2196F3", borderRadius: "3px" }}></Box>
+            <Typography variant="body2">{t("your_trainings")}</Typography>
+          </Box>:null}
 
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Box sx={{ width: 20, height: 16, backgroundColor: "lightgrey", borderRadius: "3px" }}></Box>

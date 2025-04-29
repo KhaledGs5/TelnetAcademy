@@ -167,6 +167,7 @@ const TraineeTrainings = () => {
         });
   };
 
+  console.log(requestResponseTrainings);
   const formatDaysWithMonth = (dateString, month) => {
     if (!dateString) return "";
   
@@ -288,7 +289,7 @@ const TraineeTrainings = () => {
         };
       
         fetchTrainingsFeedbacks();
-    }, []);      
+    }, []); 
 
     const changeFeedbackAvailabilty = () => {
         axios.get(`http://localhost:5000/api/users/${user._id}`)
@@ -441,7 +442,8 @@ const TraineeTrainings = () => {
                 training: selectedTrainingId,
                 responses,
             })
-            .then(() => {
+            .then(async () => {
+                await axios.delete("http://localhost:5000/api/notifications", { data : {rec : user._id, tp : "Request_Cold_Feedback", msg: selectedTrainingId.toString()}});
                 setVerifyAlert("success");
                 setVerifyAlertMessage("feedback_sent_successfully");
                 setShowsVerifificationAlert(true);
@@ -462,7 +464,8 @@ const TraineeTrainings = () => {
                 training: selectedTrainingId,
                 responses,
             })
-            .then(() => {
+            .then(async () => {
+                await axios.delete("http://localhost:5000/api/notifications", { data : {rec : user._id, tp : "Request_Hot_Feedback", msg: selectedTrainingId.toString()}});
                 setVerifyAlert("success");
                 setVerifyAlertMessage("feedback_sent_successfully");
                 setShowsVerifificationAlert(true);

@@ -386,6 +386,10 @@ const translations = {
       "confrimed_attendance": "Confirmed Attendance",
       "list_of_trained_employees": "List Of Trained Employees",
       "total_number_of_trained_employees": "Total Number Of Trained Employees",
+      "your_trainings": "Your Trainings",
+      "charts": "Charts",
+      "employees": "Employees",
+      "recap": "Recap",
     },
     "fr": {
       "name": "Nom",
@@ -773,6 +777,10 @@ const translations = {
       "confirmed_attendance": "Présence confirmée",
       "list_of_trained_employees": "Liste des employés formés",
       "total_number_of_trained_employees": "Nombre total d'employés formés",
+      "your_trainings": "Vos formations",
+      "charts": "Graphiques",
+      "employees": "Employés",
+      "recap": "Récapitulatif",
     }
   };
   

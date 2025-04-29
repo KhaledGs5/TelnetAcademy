@@ -1,4 +1,5 @@
 import { createContext, useState, useContext } from 'react';
+import { getCookie } from './components/Cookies';
 
 const NavbarContext = createContext();
 
@@ -14,6 +15,7 @@ export const NavbarProvider = ({ children }) => {
   const [numberOfDeletedTrainee, setNumberOfDeletedTrainee] = useState(0);
   const [numberOfQuizFromTrainer, setNumberOfQuizFromTrainer]= useState(0);
   const [numberOfQuizFromTrainee, setNumberOfQuizFromTrainee]= useState(0);
+  const [selectedRole, setSelectedRole] = useState(getCookie("Role") || "trainer");
 
   return (
     <NavbarContext.Provider value={{ 
@@ -25,7 +27,8 @@ export const NavbarProvider = ({ children }) => {
         numberOfRequestsReponses, setNumberOfRequestsReponses,
         numberOfDeletedTrainee, setNumberOfDeletedTrainee,
         numberOfQuizFromTrainer, setNumberOfQuizFromTrainer,
-        numberOfQuizFromTrainee, setNumberOfQuizFromTrainee
+        numberOfQuizFromTrainee, setNumberOfQuizFromTrainee,
+        selectedRole,setSelectedRole
         }}>
       {children}
     </NavbarContext.Provider>

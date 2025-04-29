@@ -1,6 +1,7 @@
 const ColdFeedback = require("../models/coldfeedback.model");
 const User = require("../models/user.model");
 const DynamicForm = require("../models/dynamicform.model");
+const Training = require("../models/training.model");
 const vader = require('vader-sentiment');
 const translate = require('@vitalets/google-translate-api');
 const { notifyManagers, deleteNotifFromManagers } = require("../controllers/notification.controllers");
@@ -115,11 +116,18 @@ const addColdFeedback = async (req, res) => {
         const { trainee, training } = feedbackData;
         const user = await User.findById(trainee);
         user.trainingsCanSendColdFeedback = user.trainingsCanSendColdFeedback.filter(t => t.toString() !== training.toString());
-
-        notifyManagers(trainee, 'New_Feedback', training.toString());
-        deleteNotifFromManagers(trainee, "Request_Cold_Feedback");
-
         await user.save();
+
+        const allFeedbacks = await ColdFeedback.find({ training });
+        const totalScore = allFeedbacks.reduce((sum, fb) => sum + fb.sentimentScore, 0);
+        const averageScore = totalScore / allFeedbacks.length;
+    
+        const tr = await Training.findById(training);
+        tr.coldEvalRate = averageScore;
+        await tr.save();
+        
+        notifyManagers(trainee, 'New_Feedback', training.toString());
+
         res.status(201).json(coldfeedback);
     } catch (err) {
         console.log(err);

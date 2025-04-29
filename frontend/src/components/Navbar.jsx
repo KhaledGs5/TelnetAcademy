@@ -66,7 +66,7 @@ const Navbar = () => {
     };
 
     const UserRoles = ["trainer", "trainee"];
-    const [selectedRole, setSelectedRole] = useState(getCookie("Role") || "trainer");
+    const {selectedRole, setSelectedRole} = useNavbar();
     const handleRoleChange = (role) => {
         setSelectedRole(role);
         setCookie("Role", role , 1000);
