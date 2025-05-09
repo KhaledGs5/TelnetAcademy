@@ -110,12 +110,12 @@ const Calendar = () => {
                 cursor: "pointer",
                 "&:hover": { backgroundColor: "lightblue" },
                 width: '100%',
-                height: '150px',
+                height: '100px',
                 marginBottom: '10px',
               }}
               onClick={() => setSelectedDate(cloneDay)}
             >
-              <Typography variant="body1" sx={{mb: 2}}>{format(cloneDay, "d")}</Typography>
+              <Typography variant="body1" sx={{mb: 1}}>{format(cloneDay, "d")}</Typography>
               {sessionsOnThisDay
                 .filter(training => {
                   if (selectedRole === "trainer" || user.role === "trainer") {
@@ -142,7 +142,7 @@ const Calendar = () => {
                   }
                 
                 return (
-                  <div key={training._id}>
+                  <Box key={training._id}>
                     <Typography variant="body2" align="center" sx={{ color: trainingColor }}>
                       <strong>{training.title}</strong>
                     </Typography>
@@ -157,7 +157,7 @@ const Calendar = () => {
                       }
                       return null;
                     })}
-                  </div>
+                  </Box>
                 );
               })}
             </Paper>
@@ -202,17 +202,17 @@ const Calendar = () => {
       >
         <Button onClick={handlePrevMonth}>⬅️ Prev</Button>
         <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          {user.role!=="manager" && user.role!=="admin" && user.role!=="trainer" && selectedRole !== "trainer"?<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {user.role === "trainee" || selectedRole === "trainee"?<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Box sx={{ width: 20, height: 16, backgroundColor: "#4CAF50", borderRadius: "3px"}}></Box>
             <Typography variant="body2">{t("confrimed_attendance")}</Typography>
           </Box>:null}
           
-          {user.role!=="manager" && user.role!=="admin" && user.role!=="trainer" && selectedRole !== "trainer"?<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {user.role === "trainee" || selectedRole === "trainee"?<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Box sx={{ width: 20, height: 16, backgroundColor: "#FF9800", borderRadius: "3px" }}></Box>
             <Typography variant="body2">{t("waiting_for_confirmation")}</Typography>
           </Box>:null}
           
-          {user.role !== "trainer" && selectedRole !== "trainer"?<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          {user.role === "manager"?<Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Box sx={{ width: 20, height: 16, backgroundColor: "#2196F3", borderRadius: "3px" }}></Box>
             <Typography variant="body2">{t("available_trainings")}</Typography>
           </Box>:null}

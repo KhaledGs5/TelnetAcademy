@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useContext } from 'react';
 import { ThemeContext } from '../themecontext';
-import { getCookie , setCookie} from './Cookies';
+import { getCookie , setCookie, deleteCookie} from './Cookies';
 import { Box, Link, Typography, Menu, MenuItem, Dialog, Button, DialogTitle, Badge, Snackbar, Alert,
     OutlinedInput,InputLabel,FormControl,Tooltip,IconButton,FormControlLabel, Radio, RadioGroup, Checkbox,TextField
 } from "@mui/material";
@@ -27,7 +27,7 @@ import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
 import LanguageIcon from '@mui/icons-material/Language';
 import axios from 'axios';
 import { useNavbar } from '../NavbarContext';
-import io from "socket.io-client";
+import socket from '../socket';
 import { useLanguage } from "../languagecontext";
 
 const Navbar = () => {
@@ -96,7 +96,6 @@ const Navbar = () => {
     const location = useLocation();
 
     // Notfications
-    const socket = io("http://localhost:5000"); 
     const [callMessage, setCallMessage] = useState("");
     const [numberOfCalls, setNumberOfCalls] = useState(0);
     const {numberOfTrainingsStatus, setNumberOfTrainingsStatus} = useNavbar();
@@ -204,64 +203,39 @@ const Navbar = () => {
 
     useEffect(() => {
         if (!user) return; 
-    
+        
         if (!socket.connected) {
             socket.connect();
         }
-    
-        fetchNotifications();
         socket.emit("joinRoom", user._id);
-    
-        socket.on("newNotification", () => {
-            fetchNotifications();
-        });
-    
-        socket.on("readCallNotifications", () => {
-            setNumberOfCalls(0);
-        });
-    
-        socket.on("readTrainingRequestNotifications", () => {
-            setNumberOfTrainingRequests(0);
-        });
-
-        socket.on("readTraineeRequestNotifications", () => {
-            setNumberOfTraineeRequests(0);
-        });
-
-
-        socket.on("readConfirmNotifications", () => {
-            setNumberOfConfirmAttendance(0);
-        });
-
-        socket.on("readFeedbackNotifications", () => {
-            setNumberOfNewFeedbacks(0);
-        });
-
-        socket.on("readFeedbackReqNotifications", () => {
-            setNumberOfNewFeedbacksReq(0);
-        });
-
-        socket.on("readTrainingsStatusNotifications", () => {
-            setNumberOfTrainingsStatus(0);
-        });
-
-        socket.on("readRequestsResponsesNotifications", () => {
-            setNumberOfTrainingsStatus(0);
-        });
-
-        socket.on("readRequestTraineeNotifications", () => {
-            setNumberOfRequestRoleTrainee(0);
-        });
-
-        socket.on("readTrainerQuizNotifications", () => {
-            setNumberOfQuizFromTrainer(0);
-        });
-
+        
+        socket.on("newNotification", fetchNotifications);
+        socket.on("readCallNotifications", () => setNumberOfCalls(0));
+        socket.on("readTrainingRequestNotifications", () => setNumberOfTrainingRequests(0));
+        socket.on("readTraineeRequestNotifications", () => setNumberOfTraineeRequests(0));
+        socket.on("readConfirmNotifications", () => setNumberOfConfirmAttendance(0));
+        socket.on("readFeedbackNotifications", () => setNumberOfNewFeedbacks(0));
+        socket.on("readFeedbackReqNotifications", () => setNumberOfNewFeedbacksReq(0));
+        socket.on("readTrainingsStatusNotifications", () => setNumberOfTrainingsStatus(0));
+        socket.on("readRequestsResponsesNotifications", () => setNumberOfTrainingsStatus(0));
+        socket.on("readRequestTraineeNotifications", () => setNumberOfRequestRoleTrainee(0));
+        socket.on("readTrainerQuizNotifications", () => setNumberOfQuizFromTrainer(0));
+        
         return () => {
             socket.off("newNotification");
-            socket.off("readNotifications");
+            socket.off("readCallNotifications");
+            socket.off("readTrainingRequestNotifications");
+            socket.off("readTraineeRequestNotifications");
+            socket.off("readConfirmNotifications");
+            socket.off("readFeedbackNotifications");
+            socket.off("readFeedbackReqNotifications");
+            socket.off("readTrainingsStatusNotifications");
+            socket.off("readRequestsResponsesNotifications");
+            socket.off("readRequestTraineeNotifications");
+            socket.off("readTrainerQuizNotifications");
         };
     }, []);
+          
     
     const handleOpenCallNotifications = async () => {
         try {
@@ -489,10 +463,9 @@ const Navbar = () => {
     const [cost, setCost] = useState(0);
 
     const showTrainingsCost = async () => {
-        let currentCost = 0;
         await axios.get("http://localhost:5000/api/trainings")
             .then((response) => {
-                setCost(response.data[0].trainingsCost);
+                setCost(response.data[0]?.trainingsCost || 50);
             })
         setTrainingsCost(true);
     };
@@ -532,6 +505,9 @@ const Navbar = () => {
                     setNumberOfRoleChanged(0);
                     setSignedIn(false);
                     setCookie("SignedIn",false,5);
+                    setCookie("Role",false,5);
+                    deleteCookie("User");
+                    deleteCookie("Role");
                     window.location.href = "/";
                 })
           } catch (error) {
@@ -637,7 +613,7 @@ const Navbar = () => {
                     gap: '20px',
                 }}
             >
-                <Link href="/dashboard" sx={linkStyle('/dashboard')}>{t("dashboard")}</Link>
+                {user.role !== "admin" ? <Link href="/dashboard" sx={linkStyle('/dashboard')}>{t("dashboard")}</Link>:null}
                 <Badge badgeContent={numberOfQuizFromTrainee} color="primary"
                     sx={{ 
                     "& .MuiBadge-badge": { 
@@ -650,8 +626,8 @@ const Navbar = () => {
                     } 
                     }}
                 >
-                <Link href={(user.role === "trainer" || user.role === "trainee_trainer" && chosenRole === "trainer") ? '/trainersession' : (user.role === "trainee" || user.role === "trainee_trainer" && chosenRole === "trainee") ? '/traineesession' : user.role === 'manager' ? '/managesessions' : ''} 
-                sx={linkStyle((user.role === "trainer" || user.role === "trainee_trainer"&& chosenRole === "trainer") ? '/trainersession' : (user.role === "trainee" || user.role === "trainee_trainer" && chosenRole === "trainee") ? '/traineesession' : user.role === 'manager' ? '/managesessions' : '')}>{t("sessions")}</Link>
+                {user.role !== "admin" ? <Link href={(user.role === "trainer" || user.role === "trainee_trainer" && chosenRole === "trainer") ? '/trainersession' : (user.role === "trainee" || user.role === "trainee_trainer" && chosenRole === "trainee") ? '/traineesession' : user.role === 'manager' ? '/managesessions' : ''} 
+                sx={linkStyle((user.role === "trainer" || user.role === "trainee_trainer"&& chosenRole === "trainer") ? '/trainersession' : (user.role === "trainee" || user.role === "trainee_trainer" && chosenRole === "trainee") ? '/traineesession' : user.role === 'manager' ? '/managesessions' : '')}>{t("sessions")}</Link>:null}
                 </Badge>
                 {user.role === "manager" ? <Link href="/managetrainings" sx={linkStyle('/managetrainings')}>{t("trainings")}</Link>:null}
                 {user.role === "manager" ? <Link href="/feedbacks" sx={linkStyle('/feedbacks')}>{t("feedbacks")}</Link>:null}
@@ -706,8 +682,7 @@ const Navbar = () => {
                              >
                              <Link href="/enrolledtrainee" sx={linkStyle('/enrolledtrainee')}
                              >{t("trainings")}</Link></Badge> }
-                <Link href="/calendar" sx={linkStyle('/calendar')}>{t("calendar")}</Link>
-                {/* <Link href="/contact" sx={linkStyle('/contact')}>{t("contact")}</Link> */}
+                {user.role !== "admin"?<Link href="/calendar" sx={linkStyle('/calendar')}>{t("calendar")}</Link>:null}
                 <Link href="/about" sx={linkStyle('/about')}>{t("about")}</Link>
             </Box> : null}
             {!signedIn ? 
@@ -1010,8 +985,8 @@ const Navbar = () => {
                 onClose={closeCallForTrainers}
                 PaperProps={{
                     sx: {
-                        minWidth: "55%",  
-                        height: "auto", 
+                        minWidth: "55%",
+                        maxHeight: "85vh",
                         display: "flex",
                         flexDirection: "column",
                         justifyContent: "center",
@@ -1045,6 +1020,8 @@ const Navbar = () => {
                         <Box
                             sx={{
                                 width: '40%',
+                                maxHeight: "60vh",
+                                overflowY: 'auto',
                                 display: 'flex',
                                 flexDirection: 'column',
                                 justifyContent: 'start',
@@ -1059,6 +1036,7 @@ const Navbar = () => {
                                     flexDirection: "row",
                                     justifyContent: "start",
                                     alignItems: "center",
+                                    paddingLeft: "10px",
                                 }}
                             >
                                 <RadioGroup
@@ -1118,7 +1096,7 @@ const Navbar = () => {
                                 onChange={(e) => setCallMessage(e.target.value)}
                                 label={t("message")}
                                 sx={{
-                                height: '200px',
+                                height: 'auto',
                                 alignItems: 'flex-start'
                                 }}
                             />

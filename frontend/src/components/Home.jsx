@@ -45,8 +45,12 @@ const Home = () => {
                 setCookie("User",response.data.user);
                 setCookie("SignedIn",true);
             }
-            window.location.href = "/dashboard";
-          };
+            if(response.data.user.role === "admin"){
+                window.location.href = "/manageusers"
+            }else{
+                window.location.href = "/dashboard"
+            };
+            };
         } catch (error) {
           if (error.response) {
             const errorMessage = error.response.data.message;
@@ -217,75 +221,80 @@ const Home = () => {
                         userSelect: "none",
                         cursor: "pointer",
                         color: "#2CA8D5",
-                        position: "absolute",
-                        top: '5%',
+                        marginTop: "30px",
                     }}
                 >
                     {t("telnet_academy")}
+                </Typography>
+                <Typography
+                    sx={{
+                        fontSize: 34,
+                        fontWeight: "bold",
+                        textAlign: "center",
+                        letterSpacing: 0.2,
+                        lineHeight: 2,
+                        userSelect: "none",
+                        cursor: "pointer",
+                        color: "#2CA8D5",
+                    }}
+                >
+                    {t("signin")}
                 </Typography>
                 <Box
                     sx={{
                         width: '100%',
                         height: '400px',
-                        backgroundColor: "background.paper",
                         display: "flex",
                         flexDirection: "column",
-                        alignItems: "center",
+                        alignItems: "start",
                         justifyContent: "start",
-                        boxShadow: "0px 2px 4px rgba(0, 0, 0, 0.25)",
-                        borderRadius: '10px',
                         gap: "20px",
                         marginTop: "30px",
                     }}
                 >  
-                    <Typography
+                    <Box
                         sx={{
-                            fontSize: 34,
-                            fontWeight: "bold",
-                            textAlign: "center",
-                            letterSpacing: 0.2,
-                            lineHeight: 1,
-                            userSelect: "none",
-                            cursor: "pointer",
-                            color: "#2CA8D5",
-                            marginTop: "40px",
+                            width: "100%",
+                            display : "flex",
+                            flexDirection: "column",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            gap:"15px",
                         }}
                     >
-                        {t("signin")}
-                    </Typography>
-                    <FormControl variant="outlined" sx={inputStyle}>
-                        <InputLabel required>{t("email")}</InputLabel>
-                        <OutlinedInput
-                            value={email}
-                            onChange={handleEmailChange}
-                            label="Email...."
-                        />
-                    </FormControl>
-                    <FormControl variant="outlined" sx={inputStyle}>
-                        <InputLabel required>{t("password")}</InputLabel>
-                        <OutlinedInput
-                            type={showPassword ? 'text' : 'password'}
-                            value={password}
-                            onChange={handlePasswordChange}
-                            label="Password........."
-                            endAdornment={
-                                <InputAdornment position="end">
-                                    <IconButton onClick={toggleShowPassword} size="small">
-                                        {showPassword ? <VisibilityOff /> : <Visibility />}
-                                    </IconButton>
-                                </InputAdornment>
-                            }
-                        />
-                    </FormControl>
+                        <FormControl variant="outlined" sx={inputStyle}>
+                            <InputLabel required>{t("email")}</InputLabel>
+                            <OutlinedInput
+                                value={email}
+                                onChange={handleEmailChange}
+                                label="Email...."
+                            />
+                        </FormControl>
+                        <FormControl variant="outlined" sx={inputStyle}>
+                            <InputLabel required>{t("password")}</InputLabel>
+                            <OutlinedInput
+                                type={showPassword ? 'text' : 'password'}
+                                value={password}
+                                onChange={handlePasswordChange}
+                                label="Password........."
+                                endAdornment={
+                                    <InputAdornment position="end">
+                                        <IconButton onClick={toggleShowPassword} size="small">
+                                            {showPassword ? <VisibilityOff /> : <Visibility />}
+                                        </IconButton>
+                                    </InputAdornment>
+                                }
+                            />
+                        </FormControl>
+                    </Box>
                     <Box sx={{
-                            position: "absolute",
-                            left: '15%',
-                            top: '60%',
                             color: "Black",
                             display: 'flex',
                             flexDirection: 'row',
                             alignItems: 'center',
                             gap: '7px',
+                            width: "70%",
+                            paddingLeft:"60px",
                         }}>
                         <Checkbox value={rememberMe} onChange={(e) => setRememberMe(e.target.checked)}/>
                         <Typography
@@ -300,18 +309,16 @@ const Home = () => {
                     </Box>
                     <Box 
                         sx={{
-                            position: "absolute",
-                            top: '75%',
                             display: 'flex',
                             flexDirection: 'column',
                             alignItems: 'center',
                             justifyContent: 'center',
                             width: '100%',
-                            height: '20%',
+                            height: '25%',
                             gap: '7px',
                         }}
                     >
-                        <Button sx={buttonStyle} onClick={handleSignIn}>
+                        <Button sx={{...buttonStyle, width: "30%"}} onClick={handleSignIn}>
                             {t("submit")}
                         </Button>
                         <Link sx={linkStyle} onClick={showForgotPasswordMessage}>

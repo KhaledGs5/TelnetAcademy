@@ -25,6 +25,7 @@ const ManageUsers = () => {
     const { t } = useLanguage();
 
     const UserRoles = ["trainer", "trainee","manager","trainee_trainer"];
+    const UserTypes = ["internal", "external"];
     const [selectedUserId, setSelectedUserId] = useState(null);
 
     const [newUserName, setNewUserName] = useState("");
@@ -34,6 +35,8 @@ const ManageUsers = () => {
     const [newUserActivity, setNewUserActivity] = useState("");
     const [newUserJobtitle, setNewUserJobtitle] = useState("");
     const [newUserGrade, setNewUserGrade] = useState("");
+    const [newUserChef, setNewUserChef] = useState("");
+    const [newUserType, setNewUserType] = useState("");
 
     // Fetch All Users ....................
 
@@ -42,7 +45,11 @@ const ManageUsers = () => {
     const fetchUsers = () => {
         axios.get("http://localhost:5000/api/users")
             .then((response) => {
-                const usersWithModified = response.data.map(user => ({
+                const usersWithModified = response.data
+                .filter((user) => 
+                    user.role !== "admin"
+                )
+                .map(user => ({
                     ...user,
                     modified: false,
                     showPassword: false,
@@ -72,7 +79,7 @@ const ManageUsers = () => {
     const [newUser, setNewUser] = useState(false);
     const UserActivities = ["enablers", "mechanical", "formation_systems", "databox", "telecom", "quality", "e-paysys", "media&energy", "electronics", "space"];
     const [otherActivity, setOtherActivity]= useState(false);
-    const UserGrades = ["F1", "F2", "F3", "F4", "M1", "M2", "M3", "M4", "M5", "M6"]
+    const UserGrades = ["F1", "F2", "F3", "F4", "M1", "M2", "M3", "M4", "M5", "M6", "L1", "L2", "L3", "L4"]
     const UserJobTitles = ["associate_engineer","engineer","team_leader","technical_leader","senior_team_leader","senior_technical_leader","project_manager",
         "consulting_manager","senior_project_manager","expert","program_manager","senior_expert","senior_program_manager","architect","program_director",
         "senior_architect"
@@ -123,8 +130,9 @@ const ManageUsers = () => {
             activity: newUserActivity,
             jobtitle: newUserJobtitle,
             grade: newUserGrade,
+            chef: newUserChef,
+            type: newUserType,
         };
-        console.log(newUser);
         api.post("/api/users", newUser)
         .then(() => {
             fetchUsers();
@@ -159,21 +167,39 @@ const ManageUsers = () => {
         const reader = new FileReader();
         reader.onload = async () => {
           const data = reader.result;
-          const workbook = XLSX.read(data, { type: 'array' });
+          const workbook = XLSX.read(data, { type: "array" });
       
           const sheetName = workbook.SheetNames[0];
           const sheet = workbook.Sheets[sheetName];
       
-          const jsonData = XLSX.utils.sheet_to_json(sheet);
+          let jsonData = XLSX.utils.sheet_to_json(sheet);
+      
+          jsonData = jsonData.map((user) => {
+            const password = generateRandomPassword();
+            return {
+              ...user,
+              password,
+              sendMail: {
+                toEmail: user.email,
+                url: "http://localhost:3000/signin",
+                password,
+              },
+            };
+          });
       
           try {
-            const response = await axios.post('http://localhost:5000/api/uploadUsers', { data: jsonData });
-            if(response.status === 200) {
-                fetchUsers();
-                setVerifyAlert("success");
-            };
+            const response = await axios.post("http://localhost:5000/api/uploadUsers", { data: jsonData });
+      
+            if (response.status === 200) {
+              fetchUsers();
+              setVerifyAlert("success");
+      
+              for (const user of jsonData) {
+                await api.post("/new-user", user.sendMail);
+              }
+            }
           } catch (error) {
-            setVerifyAlertMessage(error.response.data.error);
+            setVerifyAlertMessage(error.response?.data?.error || "Upload failed");
             setVerifyAlert("error");
             setShowsVerifificationAlert(true);
           }
@@ -181,6 +207,7 @@ const ManageUsers = () => {
       
         reader.readAsArrayBuffer(file);
       };
+      
       
     // Updating user by Id............
     const [verifyUpdate, setVerifyUpdate] = useState(false);
@@ -647,8 +674,8 @@ const ManageUsers = () => {
                             }}
                         >
                             <FormControl variant="outlined" sx={{ 
-                            width: '50%',
-                            }}
+                                width: '50%',
+                                }}
                             >
                                 <InputLabel required>{t("name")}</InputLabel>
                                 <OutlinedInput
@@ -884,6 +911,43 @@ const ManageUsers = () => {
                                 {UserRoles.map((role) => (
                                     <MenuItem key={role} value={role}>
                                         {t(role)}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+                        </Box>
+                        <Box
+                            sx={{
+                                width: "100%",
+                                display: "flex",
+                                flexDirection: "row",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                gap: "20px",
+                            }}
+                        >
+                            <FormControl variant="outlined" sx={{ 
+                                width: '50%',
+                                }}
+                            >
+                                <InputLabel required>N+1</InputLabel>
+                                <OutlinedInput
+                                    value={newUserChef}
+                                    onChange={(e) => setNewUserChef(e.target.value)}
+                                    label="N+1......."
+                                />
+                            </FormControl>
+                            <TextField
+                                select
+                                label={t("type")}
+                                value={newUserType}
+                                onChange={(e) => setNewUserType(e.target.value)}
+                                sx={{
+                                    width: '50%',
+                                }}
+                                >
+                                {UserTypes.map((type) => (
+                                    <MenuItem key={type} value={type}>
+                                        {t(type)}
                                     </MenuItem>
                                 ))}
                             </TextField>
@@ -1536,6 +1600,32 @@ const ManageUsers = () => {
                 >
                     <Typography variant="body1">{t("role")} :</Typography>
                     <Typography variant="body2" color="text.secondary">{t(selectedUser.role)}</Typography>
+                </Box>
+                <Box
+                    sx={{
+                        height: '20px',
+                        width: '100%',
+                        display: "flex",
+                        flexDirection: "row",
+                        alignItems: "center", 
+                        gap: "10px",
+                    }}
+                >
+                    <Typography variant="body1">{t("chef")} :</Typography>
+                    <Typography variant="body2" color="text.secondary">{t(selectedUser.chef)}</Typography>
+                </Box>
+                <Box
+                    sx={{
+                        height: '20px',
+                        width: '100%',
+                        display: "flex",
+                        flexDirection: "row",
+                        alignItems: "center", 
+                        gap: "10px",
+                    }}
+                >
+                    <Typography variant="body1">{t("type")} :</Typography>
+                    <Typography variant="body2" color="text.secondary">{t(selectedUser.type)}</Typography>
                 </Box>
             </Dialog>
             <Pagination

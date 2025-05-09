@@ -1,9 +1,13 @@
 const mongoose = require("mongoose");
 const express = require("express");
+const session = require('express-session');
 const cors = require("cors");
 const http = require('http');
 const socketIo = require('socket.io');
-const nodemailer = require("nodemailer");
+const nodemailer = require('nodemailer');
+const ical = require('ical-generator').default;
+const fs = require('fs');
+const path = require('path');
 const connectDB = require("./db");
 require("dotenv").config();
 
@@ -12,9 +16,13 @@ const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
     origin: "http://localhost:3000", 
-    methods: ["GET", "POST"]
-  }
+    methods: ["GET", "POST"],
+    credentials: true
+  },
+  pingInterval: 25000, 
+  pingTimeout: 60000,  
 });
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -22,6 +30,8 @@ app.use((req, res, next) => {
   req.io = io;
   next();
 });
+
+
 app.use(cors({ origin: "http://localhost:3000" }));
 
 connectDB();
@@ -30,8 +40,8 @@ io.on('connection', (socket) => {
     socket.join(userId); 
   });
 
-  socket.on('disconnect', () => {
-    console.log('Client disconnected');
+  socket.on('disconnect', (reason) => {
+    console.log(`Client disconnected: ${reason}`);
   });
 });
 
@@ -74,6 +84,78 @@ const transporter = nodemailer.createTransport({
     user: process.env.EMAIL_USER,  
     pass: process.env.EMAIL_PASS,  
   },
+});
+
+const sendCalendarEvent = async (to, eventDetails) => {
+  try {
+      const calendar = ical({ name: 'My Event Calendar' });
+      calendar.method('REQUEST');
+
+      calendar.createEvent({
+          start: eventDetails.start,  
+          end: eventDetails.end,      
+          summary: eventDetails.summary,
+          description: eventDetails.description,
+          location: eventDetails.location,
+          url: eventDetails.url,
+      });
+
+      const filePath = path.join(process.cwd(), 'event.ics');
+      const icsContent = calendar.toString();
+      fs.writeFileSync(filePath, icsContent);
+
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to,
+        subject: 'You have a new calendar event!',
+        text: 'Please find the event details attached.',
+        html: `
+          <p>You have a new calendar event:</p>
+          <ul>
+            <li><strong>Summary:</strong> ${eventDetails.summary}</li>
+            <li><strong>Description:</strong> ${eventDetails.description}</li>
+            <li><strong>Location:</strong> ${eventDetails.location}</li>
+            <li><strong>Start:</strong> ${new Date(eventDetails.start).toLocaleString()}</li>
+            <li><strong>End:</strong> ${new Date(eventDetails.end).toLocaleString()}</li>
+          </ul>
+          <p>
+            <a href="cid:event.ics" download="event.ics" style="
+              background-color: #007bff;
+              color: white;
+              padding: 10px 20px;
+              text-decoration: none;
+              border-radius: 5px;
+              font-family: sans-serif;
+            ">Add to Calendar</a>
+          </p>
+        `,
+        attachments: [
+          {
+            filename: 'event.ics',
+            path: filePath,
+            cid: 'event.ics', 
+            contentDisposition: 'attachment'
+          },
+        ],
+      };
+
+      await transporter.sendMail(mailOptions);
+      console.log('Calendar event sent successfully');
+
+      fs.unlinkSync(filePath);
+  } catch (error) {
+      console.error('Error sending calendar event:', error);
+  }
+};
+
+app.post('/send-calendar-event', async (req, res) => {
+  const { recipients, eventDetails } = req.body;
+  try {
+      await sendCalendarEvent(recipients.join(','), eventDetails);
+      res.status(200).json({ message: 'Calendar event sent successfully' });
+  } catch (error) {
+      res.status(500).json({ error: 'Failed to send calendar event' });
+  }
 });
 
 app.post("/password-reset", async (req, res) => {

@@ -48,6 +48,7 @@ const signUser = async (req, res) => {
     jobtitle: user.jobtitle,
     gender: user.gender,
     grade: user.grade,
+    chef: user.chef,
     type: user.type
   };
 
@@ -70,12 +71,12 @@ const verifyEmail = async (req, res) => {
 
 const createUser = async (req, res) => {
   try {
-    const { name, email, password, role, activity, jobtitle, grade, gender } = req.body;
+    const { name, email, password, role, activity, jobtitle, grade, gender,chef,type } = req.body;
 
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(400).json({ message: "Email already exists" });
 
-    const user = new User({ name, email, password, role, activity, jobtitle, grade, gender });
+    const user = new User({ name, email, password, role, activity, jobtitle, grade, gender,chef,type });
 
     await user.save();
 

@@ -81,7 +81,12 @@ const deleteTrainingById = async (req, res) => {
 const updateAll = async (req, res) => {
   try {
     const { trainingsCost } = req.body;
-    const trainings = await Training.find({});
+    const trainings = await Training.find({
+      $or: [
+        { delivered: false },
+        { delivered: { $exists: false } }
+      ]
+    });
 
     for (let training of trainings) {
       training.trainingsCost = trainingsCost;

@@ -105,9 +105,7 @@ const TraineeTrainings = () => {
                 training.traineesrequests.some(request => request.trainee === user._id) 
                 || training.acceptedtrainees.includes(user._id)
                 || training.rejectedtrainees.includes(user._id)
-            ) &&
-            new Date() < new Date(training.registrationDeadline)
-            )
+            ))
             .map(training => ({
                 ...training,
                 sessions: [],
@@ -1631,6 +1629,9 @@ const TraineeTrainings = () => {
                         flexDirection: "row",
                         justifyContent: "center",
                         alignItems: "center",
+                        pointerEvents: "none", 
+                        userSelect: "text",    
+                        cursor: "default",
                         gap: "20px",
                     }}
                 >
@@ -1668,6 +1669,9 @@ const TraineeTrainings = () => {
                         flexDirection: "row",
                         justifyContent: "center",
                         alignItems: "center",
+                        pointerEvents: "none", 
+                        userSelect: "text",    
+                        cursor: "default",
                         gap: "20px",
                     }}
                 >
@@ -1705,6 +1709,9 @@ const TraineeTrainings = () => {
                         flexDirection: "row",
                         justifyContent: "center",
                         alignItems: "center",
+                        pointerEvents: "none", 
+                        userSelect: "text",    
+                        cursor: "default",
                         gap: "20px",
                     }}
                 >
@@ -1742,6 +1749,9 @@ const TraineeTrainings = () => {
                         flexDirection: "row",
                         justifyContent: "center",
                         alignItems: "center",
+                        pointerEvents: "none", 
+                        userSelect: "text",    
+                        cursor: "default",
                         gap: "20px",
                     }}
                 >
@@ -1779,6 +1789,9 @@ const TraineeTrainings = () => {
                         justifyContent: "center",
                         alignItems: "center",
                         width: '100%',
+                        pointerEvents: "none", 
+                        userSelect: "text",    
+                        cursor: "default",
                         gap: '20px',
                     }}
                 >   
@@ -1816,6 +1829,9 @@ const TraineeTrainings = () => {
                         flexDirection: "row",
                         justifyContent: "center",
                         alignItems: "center",
+                        pointerEvents: "none", 
+                        userSelect: "text",    
+                        cursor: "default",
                         gap: "20px",
                     }}
                 >
@@ -1852,6 +1868,9 @@ const TraineeTrainings = () => {
                     flexDirection: "column",
                     justifyContent: "center",
                     alignItems: "center",
+                    pointerEvents: "none", 
+                    userSelect: "text",    
+                    cursor: "default",
                     width: '100%',
                     gap: '10px',
                     flexWrap: "wrap",

@@ -1277,6 +1277,9 @@ const TrainerSession = () => {
                         flexDirection: "row",
                         justifyContent: "center",
                         alignItems: "center",
+                        pointerEvents: "none", 
+                        userSelect: "text",    
+                        cursor: "default",
                         gap: "20px",
                     }}
                 >
@@ -1314,6 +1317,9 @@ const TrainerSession = () => {
                         flexDirection: "row",
                         justifyContent: "center",
                         alignItems: "center",
+                        pointerEvents: "none", 
+                        userSelect: "text",    
+                        cursor: "default",
                         gap: "20px",
                     }}
                 >
@@ -1351,6 +1357,9 @@ const TrainerSession = () => {
                         flexDirection: "row",
                         justifyContent: "center",
                         alignItems: "center",
+                        pointerEvents: "none", 
+                        userSelect: "text",    
+                        cursor: "default",
                         gap: "20px",
                     }}
                 >
@@ -1388,6 +1397,9 @@ const TrainerSession = () => {
                         flexDirection: "row",
                         justifyContent: "center",
                         alignItems: "center",
+                        pointerEvents: "none", 
+                        userSelect: "text",    
+                        cursor: "default",
                         gap: "20px",
                     }}
                 >
@@ -1424,6 +1436,9 @@ const TrainerSession = () => {
                         flexDirection: "row",
                         justifyContent: "center",
                         alignItems: "center",
+                        pointerEvents: "none", 
+                        userSelect: "text",    
+                        cursor: "default",
                         width: '100%',
                         gap: '20px',
                     }}
@@ -1462,6 +1477,9 @@ const TrainerSession = () => {
                         flexDirection: "row",
                         justifyContent: "center",
                         alignItems: "center",
+                        pointerEvents: "none", 
+                        userSelect: "text",    
+                        cursor: "default",
                         gap: "20px",
                     }}
                 >
@@ -1499,6 +1517,9 @@ const TrainerSession = () => {
                     justifyContent: "center",
                     alignItems: "center",
                     width: '100%',
+                    pointerEvents: "none", 
+                    userSelect: "text",    
+                    cursor: "default",
                     gap: '10px',
                     flexWrap: "wrap",
                     

@@ -353,7 +353,7 @@ const FormBuilder = () => {
     <Box
         sx={{
         width: '100%',
-        height: 'auto',
+        height: '90vh',
         boxSizing: 'border-box',
         backgroundColor: "background.paper",
         display: "flex",
@@ -365,8 +365,9 @@ const FormBuilder = () => {
         padding: '30px',
         gap: "10px",
         position: "sticky",
-        top: '0px',
-    }}
+        top: '20px',
+        overflowY: "scroll",
+        }}
     >
       <Typography variant="h6" color="text.primary">
         {t("form_preview")}

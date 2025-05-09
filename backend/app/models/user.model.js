@@ -20,6 +20,7 @@ const userSchema = new mongoose.Schema({
   jobtitle: { type: String, required: true },
   gender: { type: String, required: true },
   grade: { type: String, required: true },
+  chef: { type: String, required: true },
   type: {
     type: String,
     required: function () {

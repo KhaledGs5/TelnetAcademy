@@ -803,6 +803,9 @@ const TraineeRequest = () => {
                         flexDirection: "row",
                         justifyContent: "center",
                         alignItems: "center",
+                        pointerEvents: "none", 
+                        userSelect: "text",    
+                        cursor: "default",
                         gap: "20px",
                     }}
                 >
@@ -840,6 +843,9 @@ const TraineeRequest = () => {
                         flexDirection: "row",
                         justifyContent: "center",
                         alignItems: "center",
+                        pointerEvents: "none", 
+                        userSelect: "text",    
+                        cursor: "default",
                         gap: "20px",
                     }}
                 >
@@ -877,6 +883,9 @@ const TraineeRequest = () => {
                         flexDirection: "row",
                         justifyContent: "center",
                         alignItems: "center",
+                        pointerEvents: "none", 
+                        userSelect: "text",    
+                        cursor: "default",
                         gap: "20px",
                     }}
                 >
@@ -914,6 +923,9 @@ const TraineeRequest = () => {
                         flexDirection: "row",
                         justifyContent: "center",
                         alignItems: "center",
+                        pointerEvents: "none", 
+                        userSelect: "text",    
+                        cursor: "default",
                         gap: "20px",
                     }}
                 >
@@ -950,6 +962,9 @@ const TraineeRequest = () => {
                         flexDirection: "row",
                         justifyContent: "center",
                         alignItems: "center",
+                        pointerEvents: "none", 
+                        userSelect: "text",    
+                        cursor: "default",
                         width: '100%',
                         gap: '20px',
                     }}
@@ -988,6 +1003,9 @@ const TraineeRequest = () => {
                         flexDirection: "row",
                         justifyContent: "center",
                         alignItems: "center",
+                        pointerEvents: "none", 
+                        userSelect: "text",    
+                        cursor: "default",
                         gap: "20px",
                     }}
                 >
@@ -1024,6 +1042,9 @@ const TraineeRequest = () => {
                     flexDirection: "column",
                     justifyContent: "center",
                     alignItems: "center",
+                    pointerEvents: "none", 
+                    userSelect: "text",    
+                    cursor: "default",
                     width: '100%',
                     gap: '10px',
                     flexWrap: "wrap",

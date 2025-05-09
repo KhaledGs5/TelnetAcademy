@@ -1935,6 +1935,9 @@ const ManageTrainings = () => {
                     justifyContent: "center",
                     alignItems: "center",
                     gap: '15px',
+                    pointerEvents: "none", 
+                    userSelect: "text",    
+                    cursor: "default",      
                 }}
             >
                 <Typography
@@ -2303,6 +2306,9 @@ const ManageTrainings = () => {
                     justifyContent: "center",
                     alignItems: "center",
                     gap: '10px',
+                    pointerEvents: "none", 
+                    userSelect: "text",    
+                    cursor: "default", 
                 }}
             >
                 <Typography

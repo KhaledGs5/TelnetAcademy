@@ -1055,6 +1055,9 @@ const TraineeSession = () => {
                         flexDirection: "row",
                         justifyContent: "center",
                         alignItems: "center",
+                        pointerEvents: "none", 
+                        userSelect: "text",    
+                        cursor: "default",
                         gap: "20px",
                     }}
                 >
@@ -1092,6 +1095,9 @@ const TraineeSession = () => {
                         flexDirection: "row",
                         justifyContent: "center",
                         alignItems: "center",
+                        pointerEvents: "none", 
+                        userSelect: "text",    
+                        cursor: "default",
                         gap: "20px",
                     }}
                 >
@@ -1129,6 +1135,9 @@ const TraineeSession = () => {
                         flexDirection: "row",
                         justifyContent: "center",
                         alignItems: "center",
+                        pointerEvents: "none", 
+                        userSelect: "text",    
+                        cursor: "default",
                         gap: "20px",
                     }}
                 >
@@ -1166,6 +1175,9 @@ const TraineeSession = () => {
                         flexDirection: "row",
                         justifyContent: "center",
                         alignItems: "center",
+                        pointerEvents: "none", 
+                        userSelect: "text",    
+                        cursor: "default",
                         gap: "20px",
                     }}
                 >
@@ -1202,6 +1214,9 @@ const TraineeSession = () => {
                         flexDirection: "row",
                         justifyContent: "center",
                         alignItems: "center",
+                        pointerEvents: "none", 
+                        userSelect: "text",    
+                        cursor: "default",
                         width: '100%',
                         gap: '20px',
                     }}
@@ -1240,6 +1255,9 @@ const TraineeSession = () => {
                         flexDirection: "row",
                         justifyContent: "center",
                         alignItems: "center",
+                        pointerEvents: "none", 
+                        userSelect: "text",    
+                        cursor: "default",
                         gap: "20px",
                     }}
                 >
@@ -1279,7 +1297,9 @@ const TraineeSession = () => {
                     width: '100%',
                     gap: '10px',
                     flexWrap: "wrap",
-                    
+                    pointerEvents: "none", 
+                    userSelect: "text",    
+                    cursor: "default",
                 }}
                 >
                     {Array.from({ length: getTrainingById(selectedTrainingId)?.nbOfSessions }, (_, index) => (

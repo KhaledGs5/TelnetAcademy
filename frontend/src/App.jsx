@@ -42,8 +42,6 @@ function App() {
             {signedIn && user?.role==='admin' && (
               <>
                 <Route path="/manageusers" element={<ManageUsers />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/calendar" element={<Calendar />} />
                 <Route path="/account" element={<Profile />} />
               </>
             )}
