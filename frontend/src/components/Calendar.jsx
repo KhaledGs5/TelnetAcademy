@@ -9,7 +9,15 @@ import axios from "axios";
 import { useLanguage } from "../languagecontext";
 
 const Calendar = () => {
-  const user = getCookie("User");
+  const userid = getCookie("User") ?? null;
+  const [user,setUser] = useState([]);
+  const getUser = async () => {
+      const response = await axios.get(`http://localhost:5000/api/users/${userid}`);
+      setUser(response.data);
+  };
+  useEffect(() => {
+      if(userid)getUser();
+  }, []);
   const { t } = useLanguage();
 
   const [currentMonth, setCurrentMonth] = useState(new Date());

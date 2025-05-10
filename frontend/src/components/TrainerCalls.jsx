@@ -6,10 +6,18 @@ import { Box, Link, Typography, Menu, MenuItem, Dialog, Button, DialogTitle, Bad
 import axios from 'axios';
 import { useLanguage } from "../languagecontext";
 
-const TrainerCalls = () => {
+const TrainerCalls = ({ w="70%", p="20px"}) => {
 
     const { t } = useLanguage();
-    const user = getCookie("User") ?? null;
+    const userid = getCookie("User") ?? null;
+    const [user,setUser] = useState([]);
+    const getUser = async () => {
+        const response = await axios.get(`http://localhost:5000/api/users/${userid}`);
+        setUser(response.data);
+    };
+    useEffect(() => {
+        if(userid)getUser();
+    }, []);
 
     // Verify Sending Form...........
 
@@ -122,7 +130,7 @@ const TrainerCalls = () => {
                 flexDirection: 'column',
                 justifyContent: 'center',
                 alignItems: 'center',
-                padding: "20px",
+                padding:p,
             }}
         >
             {calls.map((call) => (
@@ -134,13 +142,12 @@ const TrainerCalls = () => {
                         flexDirection: 'column',
                         justifyContent: 'center',
                         alignItems: 'center',
-                        padding: "20px",
                         gap:"15px"
                     }}
                 >
                     <Box
                         sx={{
-                            width: '70%',
+                            width: w,
                             display: 'flex',
                             flexDirection: 'column',
                             justifyContent: 'center',
@@ -226,7 +233,7 @@ const TrainerCalls = () => {
                     </Box>
                     <Box
                     sx={{
-                        width: '70%',
+                        width: w,
                         display: 'flex',
                         flexDirection: 'column',
                         justifyContent: 'center',

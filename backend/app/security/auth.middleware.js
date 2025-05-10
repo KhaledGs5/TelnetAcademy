@@ -20,9 +20,8 @@ const verifyAdmin = (req, res, next) => {
   }
 };
 
-const verifyToken = (req, res, next) => {
+const verifyManager = (req, res, next) => {
   const authHeader = req.headers.authorization;
-
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(403).json({ message: "Token missing or malformed" });
   }
@@ -31,11 +30,54 @@ const verifyToken = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.PRIVATE_KEY);
-    req.user = decoded; 
+    if (decoded.role !== "manager") {
+      return res.status(403).json({ message: "Access denied: Managers only" });
+    }
+    req.manager = decoded;
     next();
   } catch (err) {
     return res.status(403).json({ message: "Invalid or expired token" });
   }
 };
 
-module.exports = { verifyAdmin , verifyToken};
+const verifyTrainer = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(403).json({ message: "Token missing or malformed" });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const decoded = jwt.verify(token, process.env.PRIVATE_KEY);
+    if (decoded.role !== "trainer" && decoded.role !== "trianee_trainer") {
+      return res.status(403).json({ message: "Access denied: Trainers only" });
+    }
+    req.trainer = decoded;
+    next();
+  } catch (err) {
+    return res.status(403).json({ message: "Invalid or expired token" });
+  }
+};
+
+const verifyTrainee = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(403).json({ message: "Token missing or malformed" });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const decoded = jwt.verify(token, process.env.PRIVATE_KEY);
+    if (decoded.role !== "trainee" && decoded.role !== "trianee_trainer") {
+      return res.status(403).json({ message: "Access denied: Trainees only" });
+    }
+    req.trainee = decoded;
+    next();
+  } catch (err) {
+    return res.status(403).json({ message: "Invalid or expired token" });
+  }
+};
+
+module.exports = { verifyAdmin , verifyManager};

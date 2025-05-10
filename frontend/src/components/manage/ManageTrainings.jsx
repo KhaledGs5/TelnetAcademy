@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLanguage } from "../../languagecontext";
-import { Box, TextField , Typography, Button,Input,IconButton, InputAdornment, Tooltip, OutlinedInput, FormControl, InputLabel, Pagination,Radio, Alert, Snackbar , Autocomplete, Popover, Rating, Badge, Select } from "@mui/material";
+import { Box, TextField , Typography, Button,Input,IconButton, InputAdornment, Tooltip, OutlinedInput, FormControl, InputLabel, Pagination,Radio, Alert, Snackbar , Autocomplete, Popover, Rating, Badge, Select, Checkbox} from "@mui/material";
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import ClearIcon from '@mui/icons-material/Clear';
@@ -32,7 +32,15 @@ const ManageTrainings = () => {
 
     const { t } = useLanguage();
     const [selectedTrainingId, setSelectedTrainingId] = useState(true);
-    const user = getCookie("User");
+    const userid = getCookie("User") ?? null;
+    const [user,setUser] = useState([]);
+    const getUser = async () => {
+        const response = await axios.get(`http://localhost:5000/api/users/${userid}`);
+        setUser(response.data);
+    };
+    useEffect(() => {
+        if(userid)getUser();
+    }, []);
 
     // Verify Update Or Create Training...........
 
@@ -66,7 +74,7 @@ const ManageTrainings = () => {
             .then((response) => {
                 const trainingsWithModified = response.data.map(training => ({
                     ...training,
-                    modified: false,
+                    selected: false,
                     sessions: [],
                     full: training.nbOfConfirmedRequests == training.nbOfParticipants,
                     numberOfConfirmed : training.nbOfConfirmedRequests || 0,
@@ -411,51 +419,6 @@ const ManageTrainings = () => {
         setShowColdFeedback(false);
     };
 
-    // Delete training by Id..............
-    const [verifyDelete, setVerifyDelete] = useState(false);
-
-    const showVerifyDeleteDialog = (trainingId) => {
-        setSelectedTrainingId(trainingId);
-        setVerifyDelete(true);
-    };
-
-    const hideVerifyDeleteDialog = () => {
-        setVerifyDelete(false);
-    };
-
-    const handleDeleteTraining = (trainingId) => {
-        axios.delete(`http://localhost:5000/api/trainings/${trainingId}`)
-            .then((response) => {
-                console.log(response.data.message);
-                hideVerifyDeleteDialog();
-                fetchTrainings();
-            })
-            .catch((error) => {
-                console.error("Error deleting training:", error);
-            });
-
-    };
-        
-
-    // Delete all trainings ....................
-    const [verifyDeleteAll, setVerifyDeleteAll] = useState(false);
-
-    const showVerifyDeleteAllDialog = (userId) => {
-        setVerifyDeleteAll(true);
-    };
-
-    const hideVerifyDeleteAllDialog = () => {
-        setVerifyDeleteAll(false);
-    };
-
-    const handleDeleteAllTrainings = () => {
-        const listofalltrainings = Object.values(trainings)
-        .map((training) => training._id);
-    
-        listofalltrainings.forEach((trainingId) => handleDeleteTraining(trainingId));
-        hideVerifyDeleteAllDialog();
-    };
-
     // Get Training By Id .................
     const getTrainingById = (id) => {
         return Object.values(trainings).find(training => training._id === id) || null;
@@ -691,6 +654,99 @@ const ManageTrainings = () => {
         }
     });
 
+    // Selected Trainings.........
+    const handleTrainingChange = (value, id) => {
+        setTrainings((prevTrainings) => {
+            const trainingKey = Object.keys(prevTrainings).find(
+                (key) => prevTrainings[key]._id === id
+            );
+            if (!trainingKey) return prevTrainings;
+
+            return {
+                ...prevTrainings,
+                [trainingKey]: {
+                    ...prevTrainings[trainingKey],
+                    selected: value,
+                },
+            };
+        });
+    };
+
+    const [allTrainingsSelected, setAllTrainingsSelected] = useState(false);
+    const updateAllTrainingsSelected = (value) => {
+        setTrainings((prevTrainings) => {
+            const updatedTrainings = {};
+
+            Object.keys(prevTrainings).forEach((key) => {
+                updatedTrainings[key] = {
+                    ...prevTrainings[key],
+                    selected: value,
+                };
+            });
+
+            return updatedTrainings;
+        });
+    };
+
+    const isAnyTrainingSelected = (trainings) => {
+        return Object.values(trainings).some(training => training.selected);
+    };
+
+    const [showSendNewTrainingsEmail, setShowSendNewTrainingsEmail] = useState(false);
+     
+    const showSendTrainingsEmail = () => {
+        setShowSendNewTrainingsEmail(true);
+    }
+
+    const hideSendTrainingsEmail = () => {
+        setShowSendNewTrainingsEmail(false);
+    }
+
+    const [usersEmails, setUsersEmails] = useState("");
+
+    const fetchUsersEmails = async () => {
+        try {
+            const response = await axios.get("http://localhost:5000/api/users");
+            const trainerEmails = response.data
+            .filter(user => user.role !== "manager" && user.role !== "admin")
+            .map(user => user.email)
+            .join(",");
+        setUsersEmails(trainerEmails);
+        } catch (error) {
+            console.error("Error fetching trainer emails", error);
+        }
+    }
+    useEffect(() => {
+        fetchUsersEmails();
+    }, []);
+
+    const [newTrainingsMessage, setNewTrainingsMessage] = useState("");
+
+    const sendTrainingsEmail = async () => {
+        try {
+            const selectedTrainings = Object.values(trainings)
+                .filter(t => t.selected)
+                .map(t => {
+                    const trainer = TrainingTrainers.find(trainer => trainer.id === t.trainer);
+                    return {
+                        ...t,
+                        trainerName: trainer ? trainer.name : 'Unknown Trainer',
+                    };
+            });
+
+            await axios.post("http://localhost:5000/send-trainings-email", {
+            toEmail: usersEmails,
+            trainings: selectedTrainings, 
+            message: newTrainingsMessage,
+            });
+            hideSendTrainingsEmail();
+            setVerifyAlert("success");
+            setVerifyAlertMessage("email_sent_successfully");
+            setShowsVerifificationAlert(true);
+        } catch (error) {
+            console.error("Failed to send training emails:", error);
+        }
+    };
 
 
     // Pagination ...............
@@ -777,7 +833,7 @@ const ManageTrainings = () => {
                         marginLeft: 5,
                     }}
                 >
-                    {t("manage_trainings")}
+                    {t("trainings_list")}
                 </Typography>
                 <Box
                     sx={{
@@ -890,6 +946,15 @@ const ManageTrainings = () => {
                         gap: '20px',
                     }}
                 >
+                    <Button
+                        sx={{...buttonStyle, width: '15%', minWidth: '100px',position: "absolute", left: "10px", height: "50px"}}
+                        disabled={!isAnyTrainingSelected(trainings)}
+                        onClick={() => showSendTrainingsEmail()}
+                    >
+                        <Typography>
+                            {t("send_trainings_email")}
+                        </Typography>
+                    </Button>
                     <Button
                         sx={{...orderStyle, width: '15%', minWidth: '200px'}}
                         onClick={() => handleChangeTrainingOrder("createdAt")}
@@ -1156,6 +1221,15 @@ const ManageTrainings = () => {
                         paddingRight: '25px',
                         }}
                     >
+                        <Box sx={{width:"10px"}}>
+                            <Checkbox
+                                checked={allTrainingsSelected}
+                                onChange={(e) => {
+                                        updateAllTrainingsSelected(e.target.checked);
+                                        setAllTrainingsSelected(e.target.checked);
+                                }}
+                            />
+                        </Box>
                         <Button
                             sx={{...orderStyle, width: '25%'}}
                             onClick={() => handleChangeTrainingOrder("Title")}
@@ -1212,81 +1286,7 @@ const ManageTrainings = () => {
                         </Button>
                     </Box>
                     <Box sx={{width:'10%', display:"flex", flexDirection:"row", justifyContent:"end"}}>
-                        <Tooltip title={t("delete") + " " + t("all")} arrow> 
-                            <IconButton onClick={showVerifyDeleteAllDialog} sx={{color:"#EA9696"}}>
-                                <DeleteIcon/>
-                            </IconButton>
-                        </Tooltip>
                     </Box>
-                    <Dialog
-                        open={verifyDeleteAll}
-                        disableScrollLock={true}
-                        onClose={hideVerifyDeleteAllDialog}
-                        PaperProps={{
-                            sx: {
-                                width: "auto",  
-                                height: "auto", 
-                                display: "flex",
-                                flexDirection: "column",
-                                justifyContent: "center",
-                                alignItems: "center",
-                                borderRadius: "10px",
-                                padding: '20px',
-                            }
-                        }}
-                    >
-                        <DialogTitle>{t("confirm_delete_all_trainings")}?</DialogTitle>
-                        <Box 
-                            sx={{
-                                width: '100%',
-                                display: 'flex',
-                                flexDirection: 'row',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                gap: '20px',
-                            }}
-                        >
-                            <Button sx={{
-                                color: 'white',
-                                backgroundColor: '#EA9696',
-                                padding: '5px 10px',
-                                borderRadius: '10px',
-                                textDecoration: 'none',
-                                fontWeight: 'bold',
-                                width: '100px',
-                                height: '40px',
-                                marginTop: '10px',
-                                textTransform: "none",
-                                '&:hover': {
-                                    backgroundColor: '#EAB8B8',
-                                    color: 'white',
-                                },
-                            }} 
-                            onClick={hideVerifyDeleteAllDialog}>
-                                {t("no")}
-                            </Button>
-                            <Button sx={{
-                                color: 'white',
-                                backgroundColor: '#2CA8D5',
-                                padding: '5px 10px',
-                                borderRadius: '10px',
-                                textDecoration: 'none',
-                                fontWeight: 'bold',
-                                width: '100px',
-                                height: '40px',
-                                marginTop: '10px',
-                                textTransform: "none",
-                                '&:hover': {
-                                    backgroundColor: '#76C5E1',
-                                    color: 'white',
-                                },
-                            }} 
-                            onClick={handleDeleteAllTrainings}
-                            >
-                                {t("yes")}
-                            </Button>
-                        </Box>
-                    </Dialog>
                 </Box>
             </Box>
             <Box
@@ -1324,6 +1324,7 @@ const ManageTrainings = () => {
                             },
                         }}
                     >
+
                         <Box
                             sx={{
                                 width: '90%',
@@ -1335,6 +1336,12 @@ const ManageTrainings = () => {
                                 paddingRight: '25px',
                                 }}
                         >
+                            <Box sx={{ width: "40px" }}>
+                                <Checkbox
+                                    checked={training.selected}
+                                    onChange={(e) => handleTrainingChange(e.target.checked, training._id)}
+                                />
+                            </Box>
                             <TextField
                                 variant="outlined"
                                 required
@@ -1485,81 +1492,10 @@ const ManageTrainings = () => {
                                     </IconButton>
                                 </Tooltip>
                             </Badge>
-                            <Tooltip title={t("delete")} arrow> 
-                                <IconButton sx={{color:"#EA9696"}} onClick={() => showVerifyDeleteDialog(training._id)}>
-                                    <DeleteIcon/>
-                                </IconButton>
-                            </Tooltip>
                         </Box>
                     </Box>
                 ))}
             </Box>
-            <Dialog
-            open={verifyDelete}
-            disableScrollLock={true}
-            onClose={hideVerifyDeleteDialog}
-            PaperProps={{
-                sx: {
-                    width: "auto",  
-                    height: "auto", 
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "",
-                    alignItems: "center",
-                    borderRadius: "10px",
-                    padding: '20px',
-                }
-            }}
-        >
-            <DialogTitle>{t("confirm_delete_training")}?</DialogTitle>
-            <Box 
-                sx={{
-                    width: '100%',
-                    display: 'flex',
-                    flexDirection: 'row',
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                    gap: '20px',
-                }}
-            >
-                <Button sx={{
-                    color: 'white',
-                    backgroundColor: '#EA9696',
-                    borderRadius: '10px',
-                    textDecoration: 'none',
-                    fontWeight: 'bold',
-                    width: '100px',
-                    height: '40px',
-                    marginTop: '10px',
-                    textTransform: "none",
-                    '&:hover': {
-                        backgroundColor: '#EAB8B8',
-                        color: 'white',
-                    },
-                }} 
-                onClick={hideVerifyDeleteDialog}>
-                    {t("no")}
-                </Button>
-                <Button sx={{
-                    color: 'white',
-                    backgroundColor: '#2CA8D5',
-                    borderRadius: '10px',
-                    textDecoration: 'none',
-                    fontWeight: 'bold',
-                    width: '100px',
-                    height: '40px',
-                    marginTop: '10px',
-                    textTransform: "none",
-                    '&:hover': {
-                        backgroundColor: '#76C5E1',
-                        color: 'white',
-                    },
-                }} 
-                onClick={() => handleDeleteTraining(selectedTrainingId)}>
-                    {t("yes")}
-                </Button>
-            </Box>
-            </Dialog>
             <Dialog
             open={showAttendeeList}
             disableScrollLock={true}
@@ -1579,8 +1515,9 @@ const ManageTrainings = () => {
             }}
         >
             <DialogTitle>{t("list_of_trainees")}</DialogTitle>
-            {trainings.filter(training => training && training._id === selectedTrainingId)
-                .map((training) => (
+            {trainings && Object.values(trainings)
+                .filter(training => training && training._id === selectedTrainingId)
+                .map(training => (
                 <Box key={training._id}
                     sx={{
                         display: "flex",
@@ -1824,8 +1761,9 @@ const ManageTrainings = () => {
                 }}
             >
             <DialogTitle>{t("hot_feedbacks")}</DialogTitle>
-            {trainings.filter(training => training && training._id === selectedTrainingId)
-                .map((training) => (
+            {trainings && Object.values(trainings)
+                .filter(training => training && training._id === selectedTrainingId)
+                .map(training => (
                 <Box key={training._id}
                     sx={{
                         display: "flex",
@@ -2120,123 +2058,6 @@ const ManageTrainings = () => {
                     fieldValues={fieldValues} 
                 />
             </Box>
-            //     {feedbacks?.coldFeedback?.[0]?.appliedKnowledge && (
-            //         <TextField
-            //             label={t("knowledge")}
-            //             value={feedbacks?.coldFeedback?.[0]?.knowledge || ""}
-            //             sx={{ 
-            //                 width: "50%",
-            //                 cursor: "pointer", 
-            //                 "& .MuiInputBase-input": { cursor: "pointer" }, 
-            //                 "& .MuiOutlinedInput-root": { cursor: "pointer" } 
-            //             }}
-            //             InputProps={{
-            //                 readOnly: true, 
-            //             }}
-            //         />
-            //     )}
-            //     {!(feedbacks?.coldFeedback?.[0]?.appliedKnowledge) && (
-            //     <Box
-            //         sx={{
-            //             width: '100%',
-            //             display: 'flex',
-            //             flexDirection: 'column',
-            //             height: '100%',
-            //             gap: '10px',
-            //         }}
-            //     >
-            //         <TextField
-            //             label={t("why_didnt_apply")}
-            //             value={feedbacks?.coldFeedback?.[0]?.otherWhyNotApplied || feedbacks?.coldFeedback?.[0]?.whyNotApplied}
-            //             sx={{ 
-            //                 width: "50%",
-            //                 cursor: "pointer", 
-            //                 "& .MuiInputBase-input": { cursor: "pointer" }, 
-            //                 "& .MuiOutlinedInput-root": { cursor: "pointer" } 
-            //             }}
-            //             InputProps={{
-            //                 readOnly: true, 
-            //             }}
-            //         />
-            //     </Box>)
-            //     }
-            //     {feedbacks?.coldFeedback?.[0]?.improvedWorkEfficiency && (
-            //         <Box
-            //             sx={{
-            //                 width: '100%',
-            //                 display: 'flex',
-            //                 flexDirection: 'column',
-            //                 height: '100%',
-            //                 gap: '10px',
-            //             }}
-            //         >
-            //             <TextField
-            //                 label={t("improvment")}
-            //                 value={feedbacks?.coldFeedback?.[0]?.improvment || ""}
-            //                 sx={{ 
-            //                     width: "100%",
-            //                     cursor: "pointer", 
-            //                     "& .MuiInputBase-input": { cursor: "pointer" }, 
-            //                     "& .MuiOutlinedInput-root": { cursor: "pointer" } 
-            //                 }}
-            //                 InputProps={{
-            //                     readOnly: true, 
-            //                 }}
-            //             />
-            //         </Box>
-            //     )}
-            //     {!feedbacks?.coldFeedback?.[0]?.improvedWorkEfficiency && (
-            //         <Box
-            //             sx={{
-            //                 width: '100%',
-            //                 display: 'flex',
-            //                 flexDirection: 'column',
-            //                 height: '100%',
-            //                 gap: '10px',
-            //             }}
-            //         >
-            //             <TextField
-            //                 label={t("why_not_improved")}
-            //                 value={feedbacks?.coldFeedback?.[0]?.whyNotImproved || ""}
-            //                 sx={{ 
-            //                     width: "100%",
-            //                     cursor: "pointer", 
-            //                     "& .MuiInputBase-input": { cursor: "pointer" }, 
-            //                     "& .MuiOutlinedInput-root": { cursor: "pointer" } 
-            //                 }}
-            //                 InputProps={{
-            //                     readOnly: true, 
-            //                 }}
-            //             />
-            //         </Box>
-            //     )}
-            //     <TextField
-            //         label={t("suggestion")}
-            //         value={feedbacks?.coldFeedback?.[0]?.trainingImprovementsSuggested || ""}
-            //         sx={{ 
-            //             width: "100%",
-            //             cursor: "pointer", 
-            //             "& .MuiInputBase-input": { cursor: "pointer" }, 
-            //             "& .MuiOutlinedInput-root": { cursor: "pointer" } 
-            //         }}
-            //         InputProps={{
-            //             readOnly: true, 
-            //         }}
-            //     />
-            //     <TextField
-            //         label={t("comments")}
-            //         value={feedbacks?.coldFeedback?.[0]?.comments || ""}
-            //         sx={{ 
-            //             width: "100%",
-            //             cursor: "pointer", 
-            //             "& .MuiInputBase-input": { cursor: "pointer" }, 
-            //             "& .MuiOutlinedInput-root": { cursor: "pointer" } 
-            //         }}
-            //         InputProps={{
-            //             readOnly: true, 
-            //         }}
-            //     />
-            // </Box>
             :feedbacks?.coldFeedback?.length === 0 ?
             <Typography
                 sx={{
@@ -2412,51 +2233,6 @@ const ManageTrainings = () => {
                     formFields={formFields} 
                     fieldValues={fieldValues} 
                 />
-                {/* {[
-                    { label: t("objectivesCommunication"), field: "objectivesCommunication" },
-                    { label: t("trainingOrganization"), field: "trainingOrganization" },
-                    { label: t("groupComposition"), field: "groupComposition" },
-                    { label: t("materialAdequacy"), field: "materialAdequacy" },
-                    { label: t("programCompliance"), field: "programCompliance" },
-                    { label: t("contentClarity"), field: "contentClarity" },
-                    { label: t("materialQuality"), field: "materialQuality" },
-                    { label: t("trainingAnimation"), field: "trainingAnimation" },
-                    { label: t("trainingProgress"), field: "trainingProgress" },
-                    { label: t("metExpectations"), field: "metExpectations" },
-                    { label: t("objectivesAchieved"), field: "objectivesAchieved" },
-                    { label: t("exercisesRelevance"), field: "exercisesRelevance" },
-                    { label: t("willApplySkills"), field: "willApplySkills" }
-                ].map((question, index) => (
-                    <Box key={index} 
-                    sx={{ 
-                        width: '100%', 
-                        display: 'flex', 
-                        flexDirection: 'row',
-                        justifyContent: 'start',
-                        alignItems: 'center',
-                        gap: "40px" }}
-                    >
-                        <Typography>{question.label}</Typography>
-                        <Rating
-                            name={question.field}
-                            value={feedbacks?.hotFeedback?.[0]?.[question.field]}
-                            readOnly
-                        />
-                    </Box>
-                ))}
-                <TextField
-                    label={t("comments")}
-                    value={feedbacks?.hotFeedback?.[0]?.comments || ""}
-                    sx={{ 
-                        width: "50%",
-                        cursor: "pointer", 
-                        "& .MuiInputBase-input": { cursor: "pointer" }, 
-                        "& .MuiOutlinedInput-root": { cursor: "pointer" } 
-                    }}
-                    InputProps={{
-                        readOnly: true, 
-                    }}
-                /> */}
             </Box>
             :feedbacks?.hotFeedback?.length === 0 ?
             <Typography
@@ -2939,6 +2715,92 @@ const ManageTrainings = () => {
                     },
                 }}
                 onClick={() => handleUpdateTrainingRegisDeadline(selectedTrainingId)} 
+                >
+                    {t("yes")}
+                </Button>
+            </Box>
+            </Dialog>
+             <Dialog
+            open={showSendNewTrainingsEmail}
+            disableScrollLock={true}
+            onClose={hideSendTrainingsEmail}
+            PaperProps={{
+                sx: {
+                    minWidth: "50%",  
+                    height: "auto", 
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "",
+                    alignItems: "center",
+                    borderRadius: "10px",
+                    padding: '20px',
+                }
+            }}
+        >
+            <DialogTitle>{t("confirm_send_email")} ?</DialogTitle>
+             <FormControl
+                variant="outlined"
+                sx={{
+                    width: '100%',
+                }}
+                >
+                <InputLabel required>{t("message")}</InputLabel>
+                <OutlinedInput
+                    multiline
+                    minRows={8}
+                    value={newTrainingsMessage}
+                    onChange={(e) => setNewTrainingsMessage(e.target.value)}
+                    label={t("message")}
+                    sx={{
+                    height: 'auto',
+                    alignItems: 'flex-start'
+                    }}
+                />
+            </FormControl>
+            <Box 
+                sx={{
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'row',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    gap: '20px',
+                }}
+            >
+                <Button sx={{
+                    color: 'white',
+                    backgroundColor: '#EA9696',
+                    borderRadius: '10px',
+                    textDecoration: 'none',
+                    fontWeight: 'bold',
+                    width: '100px',
+                    height: '40px',
+                    marginTop: '10px',
+                    textTransform: "none",
+                    '&:hover': {
+                        backgroundColor: '#EAB8B8',
+                        color: 'white',
+                    },
+                }} 
+                onClick={hideSendTrainingsEmail}>
+                    {t("no")}
+                </Button>
+                <Button sx={{
+                    color: 'white',
+                    backgroundColor: '#2CA8D5',
+                    borderRadius: '10px',
+                    textDecoration: 'none',
+                    fontWeight: 'bold',
+                    width: '100px',
+                    height: '40px',
+                    marginTop: '10px',
+                    textTransform: "none",
+                    '&:hover': {
+                        backgroundColor: '#76C5E1',
+                        color: 'white',
+                    },
+                }}
+                onClick={() => sendTrainingsEmail()}
                 >
                     {t("yes")}
                 </Button>

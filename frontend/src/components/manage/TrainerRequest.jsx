@@ -28,7 +28,15 @@ const TrainerRequest = () => {
 
     const location = useLocation();
     const [selectedFormId, setSelectedFormId] = useState("");
-    const user = getCookie("User") ?? null;
+    const userid = getCookie("User") ?? null;
+    const [user,setUser] = useState([]);
+    const getUser = async () => {
+        const response = await axios.get(`http://localhost:5000/api/users/${userid}`);
+        setUser(response.data);
+    };
+    useEffect(() => {
+        if(userid)getUser();
+    }, []);
 
     // Verify Create Training...........
 

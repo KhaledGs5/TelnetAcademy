@@ -46,7 +46,15 @@ const TraineeTrainings = () => {
     const [numberOfApproved, setNumberOfApproved] = useState(0);
     const [numberOfRejected, setNumberOfRejected] = useState(0);
   
-  const user = getCookie("User");
+    const userid = getCookie("User") ?? null;
+    const [user,setUser] = useState([]);
+    const getUser = async () => {
+    const response = await axios.get(`http://localhost:5000/api/users/${userid}`);
+    setUser(response.data);
+    };
+    useEffect(() => {
+    if(userid)getUser();
+    }, []);
 
   const updateStatus = () => {
     trainings.forEach((training) => {
@@ -164,6 +172,7 @@ const TraineeTrainings = () => {
           setRequestResponseTrainings(messages);
         });
   };
+  console.log(trainings);
 
   console.log(requestResponseTrainings);
   const formatDaysWithMonth = (dateString, month) => {
@@ -668,7 +677,7 @@ const TraineeTrainings = () => {
             (selectedTrainer === training.trainer || selectedTrainer === 0)
         ))
     &&
-    ((selectedFilter === "all") || (selectedFilter === training.status))
+    ((selectedFilter === "all") || (selectedFilter === training.status) || ((selectedFilter === "approved") && (training.status === "confirmed")))
         ).sort((ftraining, straining) => {
         if (
         selectedTrainingOrder &&

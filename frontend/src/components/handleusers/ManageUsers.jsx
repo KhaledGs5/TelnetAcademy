@@ -142,7 +142,10 @@ const ManageUsers = () => {
                 toEmail: newUserEmail,
                 url: "http://localhost:3000/signin",
                 password: newUser.password,
-              });              
+              });    
+            setVerifyAlertMessage(t("user_added_successfully"));
+            setVerifyAlert("success");
+            setShowsVerifificationAlert(true);          
         })
         .catch((error) => {
             setVerifyAlertMessage(error.response.data.error);
@@ -227,6 +230,8 @@ const ManageUsers = () => {
             .then((response) => { 
                 hideVerifyUpdateDialog();
                 setVerifyAlert("success");
+                setVerifyAlertMessage(t("user_updated_successfully"));
+                setShowsVerifificationAlert(true); 
             })
             .catch((error) => {
                 setVerifyAlertMessage(error.response.data.error);
@@ -510,6 +515,7 @@ const ManageUsers = () => {
                     userSelect: "none",
                     cursor: "pointer",
                     color: "#2CA8D5",
+                    paddingBottom: "20px",
                 }}
             >
                 {t("manage_users")}
@@ -1611,7 +1617,7 @@ const ManageUsers = () => {
                         gap: "10px",
                     }}
                 >
-                    <Typography variant="body1">{t("chef")} :</Typography>
+                    <Typography variant="body1">N+1 :</Typography>
                     <Typography variant="body2" color="text.secondary">{t(selectedUser.chef)}</Typography>
                 </Box>
                 <Box

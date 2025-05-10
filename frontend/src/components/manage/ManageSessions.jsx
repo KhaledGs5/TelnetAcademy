@@ -279,18 +279,31 @@ const ManageSessions = () => {
         setVerifyUpdate(false);
     };
     
-    const handleUpdateTraining = (trainingId) => {
+    const handleUpdateTraining = async (trainingId) => {
       const updatedTraining = Object.values(trainings).find(training => training._id === trainingId);
-      console.log(updatedTraining);
       if (!updatedTraining) return;
+      console.log(updatedTraining);
+
+
+    const emails = await Promise.all(
+        updatedTraining.acceptedtrainees.map(async (traineeId) => {
+            const response = await axios.get(`http://localhost:5000/api/users/${traineeId}`);
+            return response.data.email; 
+        })
+    );
   
-      axios.put(`http://localhost:5000/api/trainings/${trainingId}`, updatedTraining)
-          .then(() => { 
-              hideVerifyUpdateDialog();
-              setVerifyAlert("success");
-              setVerifyAlertMessage("training_updated_successfully");
-              setShowsVerifificationAlert(true);
-              fetchTrainings();
+     await axios.put(`http://localhost:5000/api/trainings/${trainingId}`, updatedTraining)
+          .then(async () => { 
+            hideVerifyUpdateDialog();
+            setVerifyAlert("success");
+            setVerifyAlertMessage("training_updated_successfully");
+            setShowsVerifificationAlert(true);
+            await axios.post("http://localhost:5000/training-changed", {
+                toEmail: emails,
+                message: `Dear trainee,\n\nThe training titled "${updatedTraining.title}" has been updated. Please check the details on the platform.\n\nBest regards,\nTelnet Academy`,
+                url: "http://localhost:3000/enrolledtrainee",
+            });
+            fetchTrainings();
           })
           .catch((error) => {
               setVerifyAlertMessage(error.response?.data?.error || "An error occurred");
@@ -386,7 +399,7 @@ const ManageSessions = () => {
         hideVerifyDeleteAllDialog();
     };
 
-    // Add  new Session .............
+    // Add new Session .............
 
     const handleAddSession = (trainingId) => {
         axios.post("http://localhost:5000/api/sessions", { training: trainingId })
@@ -845,9 +858,11 @@ const ManageSessions = () => {
                         cursor: "pointer",
                         color: "#2CA8D5",
                         marginLeft: 5,
+                        width: "300px",
+                        wordWrap: "break-word", 
                     }}
                 >
-                    {t("manage_sessions")}
+                    {t("manage_trainings_sessions")}
                 </Typography>
             <Box
                 sx={{

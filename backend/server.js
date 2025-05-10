@@ -78,6 +78,7 @@ app.use("/api", dynamicFormRoutes);
 
 
 // Automatic Mail Sending ..........
+const User = require("./app/models/user.model");
 const transporter = nodemailer.createTransport({
   service: "gmail", 
   auth: {
@@ -383,10 +384,107 @@ You can sign in using the link below: </p>
   }
 });
 
+const formatDaysWithMonth = (dateString, month) => {
+    if (!dateString) return "";
+  
+    const days = dateString.split(" ").map(Number);
+
+    const getDayWithSuffix = (day) => {
+      if (day >= 11 && day <= 13) return `${day}th`; 
+      const lastDigit = day % 10;
+      if (lastDigit === 1) return `${day}st`;
+      if (lastDigit === 2) return `${day}nd`;
+      if (lastDigit === 3) return `${day}rd`;
+      return `${day}th`;
+    };
+  
+    const formattedDays = days.map(getDayWithSuffix);
+    const finalDaysFormat = formattedDays.length > 1 
+      ? formattedDays.slice(0, -1).join(", ") + " and " + formattedDays.slice(-1) 
+      : formattedDays[0];
+  
+    return `${finalDaysFormat} ${month}`;
+};
+
+app.post("/send-trainings-email", async (req, res) => {
+  const { toEmail, trainings, message } = req.body;
+
+  if (!toEmail || !trainings) {
+    return res.status(400).json({ success: false, message: "Missing required fields." });
+  }
+
+
+  const html = `
+    <p>Dear trainee,</p>
+    ${message ? `<p><strong>Message:</strong> ${message}</p>` : ""}
+    <table style="border-collapse: collapse; width: 100%; font-family: Arial, sans-serif;">
+      <thead>
+        <tr>
+          <th style="border: 1px solid #ccc; padding: 8px;">Title</th>
+          <th style="border: 1px solid #ccc; padding: 8px;">Trainer</th>
+          <th style="border: 1px solid #ccc; padding: 8px;">Date</th>
+          <th style="border: 1px solid #ccc; padding: 8px;">Duration</th>
+          <th style="border: 1px solid #ccc; padding: 8px;">Location</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${trainings.map(t => `
+          <tr>
+            <td style="border: 1px solid #ccc; padding: 8px;">${t.title}</td>
+            <td style="border: 1px solid #ccc; padding: 8px;">${t.trainerName}</td>
+            <td style="border: 1px solid #ccc; padding: 8px;">${formatDaysWithMonth(t.date, t.month)}</td>
+            <td style="border: 1px solid #ccc; padding: 8px;">${t.nbOfHours}</td>
+            <td style="border: 1px solid #ccc; padding: 8px;">${t.location}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+    <p>Best regards,<br>Telnet Academy</p>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: toEmail,
+      subject: "New Trainings !",
+      html,
+    });
+
+    res.status(200).json({ success: true, message: "Email sent successfully!" });
+  } catch (error) {
+    console.error("Error sending trainings email:", error);
+    res.status(500).json({ success: false, message: "Failed to send email." });
+  }
+});
+
+app.post("/training-changed", async (req, res) => {
+  const { toEmail, message, url } = req.body;
+
+  if (!toEmail || !message) {
+    return res.status(400).json({ success: false, message: "Missing required fields." });
+  }
+
+  try {
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: toEmail,
+      subject: "Training Changed",
+      html: `
+        <p><strong>Message:</strong> ${message}</p>
+        <p>You can view the full details <a href="${url}" target="_blank">here</a>.</p>
+      `
+    });
+
+    res.status(200).json({ success: true, message: "Email sent successfully!" });
+  } catch (error) {
+    console.error("Error sending email:", error);
+    res.status(500).json({ success: false, message: "Failed to send email." });
+  }
+});
+
 
 
 // Fetch All Users from excel to mongoDB
-const User = require("./app/models/user.model");
 app.post("/api/uploadUsers", async (req, res) => {
   const data = req.body.data;
 

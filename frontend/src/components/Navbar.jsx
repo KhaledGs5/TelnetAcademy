@@ -90,7 +90,16 @@ const Navbar = () => {
         navigate("/dashboard");
     };
 
-    const user = getCookie("User") ?? null;
+    const userid = getCookie("User") ?? null;
+    const [user,setUser] = useState([]);
+    const getUser = async () => {
+        const response = await axios.get(`http://localhost:5000/api/users/${userid}`);
+        setUser(response.data);
+    };
+    useEffect(() => {
+        if(userid)getUser();
+    }, []);
+    const token = getCookie("Token") ?? null;
 
 
     const location = useLocation();
@@ -334,14 +343,20 @@ const Navbar = () => {
                 selectedTrainerIds = TrainingTrainers
                     .filter(trainer => trainer.selected)
                     .map(trainer => trainer.id); 
-
-                const response = await axios.post("http://localhost:5000/api/users/callforspecifiedtrainers", {
+                const response = await axios.post(
+                "http://localhost:5000/api/users/callforspecifiedtrainers",
+                {
                     trainersIDs: selectedTrainerIds,
                     sen: user._id,
                     tp: "Call_For_Trainers",
                     msg: callMessage,
-                });
-    
+                },
+                {
+                    headers: {
+                    Authorization: `Bearer ${token}`,
+                    }
+                }
+                );
                 if (response.data.success) {
                     await axios.post("http://localhost:5000/call-for-trainers", {
                         toEmail: selectedTrainerEmails,
@@ -373,8 +388,7 @@ const Navbar = () => {
             console.error("Error sending call for trainers:", error);
         }
     };
-    
-    
+        
 
     //Became Trainee ...............
 

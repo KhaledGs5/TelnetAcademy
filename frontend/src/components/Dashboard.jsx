@@ -107,7 +107,15 @@ const Navbar = () => {
     // ..............
 
     const { t } = useLanguage(); 
-    const user = getCookie("User") || null;
+    const userid = getCookie("User") ?? null;
+    const [user,setUser] = useState([]);
+    const getUser = async () => {
+        const response = await axios.get(`http://localhost:5000/api/users/${userid}`);
+        setUser(response.data);
+    };
+    useEffect(() => {
+        if(userid)getUser();
+    }, []);
     const {selectedRole} = useNavbar();
 
     const [view, setView] = useState("trainings");

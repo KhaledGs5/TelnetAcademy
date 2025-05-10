@@ -12,7 +12,15 @@ import dayjs from 'dayjs';
 
 const BecameTrainer = () => {
 
-    const user = getCookie("User");
+    const userid = getCookie("User") ?? null;
+    const [user,setUser] = useState([]);
+    const getUser = async () => {
+        const response = await axios.get(`http://localhost:5000/api/users/${userid}`);
+        setUser(response.data);
+    };
+    useEffect(() => {
+        if(userid)getUser();
+    }, []);
     const { t } = useLanguage();
 
     const [showForm, setShowForm] = useState(false);

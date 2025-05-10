@@ -10,10 +10,19 @@ import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { useNavbar } from '../NavbarContext';
 import dayjs from 'dayjs';
+import TrainerCalls from "./TrainerCalls";
 
 const TrainerTraining = () => {
 
-    const user = getCookie("User");
+    const userid = getCookie("User") ?? null;
+    const [user,setUser] = useState([]);
+    const getUser = async () => {
+        const response = await axios.get(`http://localhost:5000/api/users/${userid}`);
+        setUser(response.data);
+    };
+    useEffect(() => {
+        if(userid)getUser();
+    }, []);
     const { t } = useLanguage();
 
     const [showForm, setShowForm] = useState(false);
@@ -296,6 +305,23 @@ const TrainerTraining = () => {
                         </Tooltip>
                     </Box>
                 </Box>
+                <Typography
+                    sx={{
+                        fontSize: 20,
+                        fontWeight: "bold",
+                        textAlign: "center",
+                        letterSpacing: 0.2,
+                        lineHeight: 1.5,
+                        userSelect: "none",
+                        cursor: "pointer",
+                        color: "text.primary",
+                        width: "100%",
+                        marginBottom: "10px",
+                    }}
+                >
+                {t("list_of_training_calls")}
+                </Typography>  
+                <TrainerCalls w="100%" p="0px"/>
                 <Box
                 sx={{
                     width: '100%',

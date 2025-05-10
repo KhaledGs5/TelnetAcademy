@@ -37,7 +37,15 @@ const TraineeSession = () => {
 
   // Fetch All Trainings with corresponding sessions
   const [trainings, setTrainings] = useState([]);
-  const user = getCookie("User");
+    const userid = getCookie("User") ?? null;
+    const [user,setUser] = useState([]);
+    const getUser = async () => {
+    const response = await axios.get(`http://localhost:5000/api/users/${userid}`);
+    setUser(response.data);
+    };
+    useEffect(() => {
+    if(userid)getUser();
+    }, []);
 
   const updateStatus = () => {
     trainings.forEach((training) => {

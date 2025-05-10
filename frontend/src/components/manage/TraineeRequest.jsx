@@ -25,7 +25,15 @@ const TraineeRequest = () => {
     const location = useLocation();
     const [selectedTraineeId, setSelectedTraineeId] = useState("");
     const [selectedTrainingId, setSelectedTrainingId] = useState("");
-    const user = getCookie("User");
+    const userid = getCookie("User") ?? null;
+    const [user,setUser] = useState([]);
+    const getUser = async () => {
+        const response = await axios.get(`http://localhost:5000/api/users/${userid}`);
+        setUser(response.data);
+    };
+    useEffect(() => {
+        if(userid)getUser();
+    }, []);
 
     // Verify ...........
 
@@ -1295,6 +1303,32 @@ const TraineeRequest = () => {
                 >
                     <Typography variant="body1">{t("role")} :</Typography>
                     <Typography variant="body2" color="text.secondary">{t(traineesData[selectedTraineeId]?.role)}</Typography>
+                </Box>
+                <Box
+                    sx={{
+                        height: '20px',
+                        width: '100%',
+                        display: "flex",
+                        flexDirection: "row",
+                        alignItems: "center", 
+                        gap: "10px",
+                    }}
+                >
+                    <Typography variant="body1">N+1 :</Typography>
+                    <Typography variant="body2" color="text.secondary">{t(traineesData[selectedTraineeId]?.chef)}</Typography>
+                </Box>
+                <Box
+                    sx={{
+                        height: '20px',
+                        width: '100%',
+                        display: "flex",
+                        flexDirection: "row",
+                        alignItems: "center", 
+                        gap: "10px",
+                    }}
+                >
+                    <Typography variant="body1">{t("type")} :</Typography>
+                    <Typography variant="body2" color="text.secondary">{t(traineesData[selectedTraineeId]?.type)}</Typography>
                 </Box>
             </Dialog>
             <Snackbar open={showsVerificationAlert} autoHideDuration={3000} onClose={handleVerificationAlertClose}>

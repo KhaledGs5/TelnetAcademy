@@ -5,7 +5,7 @@ const router = express.Router();
 const multer = require('multer');
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
-const { verifyAdmin } = require("../security/auth.middleware");
+const { verifyAdmin, verifyManager } = require("../security/auth.middleware");
 
 router.put('/users/upload-quiz', upload.single('file'), uploadQuiz);
 router.post('/users/get-quiz-file/:id', getQuizFile);
@@ -18,8 +18,8 @@ router.post("/users/verify-email", verifyEmail);
 router.post("/users", verifyAdmin, createUser);
 router.put("/users/:id", updateUser);
 router.delete("/users/:id", deleteUser);
-router.post("/users/callfortrainers", callForTrainers);
-router.post("/users/callforspecifiedtrainers", callForSpecifiedTrainers);
+router.post("/users/callfortrainers", verifyManager ,callForTrainers);
+router.post("/users/callforspecifiedtrainers",verifyManager, callForSpecifiedTrainers);
 
 
 module.exports = router;
