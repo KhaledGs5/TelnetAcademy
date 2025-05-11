@@ -23,7 +23,6 @@
     "framer-motion": "^12.4.7",
     "html-docx-js": "^0.3.1",
     "html-to-image": "^1.11.13",
-    "i18next": "^24.2.2",
     "js-cookie": "^3.0.5",
     "msal": "^1.4.18",
     "react": "^19.0.0",
