@@ -4,23 +4,15 @@ import { Box, Typography,Tooltip,IconButton, Button, TableCell,TableRow,TableHea
     ,Checkbox,FormControlLabel,TableBody,Table,Snackbar, Alert
 } from "@mui/material";
 import { useLanguage } from "../languagecontext";
-import { getCookie } from "./Cookies";
-import axios from "axios";
+import { useUser } from '../UserContext';
+import api from "../api";
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import dayjs from 'dayjs';
 
 const BecameTrainer = () => {
 
-    const userid = getCookie("User") ?? null;
-    const [user,setUser] = useState([]);
-    const getUser = async () => {
-        const response = await axios.get(`http://localhost:5000/api/users/${userid}`);
-        setUser(response.data);
-    };
-    useEffect(() => {
-        if(userid)getUser();
-    }, []);
+    const { user } = useUser();
     const { t } = useLanguage();
 
     const [showForm, setShowForm] = useState(false);
@@ -42,7 +34,7 @@ const BecameTrainer = () => {
     const [numberOfRejected, setNumberOfRejected] = useState(0);
 
     const fetchForms = () => {
-        axios.get(`http://localhost:5000/api/form/${user._id}`)
+        api.get(`/api/form/${user._id}`)
             .then((response) => {
                 console.log(response.data);
                 const updatedForms = response.data.map(form => ({
@@ -110,7 +102,7 @@ const BecameTrainer = () => {
     };
 
     const handleSendForm = () => {
-        axios.post("http://localhost:5000/api/form", formData)
+        api.post("/api/form", formData)
            .then((response) => {
               console.log(response.data);
               setShowsVerifificationAlert(true);

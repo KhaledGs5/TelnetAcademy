@@ -15,9 +15,9 @@ import FilterAltOffIcon from '@mui/icons-material/FilterAltOff';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import DialogTitle from '@mui/material/DialogTitle';
 import Dialog from '@mui/material/Dialog';
-import { getCookie } from "./Cookies";
+import { useUser } from '../UserContext';
 import dayjs from 'dayjs';
-import axios from "axios";
+import api from "../api";
 
 const TraineeSession = () => {
 
@@ -37,20 +37,12 @@ const TraineeSession = () => {
 
   // Fetch All Trainings with corresponding sessions
   const [trainings, setTrainings] = useState([]);
-    const userid = getCookie("User") ?? null;
-    const [user,setUser] = useState([]);
-    const getUser = async () => {
-    const response = await axios.get(`http://localhost:5000/api/users/${userid}`);
-    setUser(response.data);
-    };
-    useEffect(() => {
-    if(userid)getUser();
-    }, []);
+  const { user } = useUser();
 
   const updateStatus = () => {
     trainings.forEach((training) => {
         training.sessions.forEach((session) => {
-            axios.put(`http://localhost:5000/api/sessions/${session._id}`, session)
+            api.put(`/api/sessions/${session._id}`, session)
                 .then((response) => {})
                 .catch((error) => {});
         });
@@ -62,13 +54,13 @@ const TraineeSession = () => {
   }, []);
 
   const fetchTrainings = () => {
-    axios.get("http://localhost:5000/api/trainings")
+    api.get("/api/trainings")
         .then((response) => {
             const trainingsWithModified = response.data
-            .filter(training => training.trainer !== user._id 
+            .filter(training => training.trainer !== user?._id 
                 && (
-                !training.traineesrequests.some(request => request.trainee === user._id) 
-                && !training.acceptedtrainees.includes(user._id) && !training.delivered &&
+                !training.traineesrequests.some(request => request.trainee === user?._id) 
+                && !training.acceptedtrainees.includes(user?._id) && !training.delivered &&
                 new Date() < new Date(training.registrationDeadline)
             ))
             .map(training => ({
@@ -88,7 +80,7 @@ const TraineeSession = () => {
                 }
                 setNumberOfFullTrainings(fullTrainings);
                 setNumberOfNotFullTrainings(notFullTrainings);
-                axios.get(`http://localhost:5000/api/sessions/training/${training._id}`)
+                api.get(`/api/sessions/training/${training._id}`)
                     .then((response) => {
                         const updatedSessions = response.data.map(session => ({
                             ...session,
@@ -138,9 +130,9 @@ const TraineeSession = () => {
     };
 
     const registerInTraining = (trainingId) => {
-        const reqData = {trainee : user._id, date: time};
+        const reqData = {trainee : user?._id, date: time};
         console.log(reqData);
-        axios.put(`http://localhost:5000/api/trainings/register/${trainingId}`, reqData)
+        api.put(`/api/trainings/register/${trainingId}`, reqData)
             .then((response) => {
                 setShowsVerifificationAlert(true);
                 setVerifyAlertMessage("registration_successful");
@@ -218,11 +210,11 @@ const TraineeSession = () => {
 
     const fetchTrainers = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/users');
+        const response = await api.get('/api/users');
         if (response.status === 200) {
           const trainers = response.data
             .filter(user => (user.role === "trainer" || user.role === "trainee_trainer"))
-            .map(user => ({ name: user.name, id: user._id }));
+            .map(user => ({ name: user.name, id: user?._id }));
     
           setFilterTrainer([{ name: 'all', id: 0 }, ...trainers]);
           setTrainingTrainers(trainers);

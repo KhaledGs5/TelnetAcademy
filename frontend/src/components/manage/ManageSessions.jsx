@@ -20,7 +20,7 @@ import { StaticDatePicker, LocalizationProvider , DateTimePicker} from "@mui/x-d
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import dayjs from 'dayjs';
-import axios from "axios";
+import api from "../../api";
 
 
 
@@ -65,7 +65,7 @@ const ManageSessions = () => {
   const updateStatus = () => {
     trainings.forEach((training) => {
         training.sessions.forEach((session) => {
-            axios.put(`http://localhost:5000/api/sessions/${session._id}`, session)
+            api.put(`/api/sessions/${session._id}`, session)
                 .then((response) => {})
                 .catch((error) => {});
         });
@@ -77,7 +77,7 @@ const ManageSessions = () => {
   }, []);
 
   const fetchTrainings = () => {
-    axios.get("http://localhost:5000/api/trainings")
+    api.get("/api/trainings")
         .then((response) => {
             const trainingsWithModified = response.data.map(training => ({
                 ...training,
@@ -89,7 +89,7 @@ const ManageSessions = () => {
             setTrainings(trainingsWithModified);
 
             trainingsWithModified.forEach((training) => {
-                axios.get(`http://localhost:5000/api/sessions/training/${training._id}`)
+                api.get(`/api/sessions/training/${training._id}`)
                     .then((response) => {
                         const updatedSessions = response.data.map(session => ({
                             ...session,
@@ -194,7 +194,7 @@ const ManageSessions = () => {
           nbOfParticipants: newTrainingNbOfParticipants,
           trainer: newTrainingTrainer,
       };
-      axios.post("http://localhost:5000/api/trainings", newTraining)
+      api.post("/api/trainings", newTraining)
         .then((response) => {
           fetchTrainings();
           hideNewTrainingForm();
@@ -217,7 +217,7 @@ const ManageSessions = () => {
             training: trainingId, 
           };
       
-          axios.post("http://localhost:5000/api/sessions", newSession)
+          api.post("/api/sessions", newSession)
             .then(() => {
             })
             .catch((error) => {
@@ -287,18 +287,18 @@ const ManageSessions = () => {
 
     const emails = await Promise.all(
         updatedTraining.acceptedtrainees.map(async (traineeId) => {
-            const response = await axios.get(`http://localhost:5000/api/users/${traineeId}`);
+            const response = await api.get(`/api/users/${traineeId}`);
             return response.data.email; 
         })
     );
   
-     await axios.put(`http://localhost:5000/api/trainings/${trainingId}`, updatedTraining)
+     await api.put(`/api/trainings/${trainingId}`, updatedTraining)
           .then(async () => { 
             hideVerifyUpdateDialog();
             setVerifyAlert("success");
             setVerifyAlertMessage("training_updated_successfully");
             setShowsVerifificationAlert(true);
-            await axios.post("http://localhost:5000/training-changed", {
+            await api.post("/training-changed", {
                 toEmail: emails,
                 message: `Dear trainee,\n\nThe training titled "${updatedTraining.title}" has been updated. Please check the details on the platform.\n\nBest regards,\nTelnet Academy`,
                 url: "http://localhost:3000/enrolledtrainee",
@@ -312,7 +312,7 @@ const ManageSessions = () => {
           });
 
         updatedTraining.sessions.forEach(session => {
-            axios.put(`http://localhost:5000/api/sessions/${session._id}`, session)
+            api.put(`/api/sessions/${session._id}`, session)
                 .catch(error => {});
         });
         
@@ -362,7 +362,7 @@ const ManageSessions = () => {
     };
 
     const handleDeleteTraining = (trainingId) => {
-        axios.delete(`http://localhost:5000/api/trainings/${trainingId}`)
+        api.delete(`/api/trainings/${trainingId}`)
             .then((response) => {
                 console.log(response.data.message);
                 hideVerifyDeleteDialog();
@@ -402,7 +402,7 @@ const ManageSessions = () => {
     // Add new Session .............
 
     const handleAddSession = (trainingId) => {
-        axios.post("http://localhost:5000/api/sessions", { training: trainingId })
+        api.post("/api/sessions", { training: trainingId })
             .then(() => {
                 setTrainings(prevTrainings => {
                     const trainingKey = Object.keys(prevTrainings).find(key => prevTrainings[key]._id === trainingId);
@@ -419,7 +419,7 @@ const ManageSessions = () => {
     
                     console.log(updatedTraining[trainingKey]); 
     
-                    axios.put(`http://localhost:5000/api/trainings/${trainingId}`, updatedTraining[trainingKey])
+                    api.put(`/api/trainings/${trainingId}`, updatedTraining[trainingKey])
                         .then(() => {
                             fetchTrainings();
                         })
@@ -456,7 +456,7 @@ const ManageSessions = () => {
     };
 
     const handleDeleteSession = () => {
-        axios.delete(`http://localhost:5000/api/sessions/${selectedSessionId}`)
+        api.delete(`/api/sessions/${selectedSessionId}`)
             .then((response) => {
                 setVerifyAlert("success");
                 setVerifyAlertMessage("session_deleted");
@@ -588,7 +588,7 @@ const ManageSessions = () => {
 
     const fetchTrainers = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/users');
+        const response = await api.get('/api/users');
         if (response.status === 200) {
           const trainers = response.data
             .filter(user => user.role === "trainer" || user.role === "trainee_trainer")

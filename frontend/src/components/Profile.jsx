@@ -6,7 +6,8 @@ import SaveIcon from '@mui/icons-material/Save';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import { setCookie, getCookie } from "./Cookies";
-import axios from "axios";
+import { useUser } from '../UserContext';
+import api from "../api";
 
 const Profile = () => {
     const { t } = useLanguage();
@@ -26,15 +27,7 @@ const Profile = () => {
     };
 
     //Update Profile
-    const userid = getCookie("User") ?? null;
-    const [user,setUser] = useState([]);
-    const getUser = async () => {
-        const response = await axios.get(`http://localhost:5000/api/users/${userid}`);
-        setUser(response.data);
-    };
-    useEffect(() => {
-        if(userid)getUser();
-    }, []);
+    const { user } = useUser();
     const [updateAlert, setUpdateAlert] = useState("");
     const [showUpdateAlert, setShowUpdateAlert] = useState(false);
     const [verifyUpdateAlert, setVerifyUpdateAlert] = useState("error");
@@ -82,10 +75,9 @@ const Profile = () => {
         if(newName !== ""){updatedUser.name = newName};
         if(newPassword!== ""){updatedUser.password = newPassword};
 
-        axios.put(`http://localhost:5000/api/users/${user._id}`, updatedUser)
+        api.put(`/api/users/${user?._id}`, updatedUser)
         .then((response) => {
             if(response.status == 200){
-                setCookie("User", response.data, 5);
                 setNameChanged(false);
                 setPasswordChanged(false);
                 setUpdateAlert("user_updated_successfully");
@@ -161,7 +153,7 @@ const Profile = () => {
         const newPassword = generateRandomPassword();
         const resetPasswordMessage = `Your New Password is: ${newPassword}`;
         try {
-            const response = await axios.post("http://localhost:5000/api/users/verify-email", { email: verifyEmail });
+            const response = await api.post("/api/users/verify-email", { email: verifyEmail });
 
             if(response.status === 200){
                 correctEmail();
@@ -169,11 +161,11 @@ const Profile = () => {
                     toEmail: verifyEmail,
                     message: resetPasswordMessage,
                 };
-                const response = await axios.put(`http://localhost:5000/api/users/${verifyEmail}/password`, {
+                const response = await api.put(`/api/users/${verifyEmail}/password`, {
                     password: newPassword,
                   });
                 if(response.status === 200){
-                await axios.post("http://localhost:5000/password-reset", emailData);}
+                await api.post("/password-reset", emailData);}
             };
 
         } catch (error) {
@@ -319,8 +311,8 @@ const Profile = () => {
                         paddingLeft: '20px',
                     }}
                 >
-                    <Typography variant="body1">{user.name}</Typography>
-                    <Typography variant="caption" color="text.secondary">{user.role ? t(user.role) : t("admin")}</Typography>
+                    <Typography variant="body1">{user?.name}</Typography>
+                    <Typography variant="caption" color="text.secondary">{user?.role ? t(user?.role) : t("admin")}</Typography>
                 </Box>
             </Box>
             <Typography
@@ -347,7 +339,7 @@ const Profile = () => {
                     gap: '20px',
                 }}
             >
-                <Typography variant="body1">{user.name}</Typography>
+                <Typography variant="body1">{user?.name}</Typography>
                 <TextField label={t("new_name")} variant="outlined" required onChange={handleNameChange}/>
                 <Tooltip title={t("save")} arrow> 
                     <IconButton sx={{color:"#76C5E1"}} disabled={!nameChanged} onClick={() => handleUserUpdate()}>

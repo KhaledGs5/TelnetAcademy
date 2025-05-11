@@ -15,7 +15,7 @@ export const NavbarProvider = ({ children }) => {
   const [numberOfDeletedTrainee, setNumberOfDeletedTrainee] = useState(0);
   const [numberOfQuizFromTrainer, setNumberOfQuizFromTrainer]= useState(0);
   const [numberOfQuizFromTrainee, setNumberOfQuizFromTrainee]= useState(0);
-  const [selectedRole, setSelectedRole] = useState(getCookie("Role") || "trainer");
+  const [selectedRole, setSelectedRole] = useState(getCookie("Role") || "");
 
   return (
     <NavbarContext.Provider value={{ 

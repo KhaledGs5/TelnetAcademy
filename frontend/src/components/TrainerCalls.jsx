@@ -3,21 +3,14 @@ import { getCookie , setCookie} from './Cookies';
 import { Box, Link, Typography, Menu, MenuItem, Dialog, Button, DialogTitle, Badge, TableCell,TableRow,TableHead,TableContainer,Paper,TextField
     ,Checkbox,FormControlLabel,TableBody,Table,Snackbar, Alert
 } from "@mui/material";
-import axios from 'axios';
+import api from "../api";
 import { useLanguage } from "../languagecontext";
+import { useUser } from '../UserContext';
 
 const TrainerCalls = ({ w="70%", p="20px"}) => {
 
     const { t } = useLanguage();
-    const userid = getCookie("User") ?? null;
-    const [user,setUser] = useState([]);
-    const getUser = async () => {
-        const response = await axios.get(`http://localhost:5000/api/users/${userid}`);
-        setUser(response.data);
-    };
-    useEffect(() => {
-        if(userid)getUser();
-    }, []);
+    const { user } = useUser();
 
     // Verify Sending Form...........
 
@@ -33,8 +26,8 @@ const TrainerCalls = ({ w="70%", p="20px"}) => {
 
     const fetchAvailableCalls = async () => {
       try {
-        const res = await axios.post("http://localhost:5000/api/notifications/withtype", {
-          rec: user._id,
+        const res = await api.post("/api/notifications/withtype", {
+          rec: user?._id,
           tp: "Call_For_Trainers"
         });
     
@@ -76,7 +69,7 @@ const TrainerCalls = ({ w="70%", p="20px"}) => {
         hasExperience: false,
         exp: Array(2).fill({ theme: "", cadre: "", periode:""}),
         motivation: "",
-        trainer: user._id,
+        trainer: user?._id,
     });
     
     const handleChange = (field, value) => {
@@ -104,7 +97,7 @@ const TrainerCalls = ({ w="70%", p="20px"}) => {
 
     const handleRespondCall = async (notifId) => {
         try {
-          await axios.post("http://localhost:5000/api/form", {
+          await api.post("/api/form", {
             ...formData,
             notifId,
           }).then(() => {
@@ -173,7 +166,7 @@ const TrainerCalls = ({ w="70%", p="20px"}) => {
                                 width: "100%",
                             }}
                         >
-                        {t("hello")} {user.name},<br /> {call.message ? call.message
+                        {t("hello")} {user?.name},<br /> {call.message ? call.message
                         :t("telnet_academy_is_not_calling_for_training_sessions")}
                         </Typography>    
                         <Box

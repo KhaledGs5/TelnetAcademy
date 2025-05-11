@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { getCookie , setCookie} from '../Cookies';
 import { useLocation } from 'react-router-dom';
 import { Box, Link, Typography,Tooltip,IconButton, MenuItem, Dialog, Button, DialogTitle, TableCell,TableRow,TableHead,TableContainer,Paper,TextField
     ,TableBody,Table,FormControl, InputLabel,OutlinedInput,InputAdornment, Popover, Snackbar, Alert,Input, Badge
 } from "@mui/material";
-import axios from 'axios';
+import api from "../../api";
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import AddIcon from '@mui/icons-material/Add';
@@ -15,7 +14,7 @@ import PersonIcon from '@mui/icons-material/Person';
 import ClearIcon from '@mui/icons-material/Clear';
 import SearchIcon from '@mui/icons-material/Search';
 import { useNavbar } from '../../NavbarContext';
-
+import { useUser } from '../../UserContext';
 import dayjs from 'dayjs';
 
 const TraineeRequest = () => {
@@ -25,15 +24,7 @@ const TraineeRequest = () => {
     const location = useLocation();
     const [selectedTraineeId, setSelectedTraineeId] = useState("");
     const [selectedTrainingId, setSelectedTrainingId] = useState("");
-    const userid = getCookie("User") ?? null;
-    const [user,setUser] = useState([]);
-    const getUser = async () => {
-        const response = await axios.get(`http://localhost:5000/api/users/${userid}`);
-        setUser(response.data);
-    };
-    useEffect(() => {
-        if(userid)getUser();
-    }, []);
+    const { user } = useUser();
 
     // Verify ...........
 
@@ -50,7 +41,7 @@ const TraineeRequest = () => {
     const [traineeRequestNotif, setTraineeRequestNotif] = useState([]);
 
     const fetchTrainingsWithRequests = async () => {
-        axios.get("http://localhost:5000/api/trainings")
+        api.get("/api/trainings")
             .then((response) => {
                 const updatedTrainings = response.data.filter(training => (
                     (training.traineesrequests.length !== 0)
@@ -58,7 +49,7 @@ const TraineeRequest = () => {
 
                 Promise.all(
                     updatedTrainings.map(training =>
-                        axios.get(`http://localhost:5000/api/sessions/training/${training._id}`)
+                        api.get(`/api/sessions/training/${training._id}`)
                             .then((sessionResponse) => {
                                 training.sessions = sessionResponse.data;
                                 return training;
@@ -79,7 +70,7 @@ const TraineeRequest = () => {
             .catch((error) => {
                 console.error("Error fetching trainings:", error);
             });
-        const response = await axios.post("http://localhost:5000/api/notifications/noread", {rec : user._id });
+        const response = await api.post("/api/notifications/noread", {rec : user?._id });
         setTraineeRequestNotif(
             response.data.notifications
                 .filter(notification => notification.type === "New_Trainee_Request")
@@ -98,7 +89,7 @@ const TraineeRequest = () => {
 
     const handleOpenTraineeRequestNotifications = async (traineeId) => {
         try {
-          await axios.put("http://localhost:5000/api/notifications/markread", {rec : user._id, sen : traineeId, tp : "New_Trainee_Request", rtp : "readTraineeRequestNotifications"});
+          await api.put("/api/notifications/markread", {rec : user?._id, sen : traineeId, tp : "New_Trainee_Request", rtp : "readTraineeRequestNotifications"});
           setNumberOfTraineeRequests(0);
         } catch (error) {
           console.error("Error marking notifications as read", error);
@@ -112,7 +103,7 @@ const TraineeRequest = () => {
         const responses = await Promise.all(
             trainings.flatMap(training => 
                 training.traineesrequests.map(t => 
-                    axios.get(`http://localhost:5000/api/users/${t.trainee}`).catch(() => null)
+                    api.get(`/api/users/${t.trainee}`).catch(() => null)
                 )
             )
         );
@@ -137,7 +128,7 @@ const TraineeRequest = () => {
     const fetchTrainers = async () => {
         const responses = await Promise.all(
             trainings.map(training => 
-                axios.get(`http://localhost:5000/api/users/${training.trainer}`).catch(() => null)
+                api.get(`/api/users/${training.trainer}`).catch(() => null)
             )
         );
     
@@ -197,7 +188,7 @@ const TraineeRequest = () => {
     };
 
     const handleAcceptRequest = async () => {
-        await axios.put(`http://localhost:5000/api/trainings/accept/${selectedTrainingId}`, { trainee:selectedTraineeId, manageraccepted : user._id})
+        await api.put(`/api/trainings/accept/${selectedTrainingId}`, { trainee:selectedTraineeId, manageraccepted : user?._id})
         .then(() => {
             hideVerifyRejectDialog();
             setVerifyAlertMessage("trainee_accepted");
@@ -209,7 +200,7 @@ const TraineeRequest = () => {
         .catch((error) => {
             console.error("Error deleting form:", error);
         });
-        await axios.post("http://localhost:5000/accept-request/", 
+        await api.post("/accept-request/", 
             {
                 toEmail: traineesData[selectedTraineeId]?.email,
                 message: `Hello ${traineesData[selectedTraineeId]?.name}, your request has been accepted.`,
@@ -233,7 +224,7 @@ const TraineeRequest = () => {
     };
 
     const handleDeleteRequest = () => {
-        axios.put(`http://localhost:5000/api/trainings/reject/${selectedTrainingId}`, { trainee:selectedTraineeId, managerrejected:user._id })
+        api.put(`/api/trainings/reject/${selectedTrainingId}`, { trainee:selectedTraineeId, managerrejected:user?._id })
         .then(() => {
             hideVerifyRejectDialog();
             setVerifyAlertMessage("trainee_rejected");
@@ -245,14 +236,14 @@ const TraineeRequest = () => {
         .catch((error) => {
             console.error("Error deleting form:", error);
         });
-        axios.get(`http://localhost:5000/api/users/${selectedTraineeId}`)
+        api.get(`/api/users/${selectedTraineeId}`)
             .then((response) => {
                 const receiver = {
                     toEmail: response.data.email,
                     message: rejectMessage,
                     url: "http://localhost:3000/enrolledtrainee",
                 }
-                axios.post("http://localhost:5000/reject-request", receiver);
+                api.post("/reject-request", receiver);
             })
     };
 

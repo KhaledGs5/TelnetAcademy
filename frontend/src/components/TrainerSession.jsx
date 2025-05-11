@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext  } from "react";
 import { useLanguage } from "../languagecontext";
 import { Box, TextField , Typography, Button,Input,IconButton, InputAdornment, Tooltip, OutlinedInput, FormControl, InputLabel, Pagination,Radio, Alert, Snackbar , Autocomplete, Popover,Table, TableBody, TableCell, TableContainer, 
     TableHead, TableRow, Paper, Checkbox, FormControlLabel,Grid ,Badge, Select } from "@mui/material";
@@ -19,31 +19,24 @@ import Dialog from '@mui/material/Dialog';
 import { getCookie } from "./Cookies";
 import { useNavbar } from '../NavbarContext';
 import dayjs from 'dayjs';
-import axios from "axios";
+import api from "../api";
+import { useUser } from '../UserContext';
 
 const TrainerSession = () => {
 
   const { t } = useLanguage();
+  const { user } = useUser();
   const [selectedTrainingId, setSelectedTrainingId] = useState(true);
   const [selectedSession, setSelectedSession] = useState(true);
 
   // Fetch All Trainings with corresponding sessions
   const [trainings, setTrainings] = useState([]);
   const [listOfScores, setListOfScores] = useState([]);
-    const userid = getCookie("User") ?? null;
-    const [user,setUser] = useState([]);
-    const getUser = async () => {
-    const response = await axios.get(`http://localhost:5000/api/users/${userid}`);
-    setUser(response.data);
-    };
-    useEffect(() => {
-    if(userid)getUser();
-    }, []);
-
+    
   const updateStatus = () => {
     trainings.forEach((training) => {
         training.sessions.forEach((session) => {
-            axios.put(`http://localhost:5000/api/sessions/${session._id}`, session)
+            api.put(`/api/sessions/${session._id}`, session)
                 .then((response) => {})
                 .catch((error) => {});
         });
@@ -55,11 +48,11 @@ const TrainerSession = () => {
   }, []);
 
   const fetchTrainings = () => {
-    axios.get("http://localhost:5000/api/trainings")
+    api.get("/api/trainings")
         .then((response) => {
             const trainingsWithModified = response.data
             .filter((training) => {
-                return training.trainer === user._id;
+                return training.trainer === user?._id;
             })
             .map(training => ({
                 ...training,
@@ -79,7 +72,7 @@ const TrainerSession = () => {
                 }
                 setNumberOfFullTrainings(fullTrainings);
                 setNumberOfNotFullTrainings(notFullTrainings);
-                axios.get(`http://localhost:5000/api/sessions/training/${training._id}`)
+                api.get(`/api/sessions/training/${training._id}`)
                     .then((response) => {
                         const updatedSessions = response.data.map(session => ({
                             ...session,
@@ -98,7 +91,7 @@ const TrainerSession = () => {
             trainingsWithModified.forEach((training) => {
                 let listOfTrainees = [];
                 (training.confirmedtrainees).forEach((traineeId) => {
-                    axios.get(`http://localhost:5000/api/users/${traineeId}`)
+                    api.get(`/api/users/${traineeId}`)
                         .then((response) => {
                             listOfTrainees.push(response.data);
                             setListOfScores((prevScores) => {
@@ -189,7 +182,7 @@ const TrainerSession = () => {
     const [presentTrainees, setPresentTrainees] = useState([]);
 
     const fetchPresentTrainees = (sessionId, trainingId) => {
-        axios.get(`http://localhost:5000/api/sessions/${sessionId}`)
+        api.get(`/api/sessions/${sessionId}`)
             .then((response) => {
                 const present = response.data.presenttrainees;
                 let numberOfPresent = 0;
@@ -216,7 +209,7 @@ const TrainerSession = () => {
     
 
     const markTraineePresent = (traineeId) => {
-        axios.put(`http://localhost:5000/api/sessions/trainee/${selectedSession}`, {traineeId})
+        api.put(`/api/sessions/trainee/${selectedSession}`, {traineeId})
             .then((response) => {
                 fetchPresentTrainees(selectedSession, selectedTrainingId);
             })
@@ -226,7 +219,7 @@ const TrainerSession = () => {
     }
     
     const markTraineeAbsent = (traineeId) => {
-        axios.put(`http://localhost:5000/api/sessions/trainee/absent/${selectedSession}`, {traineeId})
+        api.put(`/api/sessions/trainee/absent/${selectedSession}`, {traineeId})
             .then((response) => {
                 fetchPresentTrainees(selectedSession, selectedTrainingId);
             })
@@ -266,7 +259,7 @@ const TrainerSession = () => {
     const updateScoresInBackend = async () => {
         for (const entry of listOfScores) {
             try {
-                await axios.put(`http://localhost:5000/api/users/update-score`, {
+                await api.put(`/api/users/update-score`, {
                     traineeId: entry.traineeId,
                     trainingId: entry.trainingId,
                     scorePre: entry.scorePre,
@@ -306,7 +299,7 @@ const TrainerSession = () => {
 
     const handleOpenTraineeQuizNotification = async () => {
         try {
-            await axios.put("http://localhost:5000/api/notifications/markread", {rec : user._id, tp : "Quiz_Uploaded_From_Trainee", rtp : "readTrainerQuizNotifications"});
+            await api.put("/api/notifications/markread", {rec : user?._id, tp : "Quiz_Uploaded_From_Trainee", rtp : "readTrainerQuizNotifications"});
             setNumberOfQuizFromTrainee(0); 
         } catch (error) {
             console.error("Error marking notifications as read", error);
@@ -355,11 +348,11 @@ const TrainerSession = () => {
         formData.append('file', file);
         formData.append('trainingId', selectedTrainingId);
         formData.append('type', quizType);
-        formData.append('trainer', user._id);
+        formData.append('trainer', user?._id);
 
         try {
-            await axios.put(`http://localhost:5000/api/trainings/${selectedTrainingId}`, {quizVisibility : isAnonymous})
-            await axios.put('http://localhost:5000/api/trainings/upload-quiz', formData);
+            await api.put(`/api/trainings/${selectedTrainingId}`, {quizVisibility : isAnonymous})
+            await api.put('/api/trainings/upload-quiz', formData);
             setVerifyAlertMessage(t("quiz_sent_successfully"));
             setVerifyAlert("success");
             setShowsVerifificationAlert(true);
@@ -374,8 +367,8 @@ const TrainerSession = () => {
     
     const downloadQuizFile = async (traineeId, tp) => {
         try {
-            const response = await axios.post(
-                `http://localhost:5000/api/users/get-quiz-file/${traineeId}`,
+            const response = await api.post(
+                `/api/users/get-quiz-file/${traineeId}`,
                 {
                     trainingId: selectedTrainingId,
                     type: tp
@@ -457,11 +450,11 @@ const TrainerSession = () => {
 
     const fetchTrainers = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/users');
+        const response = await api.get('/api/users');
         if (response.status === 200) {
           const trainers = response.data
             .filter(user => (user.role === "trainer" || user.role === "trainee_trainer"))
-            .map(user => ({ name: user.name, id: user._id }));
+            .map(user => ({ name: user?.name, id: user?._id }));
           setTrainingTrainers(trainers);
         }
       } catch (error) {

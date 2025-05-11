@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { getCookie , setCookie} from '../Cookies';
+import { useUser } from '../../UserContext';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Box, Link, Typography,Tooltip,IconButton, Menu, MenuItem, Dialog, Button, DialogTitle, Badge, TableCell,TableRow,TableHead,TableContainer,Paper,TextField
     ,Checkbox,FormControlLabel,TableBody,Table,FormControl, InputLabel,OutlinedInput,InputAdornment, Popover, Snackbar, Alert,Input,
 } from "@mui/material";
 import { Document, Packer, Paragraph, TextRun, HeadingLevel} from "docx";
 import { saveAs } from "file-saver";
-import axios from 'axios';
+import api from "../../api";
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import AddIcon from '@mui/icons-material/Add';
@@ -28,15 +28,7 @@ const TrainerRequest = () => {
 
     const location = useLocation();
     const [selectedFormId, setSelectedFormId] = useState("");
-    const userid = getCookie("User") ?? null;
-    const [user,setUser] = useState([]);
-    const getUser = async () => {
-        const response = await axios.get(`http://localhost:5000/api/users/${userid}`);
-        setUser(response.data);
-    };
-    useEffect(() => {
-        if(userid)getUser();
-    }, []);
+    const { user } = useUser();
 
     // Verify Create Training...........
 
@@ -53,7 +45,7 @@ const TrainerRequest = () => {
     const [trainingRequestNotif, setTrainingRequestNotif] = useState([]);
 
     const fetchForms = async () => {
-        axios.get("http://localhost:5000/api/form")
+        api.get("/api/form")
             .then((response) => {
                 const updatedForms = response.data
                 .filter(form => form.status === "pending" || form.status === "approved")
@@ -66,7 +58,7 @@ const TrainerRequest = () => {
             .catch((error) => {
                 console.error("Error fetching forms:", error);
             });
-        const response = await axios.post("http://localhost:5000/api/notifications/noread", {rec : user._id });
+        const response = await api.post("/api/notifications/noread", {rec : user?._id });
         setTrainingRequestNotif(
             response.data.notifications
               .filter(notification => notification.type === "New_Training_Request")
@@ -87,7 +79,7 @@ const TrainerRequest = () => {
 
     const handleOpenTrainingRequestNotifications = async (trainerId) => {
         try {
-          await axios.put("http://localhost:5000/api/notifications/markread", {rec : user._id,sen : trainerId,tp : "New_Training_Request", rtp : "readTrainingRequestNotifications"});
+          await api.put("/api/notifications/markread", {rec : user?._id,sen : trainerId,tp : "New_Training_Request", rtp : "readTrainingRequestNotifications"});
           setNumberOfTrainingRequests(0);
         } catch (error) {
           console.error("Error marking notifications as read", error);
@@ -167,7 +159,7 @@ const TrainerRequest = () => {
     const getTrainer = async (formId) => {
         const trainerId = forms.find(form => form._id === formId)?.trainer || "";
         try {
-        const response = await axios.get(`http://localhost:5000/api/users/${trainerId}`);
+        const response = await api.get(`/api/users/${trainerId}`);
         if (response.status === 200) {
             setTrainerInfo(response.data);
         }
@@ -201,18 +193,18 @@ const TrainerRequest = () => {
             nbOfParticipants: newTrainingNbOfParticipants,
             trainer: trainerInfo._id,
         };
-        axios.post("http://localhost:5000/api/trainings", newTraining)
+        api.post("/api/trainings", newTraining)
         .then((response) => {
             hideNewTrainingForm();
             addSessions(response.data._id);
-            axios.put(`http://localhost:5000/api/form/status/${selectedFormId}`, { status:"approved" })
+            api.put(`/api/form/status/${selectedFormId}`, { status:"approved" })
                 .then(() => {fetchForms();});
             if(trainerInfo.role === "trainee"){
-                axios.put(`http://localhost:5000/api/users/${trainerInfo._id}`, {role : "trainee_trainer"})
+                api.put(`/api/users/${trainerInfo._id}`, {role : "trainee_trainer"})
                     .then(() => {
-                        axios.post("http://localhost:5000/api/notifications/rolechange", {rec: trainerInfo._id, sen:user._id,tp:"Role_Changed", msg:"your_role_updated_to_trainee_trainer" })
+                        api.post("/api/notifications/rolechange", {rec: trainerInfo._id, sen:user?._id,tp:"Role_Changed", msg:"your_role_updated_to_trainee_trainer" })
                         fetchForms();
-                        axios.post("http://localhost:5000/role-changed", {
+                        api.post("/role-changed", {
                             toEmail: trainerInfo.email,
                             message: `Hello ${trainerInfo.name}, your role has been updated to Trainee-Trainer.`,
                             url: "http://localhost:3000/dashboard",
@@ -237,14 +229,14 @@ const TrainerRequest = () => {
             training: trainingId, 
             };
         
-            axios.post("http://localhost:5000/api/sessions", newSession)
+            api.post("/api/sessions", newSession)
             .then(() => {
             })
             .catch((error) => {
             });
         }
         };
-        axios.post("http://localhost:5000/new_training_status", 
+        api.post("/new_training_status", 
             {
                 toEmail: trainerInfo?.email,
                 message: `Hello ${trainerInfo?.name}, your training request status has been updated to approved.`,
@@ -373,7 +365,7 @@ const TrainerRequest = () => {
     const handleDeleteRequest = async () => {
         const prevstatus = getFormById(selectedFormId)?.status;
         const stat = prevstatus === "pending" ? "rejected" : "deleted"
-        await axios.put(`http://localhost:5000/api/form/status/${selectedFormId}`, { status:stat })
+        await api.put(`/api/form/status/${selectedFormId}`, { status:stat })
         .then(() => {
             hideVerifyRejectDialog();
             setVerifyAlertMessage("training_rejected/deleted");
@@ -385,7 +377,7 @@ const TrainerRequest = () => {
             console.error("Error deleting form:", error);
         });
 
-        await axios.post("http://localhost:5000/new_training_status", 
+        await api.post("/new_training_status", 
             {
                 toEmail: trainerInfo?.email,
                 message: `Hello ${trainerInfo?.name}, your training request status has been updated to ${stat}.`,

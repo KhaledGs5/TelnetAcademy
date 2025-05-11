@@ -41,9 +41,18 @@ const signUser = async (req, res) => {
 
   const userResponse = {
     _id: user._id,
+    name:user.name,
+    email:user.email,
+    password:user.password,
+    role:user.role,
+    activity:user.activity,
+    jobtitle:user.jobtitle,
+    gender:user.gender,
+    chef:user.chef,
+    type:user.type,
   };
 
-  res.json({ user: userResponse, token});
+  res.json({ user: userResponse, token, id:user._id});
 };
 
 

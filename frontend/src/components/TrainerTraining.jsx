@@ -4,25 +4,17 @@ import { Box, Typography,Tooltip,IconButton, Button, TableCell,TableRow,TableHea
     ,Checkbox,FormControlLabel,TableBody,Table,Snackbar, Alert
 } from "@mui/material";
 import { useLanguage } from "../languagecontext";
-import { getCookie } from "./Cookies";
-import axios from "axios";
+import api from "../api";
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { useNavbar } from '../NavbarContext';
 import dayjs from 'dayjs';
 import TrainerCalls from "./TrainerCalls";
+import { useUser } from '../UserContext';
 
 const TrainerTraining = () => {
 
-    const userid = getCookie("User") ?? null;
-    const [user,setUser] = useState([]);
-    const getUser = async () => {
-        const response = await axios.get(`http://localhost:5000/api/users/${userid}`);
-        setUser(response.data);
-    };
-    useEffect(() => {
-        if(userid)getUser();
-    }, []);
+    const { user } = useUser();
     const { t } = useLanguage();
 
     const [showForm, setShowForm] = useState(false);
@@ -44,7 +36,7 @@ const TrainerTraining = () => {
     const [numberOfRejected, setNumberOfRejected] = useState(0);
 
     const fetchForms = () => {
-        axios.get(`http://localhost:5000/api/form/${user._id}`)
+        api.get(`/api/form/${user?._id}`)
             .then((response) => {
                 console.log(response.data);
                 const updatedForms = response.data.map(form => ({
@@ -74,9 +66,9 @@ const TrainerTraining = () => {
 
     const handleOpenTrainingsStatusNotifications = async () => {
         try {
-        await axios.delete("http://localhost:5000/api/notifications", {
+        await api.delete("/api/notifications", {
             data: {
-                rec: user._id,
+                rec: user?._id,
                 tp: "New_Training_Status",
             }
             });
@@ -103,7 +95,7 @@ const TrainerTraining = () => {
         hasExperience: false,
         exp: Array(2).fill({ theme: "", cadre: "", periode:""}),
         motivation: "",
-        trainer: user._id,
+        trainer: user?._id,
     });
     
     const handleChange = (field, value) => {
@@ -129,7 +121,7 @@ const TrainerTraining = () => {
     };
 
     const handleSendForm = () => {
-        axios.post("http://localhost:5000/api/form", formData)
+        api.post("/api/form", formData)
            .then((response) => {
               console.log(response.data);
               setShowsVerifificationAlert(true);
@@ -244,7 +236,7 @@ const TrainerTraining = () => {
                             width: "100%",
                         }}
                     >
-                    {t("hello")} {user.name},<br /> {t("if_you_have_any_training_suggestion_you_can_fill_the_form_now")}
+                    {t("hello")} {user?.name},<br /> {t("if_you_have_any_training_suggestion_you_can_fill_the_form_now")}
                     </Typography>    
                     <Box
                     sx={{

@@ -16,7 +16,6 @@ import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import CheckIcon from '@mui/icons-material/Check';
 import { useLanguage } from "../../languagecontext";
-import axios from "axios";
 import api from "../../api";
 import * as XLSX from 'xlsx';
 
@@ -43,7 +42,7 @@ const ManageUsers = () => {
     const [users, setUsers] = useState([]);
 
     const fetchUsers = () => {
-        axios.get("http://localhost:5000/api/users")
+        api.get("/api/users")
             .then((response) => {
                 const usersWithModified = response.data
                 .filter((user) => 
@@ -191,7 +190,7 @@ const ManageUsers = () => {
           });
       
           try {
-            const response = await axios.post("http://localhost:5000/api/uploadUsers", { data: jsonData });
+            const response = await api.post("/api/uploadUsers", { data: jsonData });
       
             if (response.status === 200) {
               fetchUsers();
@@ -226,7 +225,7 @@ const ManageUsers = () => {
 
     const handleUpdateUser = (userId) => {
         const updatedUser = Object.values(users).find(user => user._id === userId);
-        axios.put(`http://localhost:5000/api/users/${userId}`, updatedUser)
+        api.put(`/api/users/${userId}`, updatedUser)
             .then((response) => { 
                 hideVerifyUpdateDialog();
                 setVerifyAlert("success");
@@ -280,7 +279,7 @@ const ManageUsers = () => {
     };
 
     const handleDeleteUser = (userId) => {
-        axios.delete(`http://localhost:5000/api/users/${userId}`)
+        api.delete(`/api/users/${userId}`)
             .then((response) => {
                 console.log(response.data.message);
                 hideVerifyDeleteDialog();
@@ -331,7 +330,7 @@ const ManageUsers = () => {
     };
 
     const handleSelectedUser = async (userId) =>{
-        const user = await axios.get(`http://localhost:5000/api/users/${userId}`);
+        const user = await api.get(`/api/users/${userId}`);
         setSelectedUser(user.data);
     } ;
 

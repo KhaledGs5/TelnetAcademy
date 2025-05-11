@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from './components/Navbar.jsx';
 import Dashboard from './components/Dashboard.jsx';
@@ -20,83 +20,91 @@ import TraineeRequest from './components/manage/TraineeRequest.jsx';
 import FormBuilder from './components/manage/Feedbakcs.jsx';
 import { NavbarProvider } from './NavbarContext.js';
 import { ThemeProviderWrapper } from './themecontext.js';
+import { UserProvider, useUser } from './UserContext';
 import './index.css';
 
-
-
-function App() {
-  const user = getCookie("User") || null;
+function AppRoutes() {
+  const { user } = useUser();
   const signedIn = getCookie("SignedIn") || null;
 
   return (
+    <Router>
+      <Navbar />
+      <Routes>
+        {user?.role === "admin" && signedIn ? (
+          <Route path="/" element={<Navigate to="/manageusers" replace />} />
+        ) :
+        user?.role !== "admin" && signedIn ? (
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        ) : (
+          <Route path="/" element={<Home />} />
+        )}
+
+        {signedIn && user?.role === 'admin' && (
+          <>
+            <Route path="/manageusers" element={<ManageUsers />} />
+            <Route path="/account" element={<Profile />} />
+          </>
+        )}
+
+        {signedIn && user?.role === 'manager' && (
+          <>
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/managesessions" element={<ManageSessions />} />
+            <Route path="/managetrainings" element={<ManageTrainings />} />
+            <Route path="/requests" element={<Navigate to="/requests/trainer" replace />} />
+            <Route path="/requests/trainee" element={<TraineeRequest />} />
+            <Route path="/requests/trainer" element={<TrainerRequest />} />
+            <Route path="/calendar" element={<Calendar />} />
+            <Route path="/account" element={<Profile />} />
+            <Route path="/feedbacks" element={<FormBuilder />} />
+          </>
+        )}
+
+        {signedIn && user?.role === 'trainer' && (
+          <>
+            <Route path="/trainertraining" element={<TrainerTraining />} />
+            <Route path="/trainersession" element={<TrainerSession />} />
+            <Route path="/trainercall" element={<TrainerCalls />} />
+            <Route path="/calendar" element={<Calendar />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/account" element={<Profile />} />
+          </>
+        )}
+
+        {signedIn && user?.role === 'trainee' && (
+          <>
+            <Route path="/traineesession" element={<TraineeSession />} />
+            <Route path="/enrolledtrainee" element={<TraineeTrainings />} />
+            <Route path="/becometrainer" element={<BecomeTrainer />} />
+            <Route path="/calendar" element={<Calendar />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/account" element={<Profile />} />
+          </>
+        )}
+
+        {signedIn && user?.role === 'trainee_trainer' && (
+          <>
+            <Route path="/trainertraining" element={<TrainerTraining />} />
+            <Route path="/trainersession" element={<TrainerSession />} />
+            <Route path="/trainercall" element={<TrainerCalls />} />
+            <Route path="/traineesession" element={<TraineeSession />} />
+            <Route path="/enrolledtrainee" element={<TraineeTrainings />} />
+            <Route path="/becometrainer" element={<BecomeTrainer />} />
+            <Route path="/calendar" element={<Calendar />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/account" element={<Profile />} />
+          </>
+        )}
+      </Routes>
+    </Router>
+  );
+}
+function App() {
+  return (
     <ThemeProviderWrapper>
       <NavbarProvider>
-        <Router>
-          <Navbar />
-          <Routes>
-            {user && signedIn ? (
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            ) : (
-              <Route path="/" element={<Home />} />
-            )}
-            {signedIn && user?.role==='admin' && (
-              <>
-                <Route path="/manageusers" element={<ManageUsers />} />
-                <Route path="/account" element={<Profile />} />
-              </>
-            )}
-
-            {signedIn && user?.role === 'manager' && (
-              <>
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/managesessions" element={<ManageSessions />} />
-                <Route path="/managetrainings" element={<ManageTrainings />} />
-                <Route path="/requests" element={<Navigate to="/requests/trainer" replace />} />
-                <Route path="/requests/trainee" element={<TraineeRequest />} />
-                <Route path="/requests/trainer" element={<TrainerRequest />} />
-                <Route path="/calendar" element={<Calendar />} />
-                <Route path="/account" element={<Profile />} />
-                <Route path="/feedbacks" element={<FormBuilder />} />
-              </>
-            )}
-
-            {signedIn && user?.role === 'trainer' && (
-              <>
-                <Route path="/trainertraining" element={<TrainerTraining />} />
-                <Route path="/trainersession" element={<TrainerSession />} />
-                <Route path="/trainercall" element={<TrainerCalls />} />
-                <Route path="/calendar" element={<Calendar />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/account" element={<Profile />} />
-              </>
-            )}
-
-            {signedIn && user?.role === 'trainee' && (
-              <>
-                <Route path="/traineesession" element={<TraineeSession />} />
-                <Route path="/enrolledtrainee" element={<TraineeTrainings />} />
-                <Route path="/becometrainer" element={<BecomeTrainer />} />
-                <Route path="/calendar" element={<Calendar />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/account" element={<Profile />} />
-              </>
-            )}
-            
-            {signedIn && user?.role === "trainee_trainer" && (
-              <>
-                <Route path="/trainertraining" element={<TrainerTraining />} />
-                <Route path="/trainersession" element={<TrainerSession />} />
-                <Route path="/trainercall" element={<TrainerCalls />} />
-                <Route path="/traineesession" element={<TraineeSession />} />
-                <Route path="/enrolledtrainee" element={<TraineeTrainings />} />
-                <Route path="/becometrainer" element={<BecomeTrainer />} />
-                <Route path="/calendar" element={<Calendar />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/account" element={<Profile />} />
-              </>
-            )}
-          </Routes>
-        </Router>
+        <AppRoutes />
       </NavbarProvider>
     </ThemeProviderWrapper>
   );

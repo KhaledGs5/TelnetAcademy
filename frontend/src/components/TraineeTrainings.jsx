@@ -19,9 +19,9 @@ import FilterAltOffIcon from '@mui/icons-material/FilterAltOff';
 import FilterAltIcon from '@mui/icons-material/FilterAlt';
 import DialogTitle from '@mui/material/DialogTitle';
 import Dialog from '@mui/material/Dialog';
-import { getCookie } from "./Cookies";
+import { useUser } from '../UserContext';
 import dayjs from 'dayjs';
-import axios from "axios";
+import api from "../api";
 import { useNavbar } from '../NavbarContext';
 
 const TraineeTrainings = () => {
@@ -46,20 +46,12 @@ const TraineeTrainings = () => {
     const [numberOfApproved, setNumberOfApproved] = useState(0);
     const [numberOfRejected, setNumberOfRejected] = useState(0);
   
-    const userid = getCookie("User") ?? null;
-    const [user,setUser] = useState([]);
-    const getUser = async () => {
-    const response = await axios.get(`http://localhost:5000/api/users/${userid}`);
-    setUser(response.data);
-    };
-    useEffect(() => {
-    if(userid)getUser();
-    }, []);
+  const { user } = useUser();
 
   const updateStatus = () => {
     trainings.forEach((training) => {
         training.sessions.forEach((session) => {
-            axios.put(`http://localhost:5000/api/sessions/${session._id}`, session)
+            api.put(`/api/sessions/${session._id}`, session)
                 .then((response) => {})
                 .catch((error) => {});
         });
@@ -70,9 +62,9 @@ const TraineeTrainings = () => {
 
   const handleOpenDeletedTraineeNotifications = async () => {
     try {
-      await axios.delete("http://localhost:5000/api/notifications", {
+      await api.delete("/api/notifications", {
         data: {
-          rec: user._id,
+          rec: user?._id,
           tp: "Deleted_Trainee_From_Training",
         }
       });
@@ -84,9 +76,9 @@ const TraineeTrainings = () => {
 
   const handleOpenRejectResponsesNotifications = async () => {
     try {
-      await axios.delete("http://localhost:5000/api/notifications", {
+      await api.delete("/api/notifications", {
         data: {
-          rec: user._id,
+          rec: user?._id,
           tp: "Request_Rejected",
         }
       });
@@ -99,31 +91,31 @@ const TraineeTrainings = () => {
     updateStatus();
     handleOpenDeletedTraineeNotifications();
     handleOpenRejectResponsesNotifications();
-  }, []);
+  }, [user]);
 
   const [requestResponseTrainings,setRequestResponseTrainings] = useState([])
 
   const fetchTrainings = async () => {
-    axios.get("http://localhost:5000/api/trainings")
+    api.get("/api/trainings")
         .then((response) => {
             const trainingsWithModified = response.data
             .filter(
-                training => training.trainer !== user._id
+                training => training.trainer !== user?._id
                 && (
-                training.traineesrequests.some(request => request.trainee === user._id) 
-                || training.acceptedtrainees.includes(user._id)
-                || training.rejectedtrainees.includes(user._id)
+                training.traineesrequests.some(request => request.trainee === user?._id) 
+                || training.acceptedtrainees.includes(user?._id)
+                || training.rejectedtrainees.includes(user?._id)
             ))
             .map(training => ({
                 ...training,
                 sessions: [],
-                status: training.traineesrequests.some(request => request.trainee === user._id)
+                status: training.traineesrequests.some(request => request.trainee === user?._id)
                 ? "pending"
-                : training.confirmedtrainees.includes(user._id)
+                : training.confirmedtrainees.includes(user?._id)
                 ? "confirmed"
-                : training.acceptedtrainees.includes(user._id)
+                : training.acceptedtrainees.includes(user?._id)
                 ? "approved"
-                : training.rejectedtrainees.includes(user._id)
+                : training.rejectedtrainees.includes(user?._id)
                 ? "rejected"
                 : ""
             }));
@@ -142,7 +134,7 @@ const TraineeTrainings = () => {
             setTrainings(trainingsWithModified);
 
             trainingsWithModified.forEach((training) => {
-                axios.get(`http://localhost:5000/api/sessions/training/${training._id}`)
+                api.get(`/api/sessions/training/${training._id}`)
                     .then((response) => {
                         const updatedSessions = response.data.map(session => ({
                             ...session,
@@ -161,7 +153,7 @@ const TraineeTrainings = () => {
         .catch((error) => {
             console.error("Error fetching trainings:", error);
         });
-        await axios.post("http://localhost:5000/api/notifications/noread", { rec: user._id })
+        await api.post("/api/notifications/noread", { rec: user?._id })
         .then((response) => {
           const messages = response.data.notifications
             .filter(notification => 
@@ -172,7 +164,6 @@ const TraineeTrainings = () => {
           setRequestResponseTrainings(messages);
         });
   };
-  console.log(trainings);
 
   console.log(requestResponseTrainings);
   const formatDaysWithMonth = (dateString, month) => {
@@ -241,7 +232,7 @@ const TraineeTrainings = () => {
     };
 
     const handleAttendanceVerification = () => {
-        axios.put(`http://localhost:5000/api/trainings/confirm/${selectedTrainingId}`, {trainee:user._id})
+        api.put(`/api/trainings/confirm/${selectedTrainingId}`, {trainee:user?._id})
             .then(() => {
                 setVerifyAlert("success");
                 setVerifyAlertMessage("attendance_confirmed_successfully");
@@ -257,8 +248,8 @@ const TraineeTrainings = () => {
 
     const handleOpenRequestsResponsesNotification = async () => {
         try {
-          await axios.put("http://localhost:5000/api/notifications/markread", {rec : user._id, tp : "Request_Accepted", rtp : "readRequestsResponsesNotifications"});
-          await axios.put("http://localhost:5000/api/notifications/markread", {rec : user._id, tp : "Request_Rejected", rtp : "readRequestsResponsesNotifications"});
+          await api.put("/api/notifications/markread", {rec : user?._id, tp : "Request_Accepted", rtp : "readRequestsResponsesNotifications"});
+          await api.put("/api/notifications/markread", {rec : user?._id, tp : "Request_Rejected", rtp : "readRequestsResponsesNotifications"});
           setNumberOfRequestsReponses(0);
         } catch (error) {
           console.error("Error marking notifications as read", error);
@@ -280,8 +271,8 @@ const TraineeTrainings = () => {
             let allNotifications = [];
       
             for (let tp of types) {
-              const res = await axios.post("http://localhost:5000/api/notifications/withtype", {
-                rec: user._id,
+              const res = await api.post("/api/notifications/withtype", {
+                rec: user?._id,
                 tp,
               });
               allNotifications = [...allNotifications, ...res.data.notifications];
@@ -296,10 +287,10 @@ const TraineeTrainings = () => {
         };
       
         fetchTrainingsFeedbacks();
-    }, []); 
+    }, [user]); 
 
     const changeFeedbackAvailabilty = () => {
-        axios.get(`http://localhost:5000/api/users/${user._id}`)
+        api.get(`/api/users/${user?._id}`)
             .then((response) => {
                 setCanSendColdFeedback(response.data.trainingsCanSendColdFeedback);
                 setCanSendHotFeedback(response.data.trainingsCanSendHotFeedback);
@@ -307,8 +298,8 @@ const TraineeTrainings = () => {
     }
 
     useEffect(() => {
-        changeFeedbackAvailabilty();
-    }, []);
+        if(user)changeFeedbackAvailabilty();
+    }, [user]);
 
 
     const showFeedbackDialog = (trainingId) => {
@@ -397,7 +388,7 @@ const TraineeTrainings = () => {
 
     const fetchForms = async () => {
         try {
-          const response = await axios.get("http://localhost:5000/api/dynamicform/forms")
+          const response = await api.get("/api/dynamicform/forms")
           const form =  response.data.forms.filter((form) => form.type === feedbackType);
           setFormFields(form[0].fields);
         } catch (error) {
@@ -408,7 +399,7 @@ const TraineeTrainings = () => {
 
     useEffect(() => {
         fetchForms();
-    }, [feedbackType]);
+    }, [feedbackType,user]);
 
     
     const handleColdFeedbackChange = (field, value) => {
@@ -421,7 +412,7 @@ const TraineeTrainings = () => {
 
     const handleOpenColdFeedbackReqNotification = async () => {
         try {
-            await axios.put("http://localhost:5000/api/notifications/markread", {rec : user._id, tp : "Request_Cold_Feedback", rtp : "readFeedbackReqNotifications"});
+            await api.put("/api/notifications/markread", {rec : user?._id, tp : "Request_Cold_Feedback", rtp : "readFeedbackReqNotifications"});
             setNumberOfNewFeedbacksReq(0);
           } catch (error) {
             console.error("Error marking notifications as read", error);
@@ -430,7 +421,7 @@ const TraineeTrainings = () => {
 
     const handleOpenHotFeedbackReqNotification = async () => {
         try {
-            await axios.put("http://localhost:5000/api/notifications/markread", {rec : user._id, tp : "Request_Hot_Feedback", rtp : "readFeedbackReqNotifications"});
+            await api.put("/api/notifications/markread", {rec : user?._id, tp : "Request_Hot_Feedback", rtp : "readFeedbackReqNotifications"});
             setNumberOfNewFeedbacksReq(0);
           } catch (error) {
             console.error("Error marking notifications as read", error);
@@ -443,14 +434,14 @@ const TraineeTrainings = () => {
                 fieldId,
                 value
               }));
-            axios.post("http://localhost:5000/api/coldfeedback", {
+            api.post("/api/coldfeedback", {
                 ...coldFeedback,
-                trainee: user._id,
+                trainee: user?._id,
                 training: selectedTrainingId,
                 responses,
             })
             .then(async () => {
-                await axios.delete("http://localhost:5000/api/notifications", { data : {rec : user._id, tp : "Request_Cold_Feedback", msg: selectedTrainingId.toString()}});
+                await api.delete("/api/notifications", { data : {rec : user?._id, tp : "Request_Cold_Feedback", msg: selectedTrainingId.toString()}});
                 setVerifyAlert("success");
                 setVerifyAlertMessage("feedback_sent_successfully");
                 setShowsVerifificationAlert(true);
@@ -465,14 +456,14 @@ const TraineeTrainings = () => {
                 fieldId,
                 value
               }));
-            axios.post("http://localhost:5000/api/hotfeedback", {
+            api.post("/api/hotfeedback", {
                 ...hotFeedback,
-                trainee: user._id,
+                trainee: user?._id,
                 training: selectedTrainingId,
                 responses,
             })
             .then(async () => {
-                await axios.delete("http://localhost:5000/api/notifications", { data : {rec : user._id, tp : "Request_Hot_Feedback", msg: selectedTrainingId.toString()}});
+                await api.delete("/api/notifications", { data : {rec : user?._id, tp : "Request_Hot_Feedback", msg: selectedTrainingId.toString()}});
                 setVerifyAlert("success");
                 setVerifyAlertMessage("feedback_sent_successfully");
                 setShowsVerifificationAlert(true);
@@ -491,7 +482,7 @@ const TraineeTrainings = () => {
 
     const handleOpenTrainerQuizNotification = async () => {
         try {
-            await axios.put("http://localhost:5000/api/notifications/markread", {rec : user._id, tp : "Quiz_Uploaded_From_Trainer", rtp : "readTrainerQuizNotifications"});
+            await api.put("/api/notifications/markread", {rec : user?._id, tp : "Quiz_Uploaded_From_Trainer", rtp : "readTrainerQuizNotifications"});
             setNumberOfQuizFromTrainer(0); 
         } catch (error) {
             console.error("Error marking notifications as read", error);
@@ -512,9 +503,9 @@ const TraineeTrainings = () => {
     const downloadQuizFile = async () => {
         try {
             console.log(selectedTrainingId);
-            const response = await axios.post(`http://localhost:5000/api/trainings/get-quiz-file/${selectedTrainingId}`, 
+            const response = await api.post(`/api/trainings/get-quiz-file/${selectedTrainingId}`, 
                 {
-                    trainee: user._id,
+                    trainee: user?._id,
                 },
                 {
                     responseType: 'blob' 
@@ -560,14 +551,14 @@ const TraineeTrainings = () => {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('trainingId', selectedTrainingId);
-        formData.append('userId', user._id);
+        formData.append('userId', user?._id);
     
         for (let pair of formData.entries()) {
             console.log(pair[0]+ ': ' + pair[1]);
         }
     
         try {
-            await axios.put('http://localhost:5000/api/users/upload-quiz', formData);
+            await api.put('/api/users/upload-quiz', formData);
             setVerifyAlertMessage(t("quiz_sent_successfully"));
             setVerifyAlert("success");
             setShowsVerifificationAlert(true);
@@ -634,11 +625,11 @@ const TraineeTrainings = () => {
 
     const fetchTrainers = async () => {
         try {
-        const response = await axios.get('http://localhost:5000/api/users');
+        const response = await api.get('/api/users');
         if (response.status === 200) {
             const trainers = response.data
-            .filter(user => user.role === "trainer" || user.role === "trainee_trainer")
-            .map(user => ({ name: user.name, id: user._id }));
+            .filter(user => user?.role === "trainer" || user?.role === "trainee_trainer")
+            .map(user => ({ name: user?.name, id: user?._id }));
     
             setFilterTrainer([{ name: 'all', id: 0 }, ...trainers]);
             setTrainingTrainers(trainers);
@@ -651,7 +642,7 @@ const TraineeTrainings = () => {
     useEffect(() => {
         fetchTrainers();
         fetchTrainings();
-    }, []);
+    }, [user]);
 
     const handleSearchChange = (e) => {
         setSearchedTitle(e.target.value);

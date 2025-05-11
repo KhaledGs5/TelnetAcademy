@@ -4,12 +4,14 @@ import './index.css';
 import App from './App.jsx';
 import { ThemeProviderWrapper } from './themecontext.js';
 import { LanguageProvider } from './languagecontext.js';
+import { UserProvider } from './UserContext';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <LanguageProvider>
-    <ThemeProviderWrapper>
-      <App />
-    </ThemeProviderWrapper>
-  </LanguageProvider>
-
+  <UserProvider>
+    <LanguageProvider>
+      <ThemeProviderWrapper>
+        <App />
+      </ThemeProviderWrapper>
+    </LanguageProvider>
+  </UserProvider>
 )

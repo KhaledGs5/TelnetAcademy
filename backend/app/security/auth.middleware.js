@@ -50,7 +50,7 @@ const verifyTrainer = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.PRIVATE_KEY);
-    if (decoded.role !== "trainer" && decoded.role !== "trianee_trainer") {
+    if (decoded.role !== "trainer" && decoded.role !== "trainee_trainer") {
       return res.status(403).json({ message: "Access denied: Trainers only" });
     }
     req.trainer = decoded;
@@ -70,7 +70,7 @@ const verifyTrainee = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.PRIVATE_KEY);
-    if (decoded.role !== "trainee" && decoded.role !== "trianee_trainer") {
+    if (decoded.role !== "trainee" && decoded.role !== "trainee_trainer") {
       return res.status(403).json({ message: "Access denied: Trainees only" });
     }
     req.trainee = decoded;
@@ -80,4 +80,44 @@ const verifyTrainee = (req, res, next) => {
   }
 };
 
-module.exports = { verifyAdmin , verifyManager};
+const verifyTraineeTrainer = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(403).json({ message: "Token missing or malformed" });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const decoded = jwt.verify(token, process.env.PRIVATE_KEY);
+    if (decoded.role !== "trainee" && decoded.role !== "trainee_trainer" && decoded.role !== "trainer") {
+      return res.status(403).json({ message: "Access denied: Trainee or Trainer only" });
+    }
+    req.trainee = decoded;
+    next();
+  } catch (err) {
+    return res.status(403).json({ message: "Invalid or expired token" });
+  }
+};
+
+const verifyManagerAdmin = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(403).json({ message: "Token missing or malformed" });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const decoded = jwt.verify(token, process.env.PRIVATE_KEY);
+    if (decoded.role !== "admin" && decoded.role !== "manager") {
+      return res.status(403).json({ message: "Access denied: Trainee or Trainer only" });
+    }
+    req.trainee = decoded;
+    next();
+  } catch (err) {
+    return res.status(403).json({ message: "Invalid or expired token" });
+  }
+};
+
+module.exports = { verifyAdmin , verifyManager , verifyTraineeTrainer, verifyTrainee,verifyTrainer,verifyManagerAdmin };

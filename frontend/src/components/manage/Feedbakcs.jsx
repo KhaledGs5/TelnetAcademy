@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import FormPreview from '../FormPreview';
 import { useLanguage } from "../../languagecontext";
+import api from "../../api";
 import {
   Box,
   Button,
@@ -25,7 +26,6 @@ import {
   Add as AddIcon,
   Delete as DeleteIcon
 } from '@mui/icons-material';
-import axios from "axios";
 
 const FormBuilder = () => {
   const { t } = useLanguage();
@@ -45,7 +45,7 @@ const FormBuilder = () => {
 
   const submitForm = async () => {
     try {
-      const response = await axios.post("http://localhost:5000/api/dynamicform/changeforms", {
+      const response = await api.post("/api/dynamicform/changeforms", {
         type: formType,
         fields: formFields,
       });
@@ -65,7 +65,7 @@ const FormBuilder = () => {
 
   const fetchForms = async () => {
     try {
-      const response = await axios.get("http://localhost:5000/api/dynamicform/forms")
+      const response = await api.get("/api/dynamicform/forms")
       const form =  response.data.forms.filter((form) => form.type === formType);
       setFormFields(form[0].fields);
     } catch (error) {

@@ -6,7 +6,7 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import ClearIcon from '@mui/icons-material/Clear';
 import SearchIcon from '@mui/icons-material/Search';
 import MenuItem from '@mui/material/MenuItem';
-import { getCookie } from '../Cookies';
+import { useUser } from '../../UserContext';
 import AddIcon from '@mui/icons-material/Add';
 import GroupIcon from '@mui/icons-material/Group';
 import FeedIcon from '@mui/icons-material/Feed';
@@ -24,7 +24,7 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import FormPreview from '../FormPreview';
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import dayjs from 'dayjs';
-import axios from "axios";
+import api from "../../api";
 import * as XLSX from 'xlsx';
 
 
@@ -32,15 +32,7 @@ const ManageTrainings = () => {
 
     const { t } = useLanguage();
     const [selectedTrainingId, setSelectedTrainingId] = useState(true);
-    const userid = getCookie("User") ?? null;
-    const [user,setUser] = useState([]);
-    const getUser = async () => {
-        const response = await axios.get(`http://localhost:5000/api/users/${userid}`);
-        setUser(response.data);
-    };
-    useEffect(() => {
-        if(userid)getUser();
-    }, []);
+    const { user } = useUser();
 
     // Verify Update Or Create Training...........
 
@@ -58,7 +50,7 @@ const ManageTrainings = () => {
     const updateStatus = () => {
     trainings.forEach((training) => {
         training.sessions.forEach((session) => {
-            axios.put(`http://localhost:5000/api/sessions/${session._id}`, session)
+            api.put(`/api/sessions/${session._id}`, session)
                 .then((response) => {})
                 .catch((error) => {});
         });
@@ -70,7 +62,7 @@ const ManageTrainings = () => {
     }, []);
 
     const fetchTrainings = () => {
-        axios.get("http://localhost:5000/api/trainings")
+        api.get("/api/trainings")
             .then((response) => {
                 const trainingsWithModified = response.data.map(training => ({
                     ...training,
@@ -93,7 +85,7 @@ const ManageTrainings = () => {
                     setNumberOfFullTrainings(fullTrainings);
                     setNumberOfNotFullTrainings(notFullTrainings);
                     setNewTrainingRegisDeadline(dayjs(training.registrationDeadline));
-                    axios.get(`http://localhost:5000/api/sessions/training/${training._id}`)
+                    api.get(`/api/sessions/training/${training._id}`)
                         .then((response) => {
                             const updatedSessions = response.data.map(session => ({
                                 ...session,
@@ -113,7 +105,7 @@ const ManageTrainings = () => {
                 trainingsWithModified.forEach((training) => {
                     let listOfTrainees = [];
                     (training.acceptedtrainees).forEach((traineeId) => { 
-                        axios.get(`http://localhost:5000/api/users/${traineeId}`)
+                        api.get(`/api/users/${traineeId}`)
                            .then((response) => {
                                 const res = response.data;
                                 const trainee = {
@@ -174,8 +166,8 @@ const ManageTrainings = () => {
     const [traineesSetHotFeedbacks, setTraineeSetHotFeedback] = useState([]);
 
     const fetchTraineesFeedbacks = (trainingId) => {
-        axios
-          .post(`http://localhost:5000/api/trainings/feedbacks/${trainingId}`)
+        api
+          .post(`/api/trainings/feedbacks/${trainingId}`)
           .then((response) => {
             const { coldFeedback, hotFeedback } = response.data;
             const traineesCold = [
@@ -228,7 +220,7 @@ const ManageTrainings = () => {
 
     const handleUpdateAttendanceList = async () => {
         const req = {trainee : selectedTraineeId, managerdeleted: user._id};
-        await axios.put(`http://localhost:5000/api/trainings/delete/${selectedTrainingId}`, req)
+        await api.put(`/api/trainings/delete/${selectedTrainingId}`, req)
         .then(() => {
             fetchTrainings();
             showAttendeeListDialog(selectedTrainingId);
@@ -237,7 +229,7 @@ const ManageTrainings = () => {
         .catch((error) => {
             console.error("Error updating attendance list:", error);
         });
-        await axios.post("http://localhost:5000/delete_from_training", 
+        await api.post("/delete_from_training", 
             {
                 toEmail: traineeMail,
                 message: `Hello ${traineeName}, you have been deleted from the training`,
@@ -259,7 +251,7 @@ const ManageTrainings = () => {
 
     const handleUpdateTrainingRegisDeadline = async () => {
         const req = {registrationDeadline: newTrainingRegisDeadline};
-        await axios.put(`http://localhost:5000/api/trainings/${selectedTrainingId}`, req)
+        await api.put(`/api/trainings/${selectedTrainingId}`, req)
             .then(() => {
                 fetchTrainings();
                 setShowAttendeeList(false);
@@ -289,7 +281,7 @@ const ManageTrainings = () => {
     }
 
     const handleSendReminder = (m, name, id) => {
-        axios.post("http://localhost:5000/send-reminder", { 
+        api.post("/send-reminder", { 
           toEmail: m,
           message: `Reminder for Confirmation: ${name} Training`,
           url: "http://localhost:3000/enrolledtrainee",
@@ -324,7 +316,7 @@ const ManageTrainings = () => {
 
     const fetchForms = async () => {
         try {
-            const response = await axios.get("http://localhost:5000/api/dynamicform/forms")
+            const response = await api.get("/api/dynamicform/forms")
             const form =  response.data.forms.filter((form) => form.type === feedbackType);
             setFormFields(form[0].fields);
         } catch (error) {
@@ -339,7 +331,7 @@ const ManageTrainings = () => {
 
     const handleOpenFeedbackNotification = async () => {
         try {
-          await axios.delete("http://localhost:5000/api/notifications", { data : {rec : user._id, tp : "New_Feedback"}});
+          await api.delete("/api/notifications", { data : {rec : user._id, tp : "New_Feedback"}});
           setNumberOfNewFeedbacks(0);
         } catch (error) {
           console.error("Error marking notifications as read", error);
@@ -347,8 +339,8 @@ const ManageTrainings = () => {
     };
 
     const fetchFeedbacks = (trainingId, traineeId, type) => {
-        axios
-          .post(`http://localhost:5000/api/trainings/feedbacks/${trainingId}`, {
+        api
+          .post(`/api/trainings/feedbacks/${trainingId}`, {
             trainee: traineeId,
           })
           .then((response) => {
@@ -370,7 +362,7 @@ const ManageTrainings = () => {
     useEffect(() => {
         const fetchTrainingsFeedbacks = async () => {
             try {
-                const newFeedbacks = await axios.post("http://localhost:5000/api/notifications/withtype", {
+                const newFeedbacks = await api.post("/api/notifications/withtype", {
                     rec: user._id,
                     tp: "New_Feedback"
                 });
@@ -450,7 +442,7 @@ const ManageTrainings = () => {
     }
 
     const sendColdRequest = async (trainingId) => {
-        await axios.post(`http://localhost:5000/api/trainings/sendcoldrequest/${trainingId}`, {manager : user._id})
+        await api.post(`/api/trainings/sendcoldrequest/${trainingId}`, {manager : user._id})
             .then((response) => {
                 setVerifyAlert("success");
                 setVerifyAlertMessage("request_sent_successfully");
@@ -464,7 +456,7 @@ const ManageTrainings = () => {
                     }));
                     
                     listOfTrainees.forEach((trainee) => {
-                        axios.post("http://localhost:5000/request-feedback", {
+                        api.post("/request-feedback", {
                           toEmail: trainee.email,
                           message: `Hello ${trainee.name}, can you please add feedback to Training : ${training.title}.`,
                           url: "http://localhost:3000/enrolledtrainee",
@@ -491,7 +483,7 @@ const ManageTrainings = () => {
     }
     
     const sendHotRequest = (trainingId) => {
-        axios.post(`http://localhost:5000/api/trainings/sendhotrequest/${trainingId}`, {manager : user._id})
+        api.post(`/api/trainings/sendhotrequest/${trainingId}`, {manager : user._id})
             .then((response) => {
                 setVerifyAlert("success");
                 setVerifyAlertMessage("request_sent_successfully");
@@ -505,7 +497,7 @@ const ManageTrainings = () => {
                     }));
                     
                     listOfTrainees.forEach((trainee) => {
-                        axios.post("http://localhost:5000/request-feedback", {
+                        api.post("/request-feedback", {
                           toEmail: trainee.email,
                           message: `Hello ${trainee.name}, can you please add feedback to Training : ${training.title}.`,
                         });
@@ -585,7 +577,7 @@ const ManageTrainings = () => {
 
     const fetchTrainers = async () => {
         try {
-        const response = await axios.get('http://localhost:5000/api/users');
+        const response = await api.get('/api/users');
         if (response.status === 200) {
             const trainers = response.data
             .filter(user => user.role === "trainer" || user.role === "trainee_trainer")
@@ -706,7 +698,7 @@ const ManageTrainings = () => {
 
     const fetchUsersEmails = async () => {
         try {
-            const response = await axios.get("http://localhost:5000/api/users");
+            const response = await api.get("/api/users");
             const trainerEmails = response.data
             .filter(user => user.role !== "manager" && user.role !== "admin")
             .map(user => user.email)
@@ -734,7 +726,7 @@ const ManageTrainings = () => {
                     };
             });
 
-            await axios.post("http://localhost:5000/send-trainings-email", {
+            await api.post("/send-trainings-email", {
             toEmail: usersEmails,
             trainings: selectedTrainings, 
             message: newTrainingsMessage,

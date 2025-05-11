@@ -1,4 +1,4 @@
-import React ,{useState,} from "react";
+import React ,{useState} from "react";
 import { Box, Link, Typography , OutlinedInput, InputLabel , FormControl, Button,Checkbox,IconButton,InputAdornment,
     Alert,Snackbar,DialogTitle,Dialog
 } from "@mui/material";
@@ -7,12 +7,15 @@ import VisibilityOff from '@mui/icons-material/VisibilityOff';
 import Class from "../assets/Class.jpg";
 import { useLanguage } from "../languagecontext";
 import { setCookie } from "./Cookies";
-import axios from "axios";
+import { useUser } from '../UserContext';
+import { useNavigate } from "react-router-dom";
+import api from "../api";
 
 const Home = () => {
 
     const { t } = useLanguage();
-
+    const { setUser } = useUser();
+    const navigate = useNavigate();
     // Sign In
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -31,35 +34,33 @@ const Home = () => {
 
     const handleSignIn = async () => {
         try {
-          const response = await axios.post("http://localhost:5000/api/users/sign-in", { 
-            email, 
-            password, 
-          });
-          if (response.status == 200) {
-            if(rememberMe) {
-                setCookie("Token",response.data.token, 5);
-                setCookie("User",response.data.user, 5);
-                setCookie("SignedIn",true, 5);
-            }else{
-                setCookie("Token",response.data.token);
-                setCookie("User",response.data.user);
-                setCookie("SignedIn",true);
+        const response = await api.post("/api/users/sign-in", { email, password });
+
+        if (response.status === 200) {
+            const userData = response.data.user;
+
+            setCookie("Token", response.data.token, rememberMe ? 5 : undefined);
+            setCookie("User", response.data.id, rememberMe ? 5 : undefined);
+            setCookie("SignedIn", true, rememberMe ? 5 : undefined);
+
+            setUser(userData);
+
+            if (userData.role === "admin") {
+                navigate("/manageusers");
+            } else {
+                navigate("/dashboard");
             }
-            if(response.data.user.role === "admin"){
-                window.location.href = "/manageusers"
-            }else{
-                window.location.href = "/dashboard"
-            };
-            };
+        }
         } catch (error) {
-          if (error.response) {
+        if (error.response) {
             const errorMessage = error.response.data.message;
             setShowsSignInAlert(true);
             setSignInAlertMessage(errorMessage);
             setSignInAlert("error");
-          }
+        }
         }
     };
+
       
     const handleSignInAlertClose = () => {
         setShowsSignInAlert(false);
@@ -123,12 +124,12 @@ const Home = () => {
         setVerifyEmailAlert("success");
         handleVerifyDialogClose();
         try {
-          const response = await axios.put(`http://localhost:5000/api/users/${verifyEmail}/password`, {
+          const response = await api.put(`/api/users/${verifyEmail}/password`, {
             password: newPassword,
           });
       
           if (response.status === 200) {
-            await axios.post("http://localhost:5000/password-reset", emailData);
+            await api.post("/password-reset", emailData);
           }
         } catch (error) {
           console.error("Error resetting password:", error);

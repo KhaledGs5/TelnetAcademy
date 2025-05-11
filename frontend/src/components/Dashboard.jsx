@@ -11,15 +11,15 @@ import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import { useLanguage } from "../languagecontext";
 import * as echarts from 'echarts';
 import { Divider } from '@mui/material';
-import axios from "axios";
+import api from "../api";
 import dayjs from "dayjs";
 import * as htmlToImage from 'html-to-image';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { getCookie } from "./Cookies";
 import { useNavbar } from '../NavbarContext';
+import { useUser } from '../UserContext';
 
 const Navbar = () => {
 
@@ -107,15 +107,8 @@ const Navbar = () => {
     // ..............
 
     const { t } = useLanguage(); 
-    const userid = getCookie("User") ?? null;
-    const [user,setUser] = useState([]);
-    const getUser = async () => {
-        const response = await axios.get(`http://localhost:5000/api/users/${userid}`);
-        setUser(response.data);
-    };
-    useEffect(() => {
-        if(userid)getUser();
-    }, []);
+    const { user } = useUser();
+    
     const {selectedRole} = useNavbar();
 
     const [view, setView] = useState("trainings");
@@ -365,9 +358,9 @@ const Navbar = () => {
     const fetchAllData = async () => {
       try {
         const [trainingsRes, sessionsRes, usersRes] = await Promise.all([
-          axios.get("http://localhost:5000/api/trainings"),
-          axios.get("http://localhost:5000/api/sessions"),
-          axios.get("http://localhost:5000/api/users")
+          api.get("/api/trainings"),
+          api.get("/api/sessions"),
+          api.get("/api/users")
         ]);
   
         setRawData({
@@ -383,9 +376,9 @@ const Navbar = () => {
   
     // Data filtering
     const filterData = () => {
-      const isTrainer = (user.role === "trainer" || selectedRole === "trainer");
-      const isTrainee = (user.role === "trainee" || selectedRole === "trainee"); 
-      const isManager = (user.role === "manager");
+      const isTrainer = (user?.role === "trainer" || selectedRole === "trainer");
+      const isTrainee = (user?.role === "trainee" || selectedRole === "trainee"); 
+      const isManager = (user?.role === "manager");
       const currentYear = dayjs().year();
   
       // Filter trainings
@@ -400,8 +393,8 @@ const Navbar = () => {
           (startMonth === null || trainingMonthDate.isAfter(startMonth)) &&
           (endMonth === null || trainingMonthDate.isBefore(endMonth));
   
-        const trainingsMatch = ((isTrainer && training.trainer === user._id) || (isManager && inRange) || (isTrainee 
-          && (training.confirmedtrainees.includes(user._id) || training.acceptedtrainees.includes(user._id) || training.rejectedtrainees.includes(user._id))
+        const trainingsMatch = ((isTrainer && training.trainer === user?._id) || (isManager && inRange) || (isTrainee 
+          && (training.confirmedtrainees.includes(user?._id) || training.acceptedtrainees.includes(user?._id) || training.rejectedtrainees.includes(user?._id))
         )); 
         return trainingsMatch;
       });
@@ -413,7 +406,7 @@ const Navbar = () => {
   
       // Filter users
       const filteredUsers = rawData.users.filter(user => 
-        (user.role !== "manager") && (user.role !== "admin")
+        (user?.role !== "manager") && (user?.role !== "admin")
       );
   
       setFilteredData({
@@ -430,7 +423,6 @@ const Navbar = () => {
         sessions,
         users
       } = filteredData;
-      console.log("trainings: ",trainings);
   
       // Basic counts
       const softSkills = trainings.filter(t => t.skillType === "soft_skill" && t.delivered);
@@ -443,14 +435,14 @@ const Navbar = () => {
 
   
       const confirmedTrainees = trainings
-        .map(t => t.confirmedtrainees)
+        .map(t => t.confirmedtrainees && t.delivered)
         .flat();
   
       // Gender rates
       const genders = await Promise.all(
         confirmedTrainees.map(async (id) => {
           try {
-            const response = await axios.get(`http://localhost:5000/api/users/${id}`);
+            const response = await api.get(`/api/users/${id}`);
             return { id, gender: response.data.gender };
           } catch (error) {
             console.error("Error fetching trainee gender", error);
@@ -465,7 +457,7 @@ const Navbar = () => {
       const activitiesConfirmed = await Promise.all(
         confirmedTrainees.map(async (id) => {
           try {
-            const response = await axios.get(`http://localhost:5000/api/users/${id}`);
+            const response = await api.get(`/api/users/${id}`);
             return { id, activity: response.data.activity };
           } catch (error) {
             console.error("Error fetching trainee activity", error);
@@ -506,7 +498,7 @@ const Navbar = () => {
       const gradesConfirmed = await Promise.all(
         confirmedTrainees.map(async (id) => {
           try {
-            const response = await axios.get(`http://localhost:5000/api/users/${id}`);
+            const response = await api.get(`/api/users/${id}`);
             return { id, grade: response.data.grade };
           } catch (error) {
             console.error("Error fetching trainee grade", error);
@@ -715,7 +707,7 @@ const Navbar = () => {
       // Update trainees data
       const traineeIds = [...new Set(requests.map((req) => req.trainee))];
       const traineeDataArray = await Promise.all(
-        traineeIds.map((id) => axios.get(`http://localhost:5000/api/users/${id}`))
+        traineeIds.map((id) => api.get(`/api/users/${id}`))
       );
       const traineesData = Object.fromEntries(
         traineeDataArray.map(({ data }) => [data._id, data])
@@ -734,7 +726,7 @@ const Navbar = () => {
           showDetails: false
         }));
       setCompletedTrainings(filtered);
-    }, [filteredData.trainings]);
+    }, [filteredData.trainings, user]);
   
     const updateShowDetails = (trainingId, value) => {
       setCompletedTrainings(prevTrainings =>
@@ -759,7 +751,6 @@ const Navbar = () => {
   
     useEffect(() => {
       calculateMetrics();
-      console.log(filteredData);
     }, [filteredData]);
     // Chart rendering
     useEffect(() => {
@@ -1238,7 +1229,7 @@ const Navbar = () => {
                 >
                     {t("training_details")}
                 </Typography>
-                {user.role === "manager"?<Box
+                {user?.role === "manager"?<Box
                     sx={{
                       ...paperStyle,
                       width: "95%",
@@ -1322,7 +1313,7 @@ const Navbar = () => {
 
                   return (
                     <Box
-                      key={user._id}
+                      key={user?._id}
                       elevation={2}
                       sx={{
                         ...paperStyle,
@@ -1490,7 +1481,7 @@ const Navbar = () => {
               >
                 {t("trainings")}
               </Button>
-              {user.role === "manager"?
+              {user?.role === "manager"?
               <Button
                 sx={buttonStyle("statistics")}
                 onClick={() => setView("statistics")}
@@ -1566,7 +1557,7 @@ const Navbar = () => {
               >
                   {t(view)}
               </Typography>
-              {user.role === "manager" && view === "statistics"?<Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+              {user?.role === "manager" && view === "statistics"?<Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                   <DatePicker
                     views={['month']}
@@ -1588,7 +1579,7 @@ const Navbar = () => {
                   />
                 </LocalizationProvider>
               </Box>:null}
-              {user.role === "manager" && view === "statistics"?<Box
+              {user?.role === "manager" && view === "statistics"?<Box
                 sx={{
                   width:"20%",
                 }}
@@ -1602,7 +1593,7 @@ const Navbar = () => {
                 </Button>
               </Box>:null}
             </Box>
-            {view === "statistics" && user.role === "manager"?
+            {view === "statistics" && user?.role === "manager"?
             <Box
               id="statistics-container"
               sx={{

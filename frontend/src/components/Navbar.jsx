@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, Link as RouterLink  } from 'react-router-dom';
 import { useContext } from 'react';
 import { ThemeContext } from '../themecontext';
 import { getCookie , setCookie, deleteCookie} from './Cookies';
@@ -25,17 +25,21 @@ import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import MonetizationOnIcon from '@mui/icons-material/MonetizationOn';
 import LanguageIcon from '@mui/icons-material/Language';
-import axios from 'axios';
+import api from "../api";
 import { useNavbar } from '../NavbarContext';
 import socket from '../socket';
 import { useLanguage } from "../languagecontext";
+import { useUser } from '../UserContext';
 
 const Navbar = () => {
 
     const { t, setLanguage } = useLanguage();
+    const { user } = useUser();
+    const navigate = useNavigate();
     const [choosedLanguage, setChoosedLanguage] = useState(getCookie("Language") || "en");
     const { darkMode, toggleTheme } = useContext(ThemeContext);
-    const [signedIn, setSignedIn] = useState(getCookie("SignedIn"));
+    const signedIn = getCookie("SignedIn");
+    console.log(signedIn);
     // Verify Everything
 
     const [showsVerificationAlert, setShowsVerifificationAlert] = useState(false);
@@ -69,9 +73,9 @@ const Navbar = () => {
     const {selectedRole, setSelectedRole} = useNavbar();
     const handleRoleChange = (role) => {
         setSelectedRole(role);
-        setCookie("Role", role , 1000);
+        setCookie("Role", role, 1000);
         setSubmenuAnchorEl(null);
-        window.location.href = role === "trainee" ? '/traineesession' : '/trainersession';
+        navigate(role === "trainee" ? '/traineesession' : '/trainersession');
     };
     const chosenRole = getCookie("Role") || "trainer";
 
@@ -84,21 +88,10 @@ const Navbar = () => {
 
     const ProfileImage = getCookie("ProfileImage");
 
-    const navigate = useNavigate();
-
     const goToDashBoard = () =>{
         navigate("/dashboard");
     };
 
-    const userid = getCookie("User") ?? null;
-    const [user,setUser] = useState([]);
-    const getUser = async () => {
-        const response = await axios.get(`http://localhost:5000/api/users/${userid}`);
-        setUser(response.data);
-    };
-    useEffect(() => {
-        if(userid)getUser();
-    }, []);
     const token = getCookie("Token") ?? null;
 
 
@@ -124,7 +117,7 @@ const Navbar = () => {
 
     const fetchNotifications = async () => {
         try {
-            const response = await axios.post("http://localhost:5000/api/notifications/noread", {rec : user._id });
+            const response = await api.post("/api/notifications/noread", {rec : user?._id });
             const callForTrainersNotif = response.data.notifications.filter(notification => notification.type === "Call_For_Trainers");
             const confirmAttendanceNotfi = response.data.notifications.filter(notification => notification.type === "Trainee_Confirmed_Attendance");
             const trainingRequestNotif = response.data.notifications.filter(notification => notification.type === "New_Training_Request");
@@ -153,13 +146,13 @@ const Navbar = () => {
             setNumberOfQuizFromTrainer(quizFromTrainer.length);
 
             setConfirmedTrainees([]);
-            const availableAttendanceConfirmations = await axios.post("http://localhost:5000/api/notifications/withtype", {rec : user._id, tp : "Trainee_Confirmed_Attendance"});
+            const availableAttendanceConfirmations = await api.post("/api/notifications/withtype", {rec : user?._id, tp : "Trainee_Confirmed_Attendance"});
             availableAttendanceConfirmations.data.notifications.forEach(notification => {
-                axios.get(`http://localhost:5000/api/users/${notification.sender}`)
+                api.get(`/api/users/${notification.sender}`)
                     .then(response => {
                         const trainee = response.data;
                         trainee.new = !notification.isRead;
-                        axios.get(`http://localhost:5000/api/trainings/${notification.message}`)
+                        api.get(`/api/trainings/${notification.message}`)
                             .then(response => {
                                 const training = response.data;
                                 trainee.trainingTitle = training.title;
@@ -174,9 +167,9 @@ const Navbar = () => {
                     });
             });
             setListOfRequests([]);
-            const availableRequests = await axios.post("http://localhost:5000/api/notifications/withtype", {rec : user._id, tp : "Request_Become_Trainee"});
+            const availableRequests = await api.post("/api/notifications/withtype", {rec : user?._id, tp : "Request_Become_Trainee"});
             availableRequests.data.notifications.forEach(notification => {
-                axios.get(`http://localhost:5000/api/users/${notification.sender}`)
+                api.get(`/api/users/${notification.sender}`)
                     .then(response => {
                         const trainer = response.data;
                         trainer.new = !notification.isRead;
@@ -196,7 +189,7 @@ const Navbar = () => {
 
     const fetchTrainersEmails = async () => {
         try {
-            const response = await axios.get("http://localhost:5000/api/users");
+            const response = await api.get("/api/users");
             const trainerEmails = response.data
             .filter(user => user.role !== "manager")
             .map(user => user.email)
@@ -216,7 +209,7 @@ const Navbar = () => {
         if (!socket.connected) {
             socket.connect();
         }
-        socket.emit("joinRoom", user._id);
+        socket.emit("joinRoom", user?._id);
         
         socket.on("newNotification", fetchNotifications);
         socket.on("readCallNotifications", () => setNumberOfCalls(0));
@@ -248,7 +241,7 @@ const Navbar = () => {
     
     const handleOpenCallNotifications = async () => {
         try {
-          await axios.put("http://localhost:5000/api/notifications/markread", {rec : user._id, tp : "Call_For_Trainers", rtp : "readCallNotifications"});
+          await api.put("/api/notifications/markread", {rec : user?._id, tp : "Call_For_Trainers", rtp : "readCallNotifications"});
           setNumberOfCalls(0); 
         } catch (error) {
           console.error("Error marking notifications as read", error);
@@ -257,7 +250,7 @@ const Navbar = () => {
 
     const handleOpenFeedbackNotification = async () => {
         try {
-          await axios.delete("http://localhost:5000/api/notifications", { data : {rec : user._id, tp : "New_Feedback"}});
+          await api.delete("/api/notifications", { data : {rec : user?._id, tp : "New_Feedback"}});
           setNumberOfNewFeedbacks(0);
         } catch (error) {
           console.error("Error marking notifications as read", error);
@@ -278,7 +271,7 @@ const Navbar = () => {
 
     const handleOpenConfirmAttendanceNotifications = async () => {
         try {
-          await axios.put("http://localhost:5000/api/notifications/markread", {rec : user._id, tp : "Trainee_Confirmed_Attendance", rtp : "readConfirmNotifications"});
+          await api.put("/api/notifications/markread", {rec : user?._id, tp : "Trainee_Confirmed_Attendance", rtp : "readConfirmNotifications"});
           setNumberOfConfirmAttendance(0);
         } catch (error) {
           console.error("Error marking notifications as read", error);
@@ -293,11 +286,11 @@ const Navbar = () => {
     const [TrainingTrainers, setTrainingTrainers] = useState([]);
     const fetchTrainers = async () => {
         try {
-        const response = await axios.get('http://localhost:5000/api/users');
+        const response = await api.get('/api/users');
         if (response.status === 200) {
             const trainers = response.data
             .filter(user => user.role === "trainer" || user.role === "trainee_trainer")
-            .map(user => ({ name: user.name, id: user._id, selected: false, email:user.email }));
+            .map(user => ({ name: user?.name, id: user?._id, selected: false, email:user.email }));
   
             setTrainingTrainers(trainers);
         }
@@ -343,11 +336,11 @@ const Navbar = () => {
                 selectedTrainerIds = TrainingTrainers
                     .filter(trainer => trainer.selected)
                     .map(trainer => trainer.id); 
-                const response = await axios.post(
-                "http://localhost:5000/api/users/callforspecifiedtrainers",
+                const response = await api.post(
+                "/api/users/callforspecifiedtrainers",
                 {
                     trainersIDs: selectedTrainerIds,
-                    sen: user._id,
+                    sen: user?._id,
                     tp: "Call_For_Trainers",
                     msg: callMessage,
                 },
@@ -358,21 +351,21 @@ const Navbar = () => {
                 }
                 );
                 if (response.data.success) {
-                    await axios.post("http://localhost:5000/call-for-trainers", {
+                    await api.post("/call-for-trainers", {
                         toEmail: selectedTrainerEmails,
                         message: callMessage,
                     });
                 }
     
             } else {
-                const response = await axios.post("http://localhost:5000/api/users/callfortrainers", {
-                    sen: user._id,
+                const response = await api.post("/api/users/callfortrainers", {
+                    sen: user?._id,
                     tp: "Call_For_Trainers",
                     msg: callMessage,
                 });
     
                 if (response.data.success) {
-                    await axios.post("http://localhost:5000/call-for-trainers", {
+                    await api.post("/call-for-trainers", {
                         toEmail: trainersEmails, 
                         message: callMessage,
                     });
@@ -403,7 +396,7 @@ const Navbar = () => {
     const closeListOfRequests = async () => {
         setShowListOfRequests(false);
         try {
-            await axios.put("http://localhost:5000/api/notifications/markread", {rec : user._id, tp : "Request_Become_Trainee", rtp : "readRequestTraineeNotifications"});
+            await api.put("/api/notifications/markread", {rec : user?._id, tp : "Request_Become_Trainee", rtp : "readRequestTraineeNotifications"});
             setNumberOfRequestRoleTrainee(0);
           } catch (error) {
             console.error("Error marking notifications as read", error);
@@ -411,9 +404,9 @@ const Navbar = () => {
     };
 
     const deleteRequestToBecomeTrainee = async (userId) => {
-        await axios.delete("http://localhost:5000/api/notifications", {
+        await api.delete("/api/notifications", {
             data: {
-              rec : user._id,
+              rec : user?._id,
               sen : userId,
               tp : "Request_Become_Trainee",
             }
@@ -424,7 +417,7 @@ const Navbar = () => {
 
     const notifyRoleChangeToTrainee = async (userId) => {
         try {
-            await axios.post("http://localhost:5000/api/notifications/rolechange", {rec: userId, sen:user._id,tp:"Role_Changed", msg:"your_role_updated_to_trainee_trainer" });
+            await api.post("/api/notifications/rolechange", {rec: userId, sen:user?._id,tp:"Role_Changed", msg:"your_role_updated_to_trainee_trainer" });
         } catch (error) {
             console.error("Error sending request:", error);
         }
@@ -433,7 +426,7 @@ const Navbar = () => {
     const handleAddTrainee = async (userId) => {
         try {
             console.log("User ID:", userId);
-            await axios.put(`http://localhost:5000/api/users/${userId}`, {role : "trainee_trainer"});
+            await api.put(`/api/users/${userId}`, {role : "trainee_trainer"});
             setVerifyAlert("success");
             setVerifyAlertMessage("request_accepted");
             setShowsVerifificationAlert(true);
@@ -452,8 +445,8 @@ const Navbar = () => {
 
     const handleBecomeTrainee = async () => {
         try {
-            const response = await axios.post("http://localhost:5000/api/notifications/rolechange/managers", {
-                sen: user._id,
+            const response = await api.post("/api/notifications/rolechange/managers", {
+                sen: user?._id,
                 tp: "Request_Become_Trainee",
                 msg: becomeTraineeMessage
             });
@@ -477,7 +470,7 @@ const Navbar = () => {
     const [cost, setCost] = useState(0);
 
     const showTrainingsCost = async () => {
-        await axios.get("http://localhost:5000/api/trainings")
+        await api.get("/api/trainings")
             .then((response) => {
                 setCost(response.data[0]?.trainingsCost || 50);
             })
@@ -489,7 +482,7 @@ const Navbar = () => {
     }
 
     const handleChangeCost = async () => {
-        await axios.put("http://localhost:5000/api/trainings" , {trainingsCost : cost})
+        await api.put("/api/trainings" , {trainingsCost : cost})
             .then((response) => {
                 hideTrainingsCost();
                 setVerifyAlert("success");
@@ -510,14 +503,13 @@ const Navbar = () => {
 
     const handleLogout = async() => {
         try {
-            await axios.delete("http://localhost:5000/api/notifications", {
+            await api.delete("/api/notifications", {
             data: {
-                rec: user._id,
+                rec: user?._id,
                 tp: "Role_Changed"
               }})
                 .then(() => {
                     setNumberOfRoleChanged(0);
-                    setSignedIn(false);
                     setCookie("SignedIn",false,5);
                     setCookie("Role",false,5);
                     deleteCookie("User");
@@ -627,7 +619,7 @@ const Navbar = () => {
                     gap: '20px',
                 }}
             >
-                {user.role !== "admin" ? <Link href="/dashboard" sx={linkStyle('/dashboard')}>{t("dashboard")}</Link>:null}
+                {user.role !== "admin" ? <Link component={RouterLink} to="/dashboard" sx={linkStyle('/dashboard')}>{t("dashboard")}</Link>:null}
                 <Badge badgeContent={numberOfQuizFromTrainee} color="primary"
                     sx={{ 
                     "& .MuiBadge-badge": { 
@@ -640,12 +632,12 @@ const Navbar = () => {
                     } 
                     }}
                 >
-                {user.role !== "admin" ? <Link href={(user.role === "trainer" || user.role === "trainee_trainer" && chosenRole === "trainer") ? '/trainersession' : (user.role === "trainee" || user.role === "trainee_trainer" && chosenRole === "trainee") ? '/traineesession' : user.role === 'manager' ? '/managesessions' : ''} 
+                {user.role !== "admin" ? <Link component={RouterLink} to={(user.role === "trainer" || user.role === "trainee_trainer" && chosenRole === "trainer") ? '/trainersession' : (user.role === "trainee" || user.role === "trainee_trainer" && chosenRole === "trainee") ? '/traineesession' : user.role === 'manager' ? '/managesessions' : ''} 
                 sx={linkStyle((user.role === "trainer" || user.role === "trainee_trainer"&& chosenRole === "trainer") ? '/trainersession' : (user.role === "trainee" || user.role === "trainee_trainer" && chosenRole === "trainee") ? '/traineesession' : user.role === 'manager' ? '/managesessions' : '')}>{t("sessions")}</Link>:null}
                 </Badge>
-                {user.role === "manager" ? <Link href="/managetrainings" sx={linkStyle('/managetrainings')}>{t("trainings")}</Link>:null}
-                {user.role === "manager" ? <Link href="/feedbacks" sx={linkStyle('/feedbacks')}>{t("feedbacks")}</Link>:null}
-                {user.role === "admin" ?  <Link href="/manageusers" sx={linkStyle('/manageusers')}>{t("users")}</Link> : 
+                {user.role === "manager" ? <Link component={RouterLink} to="/managetrainings" sx={linkStyle('/managetrainings')}>{t("trainings")}</Link>:null}
+                {user.role === "manager" ? <Link component={RouterLink} to="/feedbacks" sx={linkStyle('/feedbacks')}>{t("feedbacks")}</Link>:null}
+                {user.role === "admin" ?  <Link component={RouterLink} to="/manageusers" sx={linkStyle('/manageusers')}>{t("users")}</Link> : 
                 (user.role === "manager")? 
                 <Badge badgeContent={numberOfTrainingRequests + numberOfTraineeRequests} color="primary"
                 sx={{ 
@@ -660,7 +652,7 @@ const Navbar = () => {
                 }}
                 >
                 <Link
-                    href="/requests"
+                    component={RouterLink} to="/requests"
                     sx={linkStyle('/requests')}
                 >
                     {t("requests")}
@@ -678,7 +670,7 @@ const Navbar = () => {
                                 } 
                                 }}
                             >
-                                <Link href="/trainertraining" sx={linkStyle('/trainertraining')}
+                                <Link component={RouterLink} to="/trainertraining" sx={linkStyle('/trainertraining')}
                                 >{t("trainings")}</Link>
                             </Badge>
                               :
@@ -694,10 +686,10 @@ const Navbar = () => {
                                  } 
                              }}
                              >
-                             <Link href="/enrolledtrainee" sx={linkStyle('/enrolledtrainee')}
+                             <Link component={RouterLink} to="/enrolledtrainee" sx={linkStyle('/enrolledtrainee')}
                              >{t("trainings")}</Link></Badge> }
-                {user.role !== "admin"?<Link href="/calendar" sx={linkStyle('/calendar')}>{t("calendar")}</Link>:null}
-                <Link href="/about" sx={linkStyle('/about')}>{t("about")}</Link>
+                {user.role !== "admin"?<Link component={RouterLink} to="/calendar" sx={linkStyle('/calendar')}>{t("calendar")}</Link>:null}
+                <Link component={RouterLink} to="/about" sx={linkStyle('/about')}>{t("about")}</Link>
             </Box> : null}
             {!signedIn ? 
             <Box
@@ -712,7 +704,7 @@ const Navbar = () => {
                     gap: '30px',
                 }}
             >
-                <Link href="/" 
+                <Link component={RouterLink} to="/" 
                 sx={{...buttonStyle,                    
                     color: location.pathname === "/" ? "white" : "text.secondary",
                     backgroundColor: location.pathname === "/" ? "#2CA8D5" : "background.paper",
@@ -729,7 +721,7 @@ const Navbar = () => {
                         justifyContent: 'end',
                     }}
                 >
-                    <Link href="" sx={{...buttonStyle,
+                    <Link component={RouterLink} to="" sx={{...buttonStyle,
                         color: menuOpen ? "white" : "text.secondary",
                         backgroundColor: menuOpen? "#76C5E1" : "background.paper",
                         width:'100%'
@@ -794,7 +786,7 @@ const Navbar = () => {
                     }}>
                     {t(selectedRole)}
                 </Typography> : null}
-                <Link href="/account" sx={{...buttonStyle,
+                <Link component={RouterLink} to="/account" sx={{...buttonStyle,
                     color: menuOpen ? "white" : location.pathname === "/account" ? "white" : "text.secondary",
                     backgroundColor: menuOpen? "#76C5E1" : location.pathname === "/account" ? "#2CA8D5" : "background.paper",
                     width:'auto'
@@ -821,14 +813,14 @@ const Navbar = () => {
                         }
                     </Badge>
                     <Typography>
-                        {user.name}
+                        {user?.name}
                     </Typography>
                 </Link>
                 <Menu anchorEl={menuAnchorEl} open={menuOpen} onClose={handleCloseMenu}
                 disableScrollLock={true}
                 >
                     <MenuItem sx={{ ...menuStyle(""), height: "60px", display: "flex", flexDirection: "column", alignItems: "start" }} onMouseEnter={handleCloseSubmenu}>
-                        <Typography variant="body1">{user.name}</Typography>
+                        <Typography variant="body1">{user?.name}</Typography>
                         <Typography variant="caption" color="text.secondary">{user.role ? t(user.role) : t("admin")}</Typography>
                     </MenuItem>
                     {user.role === "admin" ? <MenuItem onClick={() => window.location.href = "/manageusers"} sx={menuStyle("/manageusers")}><ManageAccountsIcon sx={{marginRight:'10px'}}/>{t("manage")}</MenuItem> : null}
