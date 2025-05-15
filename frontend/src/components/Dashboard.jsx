@@ -2007,22 +2007,20 @@ const Navbar = () => {
             flexDirection: "row",
             justifyContent:"start",
             alignItems:"start",
+            alignItems: "stretch",
             padding:"10px",
-            minHeight: view === "statistics" ? "2500px": "auto",
+            minHeight:  "auto",
           }}
         >
           <Box
             sx={{
               width:"20%",
-              height:"100vh",
               display:"flex",
               flexDirection: "column",
               justifyContent:"start",
               alignItems:"center",
               padding:"20px",
               borderRight:"1px solid #ccc",
-              position: "sticky",
-              top : "20px",
             }}
           >
             <Typography
@@ -2035,6 +2033,8 @@ const Navbar = () => {
                     userSelect: "none",
                     cursor: "pointer",
                     color: "#2CA8D5",
+                    position: "sticky",
+                    top : "20px",
                 }}
             >
                 {t("dashboard")}
@@ -2050,6 +2050,8 @@ const Navbar = () => {
                 marginTop:"30px",
                 padding:"10px",
                 gap: "15px",
+                position: "sticky",
+                top : "80px",
               }}
             >
               <Button
