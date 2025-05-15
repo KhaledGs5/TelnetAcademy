@@ -16,9 +16,10 @@ const cron = require('node-cron');
   notification.sender = sen;
   }
 
-  io.to(rec.toString()).emit("newNotification");
+
   console.log("Sending notification to user:", notification);
   await Notification.create(notification);
+  io.to(rec.toString()).emit("newNotification");
   } catch (error) {
   console.error("Error sending notification to user:", error);
   }
@@ -180,8 +181,8 @@ const cron = require('node-cron');
       if (sen) {
         notification.sender = sen;
       }
-    io.to(rec.toString()).emit("newNotification");
     await Notification.create(notification);
+    io.to(rec.toString()).emit("newNotification");
     } catch (error) {
       console.error("Error sending notification to user:", error);
     }
@@ -223,7 +224,7 @@ const cron = require('node-cron');
     }
   };
   
-  cron.schedule('* * * * *', async () => {
+  cron.schedule('0 */5 * * *', async () => {
     try {
       const trainingIds = await Session.distinct('training');
   

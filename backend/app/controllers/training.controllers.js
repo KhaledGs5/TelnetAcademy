@@ -473,7 +473,7 @@ const markTrainedUsers = async (trainingId) => {
 };
 
 
-cron.schedule('* * * * *', async () => {
+cron.schedule('*/10 * * * *', async () => {
   try {
     const trainingIds = await Session.distinct('training');
 

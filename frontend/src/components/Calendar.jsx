@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Grid, Paper, Typography, Button , Box} from "@mui/material";
+import { Grid, Paper, Typography, Button , Box, Tooltip} from "@mui/material";
 import { getCookie } from './Cookies';
 import { useNavbar } from '../NavbarContext';
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, isSameMonth, isSameDay } from "date-fns";
@@ -79,22 +79,76 @@ const Calendar = () => {
     return days;
   };
 
-  const renderCells = () => {
-    const monthDays = [];
-    let day = startWeek;
-    while (day <= endWeek) {
-      let week = [];
-  
-      for (let i = 0; i < 7; i++) {
-        const cloneDay = day;
-        const sessionsOnThisDay = trainings.filter(training => {
-          return training.sessions.some(session => {
-            const sessionDate = new Date(session.date);
-            return isSameDay(sessionDate, cloneDay); 
-          });
+const renderCells = () => {
+  const monthDays = [];
+  let day = startWeek;
+  while (day <= endWeek) {
+    let week = [];
+
+    for (let i = 0; i < 7; i++) {
+      const cloneDay = day;
+      const sessionsOnThisDay = trainings.filter(training => {
+        return training.sessions.some(session => {
+          const sessionDate = new Date(session.date);
+          return isSameDay(sessionDate, cloneDay);
         });
-        week.push(
-          <Grid item xs key={cloneDay}>
+      });
+
+      week.push(
+        <Grid item xs key={cloneDay.toString()}>
+          <Tooltip
+            title={
+              <Box sx={{ maxWidth: 300 }}>
+                {sessionsOnThisDay
+                  .filter(training => {
+                    if (selectedRole === "trainer" || user?.role === "trainer") {
+                      return training.trainer === user?._id;
+                    } else if (selectedRole === "trainee") {
+                      return training.trainer !== user?._id;
+                    }
+                    return true;
+                  })
+                  .map(training => {
+                    let trainingColor = "";
+
+                    if (training.confirmedtrainees?.includes(user?._id) && !training.delivered) {
+                      trainingColor = "#4CAF50";
+                    } else if (
+                      training.acceptedtrainees?.includes(user?._id) &&
+                      !training.confirmedtrainees.includes(user?._id)
+                    ) {
+                      trainingColor = "#FF9800";
+                    } else if (training.delivered) {
+                      trainingColor = "lightgrey";
+                    } else {
+                      trainingColor = "#2196F3";
+                    }
+
+                    return (
+                      <Box key={training._id} sx={{ mb: 1 }}>
+                        <Typography variant="subtitle2" sx={{ color: trainingColor, fontWeight: "bold" }}>
+                          {training.title}
+                        </Typography>
+                        {training.sessions.map(session => {
+                          const sessionDate = new Date(session.date);
+                          if (isSameDay(sessionDate, cloneDay)) {
+                            return (
+                              <Typography key={session._id} variant="body2" sx={{ color: trainingColor }}>
+                                {session.name} ({format(sessionDate, "h:mm a")})
+                              </Typography>
+                            );
+                          }
+                          return null;
+                        })}
+                      </Box>
+                    );
+                  })}
+              </Box>
+            }
+            interactive
+            arrow
+            placement="top"
+          >
             <Paper
               sx={{
                 padding: 1,
@@ -106,72 +160,78 @@ const Calendar = () => {
                   : "background.dcalendar",
                 color: isSameMonth(day, currentMonth) ? "black" : "grey",
                 cursor: "pointer",
-                "&:hover": { backgroundColor: "lightblue" },
-                width: '100%',
-                height: '100px',
-                marginBottom: '10px',
+                "&:hover": {
+                  backgroundColor: "lightblue",
+                },
+                width: "100%",
+                height: "100px",
+                minHeight: "100px",
+                marginBottom: "10px",
+                overflow: "hidden",
               }}
               onClick={() => setSelectedDate(cloneDay)}
             >
-              <Typography variant="body1" sx={{mb: 1}}>{format(cloneDay, "d")}</Typography>
-              {sessionsOnThisDay
-                .filter(training => {
-                  if (selectedRole === "trainer" || user?.role === "trainer") {
-                    return training.trainer === user?._id;
-                  }else if(selectedRole === "trainee"){
-                    return training.trainer !== user?._id;
-                  }
-                  return true;
-                })
-                .map(training => {
-                  let trainingColor = '';
+              <Typography variant="body1" sx={{ mb: 1 }}>
+                {format(cloneDay, "d")}
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden' }}>
+                {sessionsOnThisDay
+                  .filter(training => {
+                    if (selectedRole === "trainer" || user?.role === "trainer") {
+                      return training.trainer === user?._id;
+                    } else if (selectedRole === "trainee") {
+                      return training.trainer !== user?._id;
+                    }
+                    return true;
+                  })
+                  .slice(0, 4) 
+                  .map(training => {
+                    let trainingColor = "";
 
-                  if (training.confirmedtrainees?.includes(user?._id) && !training.delivered) {
-                    trainingColor = "#4CAF50"; 
-                  } else if (
-                    training.acceptedtrainees?.includes(user?._id) &&
-                    !training.confirmedtrainees.includes(user?._id)
-                  ) {
-                    trainingColor = "#FF9800"; 
-                  } else if (training.delivered) {
-                    trainingColor = "lightgrey"; 
-                  } else {
-                    trainingColor = "#2196F3"; 
-                  }
-                return (
-                  <Box key={training._id}>
-                    <Typography variant="body2" align="center" sx={{ color: trainingColor }}>
-                      <strong>{training.title}</strong>
-                    </Typography>
-                    {training.sessions.map(session => {
-                      const sessionDate = new Date(session.date);
-                      if (isSameDay(sessionDate, cloneDay)) {
-                        return (
-                          <Typography key={session._id} variant="body2" align="center" sx={{ color: trainingColor }}>
-                            {session.name} ({format(sessionDate, 'h:mm a')})
-                          </Typography>
-                        );
-                      }
-                      return null;
-                    })}
-                  </Box>
-                );
-              })}
+                    if (training.confirmedtrainees?.includes(user?._id) && !training.delivered) {
+                      trainingColor = "#4CAF50";
+                    } else if (
+                      training.acceptedtrainees?.includes(user?._id) &&
+                      !training.confirmedtrainees.includes(user?._id)
+                    ) {
+                      trainingColor = "#FF9800";
+                    } else if (training.delivered) {
+                      trainingColor = "lightgrey";
+                    } else {
+                      trainingColor = "#2196F3";
+                    }
+
+                    return (
+                      <Typography
+                        key={training._id}
+                        variant="caption"
+                        sx={{ color: trainingColor, fontSize: "15px", whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden', fontWeight: "bold" }}
+                      >
+                        {training.title}
+                      </Typography>
+                    );
+                  })}
+                {sessionsOnThisDay.length > 2 && (
+                  <Typography variant="caption" color="text.secondary">
+                    +{sessionsOnThisDay.length - 2} more
+                  </Typography>
+                )}
+              </Box>
             </Paper>
-          </Grid>
-        );
-        day = addDays(day, 1);
-      }
-  
-      monthDays.push(
-        <Grid container spacing={1} key={day}>
-          {week}
+          </Tooltip>
         </Grid>
       );
+
+      day = addDays(day, 1);
     }
-  
-    return monthDays;
-  };
+    monthDays.push(
+      <Grid container spacing={1} key={day.toString()}>
+        {week}
+      </Grid>
+    );
+  }
+  return monthDays;
+};
 
 
   return (

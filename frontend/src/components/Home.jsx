@@ -10,11 +10,13 @@ import { setCookie } from "./Cookies";
 import { useUser } from '../UserContext';
 import { useNavigate } from "react-router-dom";
 import api from "../api";
+import { useNavbar } from "../NavbarContext";
 
 const Home = () => {
 
     const { t } = useLanguage();
     const { setUser } = useUser();
+    const { setSelectedRole } = useNavbar();
     const navigate = useNavigate();
     // Sign In
     const [email, setEmail] = useState('');
@@ -42,6 +44,9 @@ const Home = () => {
             setCookie("Token", response.data.token, rememberMe ? 5 : undefined);
             setCookie("User", response.data.id, rememberMe ? 5 : undefined);
             setCookie("SignedIn", true, rememberMe ? 5 : undefined);
+            if (userData.role === "trainee_trainer") {
+                setSelectedRole("trainer");
+            } 
 
             setUser(userData);
 

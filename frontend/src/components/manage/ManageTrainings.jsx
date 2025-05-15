@@ -312,8 +312,6 @@ const ManageTrainings = () => {
     const [formFields, setFormFields] = useState([]);
     const [fieldValues, setFieldValues] = useState({});
 
-    console.log(fieldValues);
-
     const fetchForms = async () => {
         try {
             const response = await api.get("/api/dynamicform/forms")
@@ -577,12 +575,13 @@ const ManageTrainings = () => {
 
     const fetchTrainers = async () => {
         try {
+            console.log("here");
         const response = await api.get('/api/users');
         if (response.status === 200) {
             const trainers = response.data
             .filter(user => user.role === "trainer" || user.role === "trainee_trainer")
             .map(user => ({ name: user.name, id: user._id }));
-    
+
             setFilterTrainer([{ name: 'all', id: 0 }, ...trainers]);
             setTrainingTrainers(trainers);
         }
@@ -722,14 +721,14 @@ const ManageTrainings = () => {
                     const trainer = TrainingTrainers.find(trainer => trainer.id === t.trainer);
                     return {
                         ...t,
-                        trainerName: trainer ? trainer.name : 'Unknown Trainer',
+                        trainerName: trainer ? trainer.name : 'Trainer',
                     };
             });
 
             await api.post("/send-trainings-email", {
-            toEmail: usersEmails,
-            trainings: selectedTrainings, 
-            message: newTrainingsMessage,
+                toEmail: usersEmails,
+                trainings: selectedTrainings, 
+                message: newTrainingsMessage,
             });
             hideSendTrainingsEmail();
             setVerifyAlert("success");
@@ -1213,7 +1212,7 @@ const ManageTrainings = () => {
                         paddingRight: '25px',
                         }}
                     >
-                        <Box sx={{width:"10px"}}>
+                        <Box sx={{ width: "40px" }}>
                             <Checkbox
                                 checked={allTrainingsSelected}
                                 onChange={(e) => {

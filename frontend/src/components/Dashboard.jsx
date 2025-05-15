@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Box, Typography, List, ListItem, ListItemIcon, ListItemText, Button, Tooltip, IconButton, Rating,
   TableContainer,Paper,Table,TableHead,TableRow,TableCell,TableBody,OutlinedInput,InputLabel,FormControl,
-  DialogTitle,Dialog
+  DialogTitle,Dialog,MenuItem,TextField
  } from "@mui/material";
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
@@ -108,6 +108,20 @@ const Navbar = () => {
 
     const { t } = useLanguage(); 
     const { user } = useUser();
+    const monthMap = {
+      january: 0,
+      february: 1,
+      march: 2,
+      april: 3,
+      may: 4,
+      june: 5,
+      july: 6,
+      august: 7,
+      september: 8,
+      october: 9,
+      november: 10,
+      december: 11
+    };
     
     const {selectedRole} = useNavbar();
 
@@ -166,8 +180,8 @@ const Navbar = () => {
           <body>
             <h1>EMV Training Recap</h1>
             ${validImages.map(({ image, width, height, id }, i) => {
-              const scaleWidthFactor = (id === 'section6' || id === 'section7') ? 0.5 : 1; 
-              const scaleHeightFactor = (id === 'section6' || id === 'section7') ? 0.6 : 1;
+              const scaleWidthFactor = 1; 
+              const scaleHeightFactor = 1;
               const newWidth = width * scaleWidthFactor;
               const newHeight = height * scaleHeightFactor;
               return `
@@ -209,6 +223,9 @@ const Navbar = () => {
     const activityChart = useRef(null);
     const gradeChart = useRef(null);
     const regisChart = useRef(null);
+    const trainingsByMonthChart = useRef(null);
+    const traineesByMonthChart = useRef(null);
+
   
     // State for all data
     const [rawData, setRawData] = useState({
@@ -270,6 +287,7 @@ const Navbar = () => {
       rateOfMediaAndEnergyConfirmedActivity: 0,
       rateOfElectronicsConfirmedActivity: 0,
       rateOfSpaceConfirmedActivity: 0,
+      rateOfOtherConfirmedActivity: 0,
       rateOfF1ConfirmedGrade: 0,
       rateOfF2ConfirmedGrade: 0,
       rateOfF3ConfirmedGrade: 0,
@@ -280,6 +298,10 @@ const Navbar = () => {
       rateOfM4ConfirmedGrade: 0,
       rateOfM5ConfirmedGrade: 0,
       rateOfM6ConfirmedGrade: 0,
+      rateOfL1ConfirmedGrade: 0,
+      rateOfL2ConfirmedGrade: 0,
+      rateOfL3ConfirmedGrade: 0,
+      rateOfL4ConfirmedGrade: 0,
       rateOfEnablersActivity: 0,
       rateOfMechanicalActivity: 0,
       rateOfInformationSystemsActivity: 0,
@@ -290,6 +312,7 @@ const Navbar = () => {
       rateOfMediaAndEnergyActivity: 0,
       rateOfElectronicsActivity: 0,
       rateOfSpaceActivity: 0,
+      rateOfOtherActivity: 0,
       rateOfF1Grade: 0,
       rateOfF2Grade: 0,
       rateOfF3Grade: 0,
@@ -300,6 +323,10 @@ const Navbar = () => {
       rateOfM4Grade: 0,
       rateOfM5Grade: 0,
       rateOfM6Grade: 0,
+      rateOfL1Grade: 0,
+      rateOfL2Grade: 0,
+      rateOfL3Grade: 0,
+      rateOfL4Grade: 0,
       numberOfEnablersTrainees : 0,
       numberOfMechanicalTrainees : 0,
       numberOfInformationSystemsTrainees : 0,
@@ -310,6 +337,7 @@ const Navbar = () => {
       numberOfElectronicsTrainees : 0,
       numberOfSpaceTrainees : 0,
       numberOfTelecomTrainees : 0,
+      numberOfOtherAct : 0,
       numberOfF1Trainees : 0,
       numberOfF2Trainees : 0,
       numberOfF3Trainees : 0,
@@ -320,6 +348,35 @@ const Navbar = () => {
       numberOfM4Trainees : 0,
       numberOfM5Trainees : 0,
       numberOfM6Trainees : 0,
+      numberOfL1Trainees : 0,
+      numberOfL2Trainees : 0,
+      numberOfL3Trainees : 0,
+      numberOfL4Trainees : 0,
+      numberOfEnablersConfirmedTrainees : 0,
+      numberOfMechanicalConfirmedTrainees : 0,
+      numberOfInformationSystemsConfirmedTrainees : 0,
+      numberOfDataboxConfirmedTrainees : 0,
+      numberOfQualityConfirmedTrainees : 0,
+      numberOfEpaysysConfirmedTrainees : 0,
+      numberOfMediaAndEnergyConfirmedTrainees : 0,
+      numberOfElectronicsConfirmedTrainees : 0,
+      numberOfSpaceConfirmedTrainees : 0,
+      numberOfTelecomConfirmedTrainees : 0,
+      numberOfOtherConfirmedAct : 0,
+      numberOfF1ConfirmedTrainees : 0,
+      numberOfF2ConfirmedTrainees : 0,
+      numberOfF3ConfirmedTrainees : 0,
+      numberOfF4ConfirmedTrainees : 0,
+      numberOfM1ConfirmedTrainees : 0,
+      numberOfM2ConfirmedTrainees : 0,
+      numberOfM3ConfirmedTrainees : 0,
+      numberOfM4ConfirmedTrainees : 0,
+      numberOfM5ConfirmedTrainees : 0,
+      numberOfM6ConfirmedTrainees : 0,
+      numberOfL1ConfirmedTrainees : 0,
+      numberOfL2ConfirmedTrainees : 0,
+      numberOfL3ConfirmedTrainees : 0,
+      numberOfL4ConfirmedTrainees : 0,
     });
 
     const [completedTrainings, setCompletedTrainings] = useState([]);
@@ -351,8 +408,33 @@ const Navbar = () => {
     };
   
     const getTrainingById = (id) => {
-      return filteredData.trainings.find(training => training._id === id) || null;
+      return rawData.trainings.find(training => training._id === id) || null;
     };
+
+    const getTrainingSessionsById = (id) => {
+      return rawData.sessions.filter(session => session.training === id);
+    };
+
+    const getFirstSessionByTraining = (selectedTraining) => {
+      const filtered = selectedTraining === 'all'
+        ? rawData.sessions
+        : rawData.sessions.filter(session => session.training === selectedTraining);
+
+      const sorted = filtered.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      return sorted[0] || null;
+    };
+
+    const getLastSessionByTraining = (selectedTraining) => {
+      const filtered = selectedTraining === 'all'
+        ? rawData.sessions
+        : rawData.sessions.filter(session => session.training === selectedTraining);
+
+      const sorted = filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      return sorted[0] || null;
+    };
+
   
     // Data fetching
     const fetchAllData = async () => {
@@ -388,14 +470,13 @@ const Navbar = () => {
           training.month.slice(1).toLowerCase() + ` ${currentYear}`, 
           'MMMM YYYY'
         );
-        console.log("training Month :: ", trainingMonthDate);
         const inRange =
           (startMonth === null || trainingMonthDate.isAfter(startMonth)) &&
           (endMonth === null || trainingMonthDate.isBefore(endMonth));
   
-        const trainingsMatch = ((isTrainer && training.trainer === user?._id) || (isManager && inRange) || (isTrainee 
+        const trainingsMatch = (((isTrainer && training.trainer === user?._id) || (isManager && inRange && training.delivered) || (isTrainee 
           && (training.confirmedtrainees.includes(user?._id) || training.acceptedtrainees.includes(user?._id) || training.rejectedtrainees.includes(user?._id))
-        )); 
+        ))); 
         return trainingsMatch;
       });
   
@@ -423,21 +504,32 @@ const Navbar = () => {
         sessions,
         users
       } = filteredData;
-  
+
       // Basic counts
-      const softSkills = trainings.filter(t => t.skillType === "soft_skill" && t.delivered);
-      const internTechnicalSkills = trainings.filter(t => t.skillType === "technical_skill" && t.type === "internal" && t.delivered);
-      const externTechnicalSkills = trainings.filter(t => t.skillType === "technical_skill" && t.type === "external" && t.delivered);
-      const technicalSkills = trainings.filter(t => t.skillType === "technical_skill" && t.delivered);
+      const softSkills = trainings.filter(t => t.skillType === "soft_skill");
+      const internTechnicalSkills = trainings.filter(t => t.skillType === "technical_skill" && t.type === "internal");
+      const externTechnicalSkills = trainings.filter(t => t.skillType === "technical_skill" && t.type === "external");
+      const technicalSkills = trainings.filter(t => t.skillType === "technical_skill");
       const FTFTrainings = trainings.filter(t => t.mode === "face_to_face");
       const OnlineTrainings = trainings.filter(t => t.mode === "online");
 
 
   
       const confirmedTrainees = trainings
-        .map(t => t.confirmedtrainees && t.delivered)
+        .map(training => {
+          const sessions = rawData.sessions.filter(
+            session => session.training === training._id
+          );
+
+          const attendees = training.confirmedtrainees.filter(traineeId =>
+            sessions.some(session => session.presenttrainees.includes(traineeId))
+          );
+
+          return attendees;
+        })
         .flat();
-  
+      console.log(confirmedTrainees);
+      
       // Gender rates
       const genders = await Promise.all(
         confirmedTrainees.map(async (id) => {
@@ -465,6 +557,19 @@ const Navbar = () => {
           }
         })
       );
+
+      const knownActivities = [
+        "enablers", 
+        "mechanical", 
+        "formation_systems", 
+        "databox", 
+        "telecom", 
+        "quality", 
+        "e-paysys", 
+        "media&energy", 
+        "electronics", 
+        "space"
+      ];
   
       const activityConfirmedCounts = {
         enablers: activitiesConfirmed.filter(a => a.activity === "enablers").length,
@@ -476,7 +581,8 @@ const Navbar = () => {
         epaysys: activitiesConfirmed.filter(a => a.activity === "e-paysys").length,
         mediaEnergy: activitiesConfirmed.filter(a => a.activity === "media&energy").length,
         electronics: activitiesConfirmed.filter(a => a.activity === "electronics").length,
-        space: activitiesConfirmed.filter(a => a.activity === "space").length
+        space: activitiesConfirmed.filter(a => a.activity === "space").length,
+        other: activitiesConfirmed.filter(a => !knownActivities.includes(a.activity)).length,
       };
 
       const activities = users.filter(u => u.role !== "trainer").map(user => user.activity);
@@ -491,9 +597,25 @@ const Navbar = () => {
         epaysys: activities.filter(a => a === "e-paysys").length,
         mediaEnergy: activities.filter(a => a === "media&energy").length,
         electronics: activities.filter(a => a === "electronics").length,
-        space: activities.filter(a => a === "space").length
+        space: activities.filter(a => a === "space").length,
+        other: activities.filter(a => !knownActivities.includes(a)).length,
       };
+
+      const activitiesTrained = users.filter(u => u.role !== "trainer" && u.isTrained).map(user => user.activity);
   
+      const activityTrainedCounts = {
+        enablers: activitiesTrained.filter(a => a === "enablers").length,
+        mechanical: activitiesTrained.filter(a => a === "mechanical").length,
+        informationSystems: activitiesTrained.filter(a => a === "formation_systems").length,
+        databox: activitiesTrained.filter(a => a === "databox").length,
+        telecom: activitiesTrained.filter(a => a === "telecom").length,
+        quality: activitiesTrained.filter(a => a === "quality").length,
+        epaysys: activitiesTrained.filter(a => a === "e-paysys").length,
+        mediaEnergy: activitiesTrained.filter(a => a === "media&energy").length,
+        electronics: activitiesTrained.filter(a => a === "electronics").length,
+        space: activitiesTrained.filter(a => a === "space").length,
+        other: activitiesTrained.filter(a => !knownActivities.includes(a)).length,
+      };
       // Grade rates
       const gradesConfirmed = await Promise.all(
         confirmedTrainees.map(async (id) => {
@@ -517,7 +639,11 @@ const Navbar = () => {
         M3: gradesConfirmed.filter(g => g.grade === "M3").length,
         M4: gradesConfirmed.filter(g => g.grade === "M4").length,
         M5: gradesConfirmed.filter(g => g.grade === "M5").length,
-        M6: gradesConfirmed.filter(g => g.grade === "M6").length
+        M6: gradesConfirmed.filter(g => g.grade === "M6").length,
+        L1: gradesConfirmed.filter(g => g.grade === "L1").length,
+        L2: gradesConfirmed.filter(g => g.grade === "L2").length,
+        L3: gradesConfirmed.filter(g => g.grade === "L3").length,
+        L4: gradesConfirmed.filter(g => g.grade === "L4").length,
       };
 
       const grades = users.filter(u => u.role !== "trainer").map(user => user.grade);
@@ -532,7 +658,30 @@ const Navbar = () => {
         M3: grades.filter(g => g === "M3").length,
         M4: grades.filter(g => g === "M4").length,
         M5: grades.filter(g => g === "M5").length,
-        M6: grades.filter(g => g === "M6").length
+        M6: grades.filter(g => g === "M6").length,
+        L1: grades.filter(g => g === "L1").length,
+        L2: grades.filter(g => g === "L2").length,
+        L3: grades.filter(g => g === "L3").length,
+        L4: grades.filter(g => g === "L4").length
+      };
+
+      const gradesTrained = users.filter(u => u.role !== "trainer" && u.isTrained).map(user => user.grade);
+
+      const gradesTrainedCounts = {
+        F1: gradesTrained.filter(g => g === "F1").length,
+        F2: gradesTrained.filter(g => g === "F2").length,
+        F3: gradesTrained.filter(g => g === "F3").length,
+        F4: gradesTrained.filter(g => g === "F4").length,
+        M1: gradesTrained.filter(g => g === "M1").length,
+        M2: gradesTrained.filter(g => g === "M2").length,
+        M3: gradesTrained.filter(g => g === "M3").length,
+        M4: gradesTrained.filter(g => g === "M4").length,
+        M5: gradesTrained.filter(g => g === "M5").length,
+        M6: gradesTrained.filter(g => g === "M6").length,
+        L1: gradesTrained.filter(g => g === "L1").length,
+        L2: gradesTrained.filter(g => g === "L2").length,
+        L3: gradesTrained.filter(g => g === "L3").length,
+        L4: gradesTrained.filter(g => g === "L4").length
       };
   
       // Request counts
@@ -551,7 +700,7 @@ const Navbar = () => {
       let nbofinprog = 0;
       let nbofcomp = 0;
   
-      sessions.forEach((session) => {
+      rawData.sessions.forEach((session) => {
         if (session.status === "scheduled") {
           nbofsch++;
         } else if (session.status === "in_progress") {
@@ -580,7 +729,7 @@ const Navbar = () => {
       setTrainedEmployees(TrainedEmployees);
   
       // Requests per month
-      const requests = trainings
+      const requests = rawData.trainings
         .flatMap((training) =>
           training.requestshistory.map((request) => ({
             ...request,
@@ -597,7 +746,7 @@ const Navbar = () => {
 
       //Calculate Sat Trainings
 
-      const satTrainings = trainings.filter(t => (t.hotEvalRate + t.coldEvalRate)/2 >= 3);
+      const satTrainings = trainings.filter(t => ((t.hotEvalRate || 2) + (t.coldEvalRate || 2))/2 >= 3);
   
       // Calculate total
       const totalConfirmedTrainees = confirmedTrainees.length || 1;
@@ -607,7 +756,7 @@ const Navbar = () => {
       setMetrics(prev => ({
         ...prev,
         // Training counts
-        numberOfTrainings: trainings.length,
+        numberOfTrainings: rawData.trainings.length,
         numberOfSoftSkillsTrainings: softSkills.length,
         numberOfInternTechnicalSkillsTrainings: internTechnicalSkills.length,
         numberOfExternTechnicalSkillsTrainings: externTechnicalSkills.length,
@@ -651,6 +800,7 @@ const Navbar = () => {
         rateOfMediaAndEnergyConfirmedActivity: (activityConfirmedCounts.mediaEnergy / totalConfirmedTrainees) * 100,
         rateOfElectronicsConfirmedActivity: (activityConfirmedCounts.electronics / totalConfirmedTrainees) * 100,
         rateOfSpaceConfirmedActivity: (activityConfirmedCounts.space / totalConfirmedTrainees) * 100,
+        rateOfOtherConfirmedActivity: (activityConfirmedCounts.other / totalConfirmedTrainees) * 100,
         rateOfF1ConfirmedGrade: (gradeConfirmedCounts.F1 / totalConfirmedTrainees) * 100,
         rateOfF2ConfirmedGrade: (gradeConfirmedCounts.F2 / totalConfirmedTrainees) * 100,
         rateOfF3ConfirmedGrade: (gradeConfirmedCounts.F3 / totalConfirmedTrainees) * 100,
@@ -661,6 +811,35 @@ const Navbar = () => {
         rateOfM4ConfirmedGrade: (gradeConfirmedCounts.M4 / totalConfirmedTrainees) * 100,
         rateOfM5ConfirmedGrade: (gradeConfirmedCounts.M5 / totalConfirmedTrainees) * 100,
         rateOfM6ConfirmedGrade: (gradeConfirmedCounts.M6 / totalConfirmedTrainees) * 100,
+        rateOfL1ConfirmedGrade: (gradeConfirmedCounts.L1 / totalConfirmedTrainees) * 100,
+        rateOfL2ConfirmedGrade: (gradeConfirmedCounts.L2 / totalConfirmedTrainees) * 100,
+        rateOfL3ConfirmedGrade: (gradeConfirmedCounts.L3 / totalConfirmedTrainees) * 100,
+        rateOfL4ConfirmedGrade: (gradeConfirmedCounts.L4 / totalConfirmedTrainees) * 100,
+        numberOfEnablersConfirmedTrainees : activityConfirmedCounts.enablers,
+        numberOfMechanicalConfirmedTrainees : activityConfirmedCounts.mechanical,
+        numberOfInformationSystemsConfirmedTrainees : activityConfirmedCounts.informationSystems,
+        numberOfDataboxConfirmedTrainees : activityConfirmedCounts.databox,
+        numberOfQualityConfirmedTrainees : activityConfirmedCounts.quality,
+        numberOfEpaysysConfirmedTrainees : activityConfirmedCounts.epaysys,
+        numberOfMediaAndEnergyConfirmedTrainees : activityConfirmedCounts.mediaEnergy,
+        numberOfElectronicsConfirmedTrainees : activityConfirmedCounts.electronics,
+        numberOfSpaceConfirmedTrainees : activityConfirmedCounts.space,
+        numberOfTelecomConfirmedTrainees : activityConfirmedCounts.telecom,
+        numberOfOtherConfirmedAct : activityConfirmedCounts.other,
+        numberOfF1ConfirmedTrainees : gradeConfirmedCounts.F1,
+        numberOfF2ConfirmedTrainees : gradeConfirmedCounts.F2,
+        numberOfF3ConfirmedTrainees : gradeConfirmedCounts.F3,
+        numberOfF4ConfirmedTrainees : gradeConfirmedCounts.F4,
+        numberOfM1ConfirmedTrainees : gradeConfirmedCounts.M1,
+        numberOfM2ConfirmedTrainees : gradeConfirmedCounts.M2,
+        numberOfM3ConfirmedTrainees : gradeConfirmedCounts.M3,
+        numberOfM4ConfirmedTrainees : gradeConfirmedCounts.M4,
+        numberOfM5ConfirmedTrainees : gradeConfirmedCounts.M5,
+        numberOfM6ConfirmedTrainees : gradeConfirmedCounts.M6,
+        numberOfL1ConfirmedTrainees : gradeConfirmedCounts.L1,
+        numberOfL2ConfirmedTrainees : gradeConfirmedCounts.L2,
+        numberOfL3ConfirmedTrainees : gradeConfirmedCounts.L3,
+        numberOfL4ConfirmedTrainees : gradeConfirmedCounts.L4,
 
         rateOfEnablersActivity: (activityConfirmedCounts.enablers / totalConfirmedTrainees) * 100,
         rateOfMechanicalActivity: (activityConfirmedCounts.mechanical / totalConfirmedTrainees) * 100,
@@ -672,6 +851,7 @@ const Navbar = () => {
         rateOfMediaAndEnergyActivity: (activityCounts.mediaEnergy / totalTrainees) * 100,
         rateOfElectronicsActivity: (activityCounts.electronics / totalTrainees) * 100,
         rateOfSpaceActivity: (activityCounts.space / totalTrainees) * 100,
+        rateOfOtherActivity: (activityCounts.other / totalTrainees) * 100,
         rateOfF1Grade: (gradeCounts.F1 / totalTrainees) * 100,
         rateOfF2Grade: (gradeCounts.F2 / totalTrainees) * 100,
         rateOfF3Grade: (gradeCounts.F3 / totalTrainees) * 100,
@@ -682,26 +862,35 @@ const Navbar = () => {
         rateOfM4Grade: (gradeCounts.M4 / totalTrainees) * 100,
         rateOfM5Grade: (gradeCounts.M5 / totalTrainees) * 100,
         rateOfM6Grade: (gradeCounts.M6 / totalTrainees) * 100,
-        numberOfEnablersTrainees : activityCounts.enablers,
-        numberOfMechanicalTrainees : activityCounts.mechanical,
-        numberOfInformationSystemsTrainees : activityCounts.informationSystems,
-        numberOfDataboxTrainees : activityCounts.databox,
-        numberOfQualityTrainees : activityCounts.quality,
-        numberOfEpaysysTrainees : activityCounts.epaysys,
-        numberOfMediaAndEnergyTrainees : activityCounts.mediaEnergy,
-        numberOfElectronicsTrainees : activityCounts.electronics,
-        numberOfSpaceTrainees : activityCounts.space,
-        numberOfTelecomTrainees : activityCounts.telecom,
-        numberOfF1Trainees : gradeCounts.F1,
-        numberOfF2Trainees : gradeCounts.F2,
-        numberOfF3Trainees : gradeCounts.F3,
-        numberOfF4Trainees : gradeCounts.F4,
-        numberOfM1Trainees : gradeCounts.M1,
-        numberOfM2Trainees : gradeCounts.M2,
-        numberOfM3Trainees : gradeCounts.M3,
-        numberOfM4Trainees : gradeCounts.M4,
-        numberOfM5Trainees : gradeCounts.M5,
-        numberOfM6Trainees : gradeCounts.M6,
+        rateOfL1Grade: (gradeCounts.L1 / totalTrainees) * 100,
+        rateOfL2Grade: (gradeCounts.L2 / totalTrainees) * 100,
+        rateOfL3Grade: (gradeCounts.L3 / totalTrainees) * 100,
+        rateOfL4Grade: (gradeCounts.L4 / totalTrainees) * 100,
+        numberOfEnablersTrainees : activityTrainedCounts.enablers,
+        numberOfMechanicalTrainees : activityTrainedCounts.mechanical,
+        numberOfInformationSystemsTrainees : activityTrainedCounts.informationSystems,
+        numberOfDataboxTrainees : activityTrainedCounts.databox,
+        numberOfQualityTrainees : activityTrainedCounts.quality,
+        numberOfEpaysysTrainees : activityTrainedCounts.epaysys,
+        numberOfMediaAndEnergyTrainees : activityTrainedCounts.mediaEnergy,
+        numberOfElectronicsTrainees : activityTrainedCounts.electronics,
+        numberOfSpaceTrainees : activityTrainedCounts.space,
+        numberOfTelecomTrainees : activityTrainedCounts.telecom,
+        numberOfOtherAct : activityTrainedCounts.other,
+        numberOfF1Trainees : gradesTrainedCounts.F1,
+        numberOfF2Trainees : gradesTrainedCounts.F2,
+        numberOfF3Trainees : gradesTrainedCounts.F3,
+        numberOfF4Trainees : gradesTrainedCounts.F4,
+        numberOfM1Trainees : gradesTrainedCounts.M1,
+        numberOfM2Trainees : gradesTrainedCounts.M2,
+        numberOfM3Trainees : gradesTrainedCounts.M3,
+        numberOfM4Trainees : gradesTrainedCounts.M4,
+        numberOfM5Trainees : gradesTrainedCounts.M5,
+        numberOfM6Trainees : gradesTrainedCounts.M6,
+        numberOfL1Trainees : gradesTrainedCounts.L1,
+        numberOfL2Trainees : gradesTrainedCounts.L2,
+        numberOfL3Trainees : gradesTrainedCounts.L3,
+        numberOfL4Trainees : gradesTrainedCounts.L4,
       }));
   
       // Update trainees data
@@ -720,13 +909,24 @@ const Navbar = () => {
     // Initialize completed trainings
     useEffect(() => {
       const filtered = filteredData.trainings
-        .filter((t) => t.delivered)
+        .filter((t) => {
+          const sessions = rawData.sessions.filter(
+            session => session.training === t._id
+          );
+          const attended = sessions.some(session => session.presenttrainees.includes(user?._id));
+          const isTrainer = (user?.role === "trainer" || selectedRole === "trainer");
+          const isTrainee = (user?.role === "trainee" || selectedRole === "trainee"); 
+          const isManager = (user?.role === "manager");
+          const condition = (isTrainee && attended) || ((isTrainer || isManager) && t.delivered);
+
+          return  condition;
+        })
         .map(training => ({
           ...training,
           showDetails: false
         }));
       setCompletedTrainings(filtered);
-    }, [filteredData.trainings, user]);
+    }, [filteredData.trainings]);
   
     const updateShowDetails = (trainingId, value) => {
       setCompletedTrainings(prevTrainings =>
@@ -752,6 +952,44 @@ const Navbar = () => {
     useEffect(() => {
       calculateMetrics();
     }, [filteredData]);
+
+    // Get Training by month ..........
+    
+    const getTrainingsByMonth = (month) => {
+      return filteredData.trainings.filter(training => training.month === month);
+    }
+
+    const getPlannedTrainingsByMonth = (month) => {
+      return rawData.trainings.filter(training => training.month === month && training.delivered === false).length;
+    }
+    const getCompletedTrainingsByMonth = (month) => {
+      return rawData.trainings.filter(training => training.month === month && training.delivered === true).length;
+    }
+
+    const getTraineesByMonth = (month) => {
+      const trainings = getTrainingsByMonth(month);
+
+      const trainees = trainings.flatMap(training => {
+        const sessions = rawData.sessions.filter(session => session.training === training._id);
+        
+        return training.confirmedtrainees.filter(traineeId =>
+          sessions.some(session => session.presenttrainees.includes(traineeId))
+        );
+    });
+
+      // const uniqueTrainees = [...new Set(trainees)];
+
+      return trainees.length;
+    };
+
+    const getNumberOfHoursByMonth = (month) => {
+      const trainings = getTrainingsByMonth(month);
+      const totalHours = trainings.reduce((acc, training) => {
+        return acc + (training.nbOfHours || 0);
+      }, 0);
+      return totalHours;
+    };
+
     // Chart rendering
     useEffect(() => {
       const skillChartInstance = skillTypeChart.current && echarts.init(skillTypeChart.current);
@@ -760,6 +998,8 @@ const Navbar = () => {
       const activityChartInstance = activityChart.current && echarts.init(activityChart.current);
       const gradeChartInstance = gradeChart.current && echarts.init(gradeChart.current);
       const registChartInstance = regisChart.current && echarts.init(regisChart.current);
+      const trainingsByMonthChartInstance = trainingsByMonthChart.current && echarts.init(trainingsByMonthChart.current);
+      const traineesByMonthChartInstance = traineesByMonthChart.current && echarts.init(traineesByMonthChart.current);
   
       const skillType = {
         title: {
@@ -915,7 +1155,8 @@ const Navbar = () => {
             t("e-paysys"),
             t("media&energy"),
             t("electronics"),
-            t("space")
+            t("space"),
+            t("other")
           ]
         },
         series: [
@@ -944,7 +1185,8 @@ const Navbar = () => {
               metrics.rateOfEpaysysConfirmedActivity,
               metrics.rateOfMediaAndEnergyConfirmedActivity,
               metrics.rateOfElectronicsConfirmedActivity,
-              metrics.rateOfSpaceConfirmedActivity
+              metrics.rateOfSpaceConfirmedActivity,
+              metrics.rateOfOtherConfirmedActivity
             ]
           }
         ]
@@ -986,6 +1228,10 @@ const Navbar = () => {
             t("M4"),
             t("M5"),
             t("M6"),
+            t("L1"),
+            t("L2"),
+            t("L3"),
+            t("L4"),
           ]
         },
         series: [
@@ -1015,6 +1261,10 @@ const Navbar = () => {
               metrics.rateOfM4ConfirmedGrade,
               metrics.rateOfM5ConfirmedGrade,
               metrics.rateOfM6ConfirmedGrade,
+              metrics.rateOfL1ConfirmedGrade,
+              metrics.rateOfL2ConfirmedGrade,
+              metrics.rateOfL3ConfirmedGrade,
+              metrics.rateOfL4ConfirmedGrade,
             ]
           }
         ]
@@ -1032,6 +1282,228 @@ const Navbar = () => {
           {
             data: metrics.requestsPerMonth,
             type: 'bar'
+          }
+        ]
+      };
+
+      const labelOption = {
+        show: true,
+        position: 'inside',
+        formatter: '{c}',
+        fontSize: 12,
+        rich: {
+          name: {}
+        }
+      };
+
+      const trainingsByMonth = {
+        tooltip: {
+            trigger: 'item'
+          },
+          legend: {
+            top: 'top',
+            data: [
+              'January', 'February', 'March', 'April', 'May', 'June',
+              'July', 'August', 'September', 'October', 'November', 'December'
+            ]
+          },
+          toolbox: {
+            show: true,
+            orient: 'vertical',
+            left: 'right',
+            top: 'center',
+            feature: {
+              dataView: { show: true, readOnly: false },
+              magicType: { show: true, type: ['stack', 'bar'] },
+              restore: { show: true },
+              saveAsImage: { show: true }
+            }
+          },
+          xAxis: {
+            type: 'category',
+            data: ['Planned Trainings', 'Delivered Trainings']
+          },
+          yAxis: {
+            type: 'value'
+          },
+          series: [
+            {
+              name: 'January',
+              type: 'bar',
+              label: labelOption,
+              data: [getPlannedTrainingsByMonth("january"), getCompletedTrainingsByMonth("january")]
+            },
+            {
+              name: 'February',
+              type: 'bar',
+              label: labelOption,
+              data: [getPlannedTrainingsByMonth("february"), getCompletedTrainingsByMonth("february")]
+            },
+            {
+              name: 'March',
+              type: 'bar',
+              label: labelOption,
+              data: [getPlannedTrainingsByMonth("march"), getCompletedTrainingsByMonth("march")]
+            },
+            {
+              name: 'April',
+              type: 'bar',
+              label: labelOption,
+              data: [getPlannedTrainingsByMonth("april"), getCompletedTrainingsByMonth("april")]
+            },
+            {
+              name: 'May',
+              type: 'bar',
+              label: labelOption,
+              data: [getPlannedTrainingsByMonth("may"), getCompletedTrainingsByMonth("may")]
+            },
+            {
+              name: 'June',
+              type: 'bar',
+              label: labelOption,
+              data: [getPlannedTrainingsByMonth("june"), getCompletedTrainingsByMonth("june")]
+            },
+            {
+              name: 'July',
+              type: 'bar',
+              label: labelOption,
+              data: [getPlannedTrainingsByMonth("july"), getCompletedTrainingsByMonth("july")]
+            },
+            {
+              name: 'August',
+              type: 'bar',
+              label: labelOption,
+              data: [getPlannedTrainingsByMonth("august"), getCompletedTrainingsByMonth("august")]
+            },
+            {
+              name: 'September',
+              type: 'bar',
+              label: labelOption,
+              data: [getPlannedTrainingsByMonth("september"), getCompletedTrainingsByMonth("september")]
+            },
+            {
+              name: 'October',
+              type: 'bar',
+              label: labelOption,
+              data: [getPlannedTrainingsByMonth("october"), getCompletedTrainingsByMonth("october")]
+            },
+            {
+              name: 'November',
+              type: 'bar',
+              label: labelOption,
+              data: [getPlannedTrainingsByMonth("november"), getCompletedTrainingsByMonth("november")]
+            },
+            {
+              name: 'December',
+              type: 'bar',
+              label: labelOption,
+              data: [getPlannedTrainingsByMonth("december"), getCompletedTrainingsByMonth("december")]
+            }
+          ]
+      };
+
+      const numberOfTrainees = [
+        getTraineesByMonth("january"),
+        getTraineesByMonth("february"),
+        getTraineesByMonth("march"),
+        getTraineesByMonth("april"),
+        getTraineesByMonth("may"),
+        getTraineesByMonth("june"),
+        getTraineesByMonth("july"),
+        getTraineesByMonth("august"),
+        getTraineesByMonth("september"),
+        getTraineesByMonth("october"),
+        getTraineesByMonth("november"),
+        getTraineesByMonth("december")
+      ];
+
+      const totalHours = [
+        getNumberOfHoursByMonth("january"),
+        getNumberOfHoursByMonth("february"),
+        getNumberOfHoursByMonth("march"),
+        getNumberOfHoursByMonth("april"),
+        getNumberOfHoursByMonth("may"),
+        getNumberOfHoursByMonth("june"),
+        getNumberOfHoursByMonth("july"),
+        getNumberOfHoursByMonth("august"),
+        getNumberOfHoursByMonth("september"),
+        getNumberOfHoursByMonth("october"),
+        getNumberOfHoursByMonth("november"),
+        getNumberOfHoursByMonth("december")
+      ];
+
+      const months = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+
+      const traineesByMonth = {
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: {
+            type: 'cross',
+            crossStyle: {
+              color: '#999'
+            }
+          }
+        },
+        toolbox: {
+          feature: {
+            dataView: { show: true, readOnly: false },
+            magicType: { show: true, type: ['line', 'bar'] },
+            restore: { show: true },
+            saveAsImage: { show: true }
+          }
+        },
+        legend: {
+          data: ['Number of Trainees', 'Total Hours']
+        },
+        xAxis: [
+          {
+            type: 'category',
+            data: months,
+            axisPointer: {
+              type: 'shadow'
+            }
+          }
+        ],
+        yAxis: [
+          {
+            type: 'value',
+            name: 'Trainees',
+            axisLabel: {
+              formatter: '{value}'
+            }
+          },
+          {
+            type: 'value',
+            name: 'Hours',
+            axisLabel: {
+              formatter: '{value} hrs'
+            }
+          }
+        ],
+        series: [
+          {
+            name: 'Number of Trainees',
+            type: 'bar',
+            tooltip: {
+              valueFormatter: function (value) {
+                return value + ' trainees';
+              }
+            },
+            data: numberOfTrainees
+          },
+          {
+            name: 'Total Hours',
+            type: 'line',
+            yAxisIndex: 1,
+            tooltip: {
+              valueFormatter: function (value) {
+                return value + ' hrs';
+              }
+            },
+            data: totalHours
           }
         ]
       };
@@ -1054,6 +1526,12 @@ const Navbar = () => {
       if (registChartInstance) {
         registChartInstance.setOption(regist)
       }
+      if (trainingsByMonthChartInstance) {
+        trainingsByMonthChartInstance.setOption(trainingsByMonth);
+      }
+      if (traineesByMonthChartInstance) {
+        traineesByMonthChartInstance.setOption(traineesByMonth);
+      }
     
       return () => {
         skillChartInstance?.dispose();
@@ -1069,23 +1547,42 @@ const Navbar = () => {
     const now = dayjs();
     const nextWeek = now.add(7, 'day').endOf('day');
     const nextMonth = now.add(1, 'month').endOf('day');
+    const thisMonthIndex = now.month();
+    const nextMonthIndex = now.add(1, 'month').month();
+
+    const sourceData = user.role === "manager" ? rawData : filteredData;
   
-    const sessionsNextWeek = filteredData.sessions.filter(session =>
+    const sessionsNextWeek = sourceData.sessions.filter(session =>
       (selectedFilter === "all" || selectedFilter === session.status) &&
       dayjs(session.date).isAfter(now) &&
       dayjs(session.date).isBefore(nextWeek)
     );
   
-    const sessionsLaterThisMonth = filteredData.sessions.filter(session =>
+    const sessionsLaterThisMonth = sourceData.sessions.filter(session =>
       (selectedFilter === "all" || selectedFilter === session.status) &&
       dayjs(session.date).isAfter(nextWeek) &&
       dayjs(session.date).isBefore(nextMonth)
     );
   
-    const sessionsAfterOneMonth = filteredData.sessions.filter(session =>
+    const sessionsAfterOneMonth = sourceData.sessions.filter(session =>
       (selectedFilter === "all" || selectedFilter === session.status) &&
       dayjs(session.date).isAfter(nextMonth)
     );
+
+    const TrainingsThisMonth = rawData.trainings.filter(training => {
+      const trainingMonthIndex = monthMap[training.month.toLowerCase()];
+      return (trainingMonthIndex === thisMonthIndex && !training.delivered);
+    });
+
+    const TrainingsNextMonth = rawData.trainings.filter(training => {
+      const trainingMonthIndex = monthMap[training.month.toLowerCase()];
+      return (trainingMonthIndex === nextMonthIndex && !training.delivered);
+    });
+
+    const TrainingsAfterNextMonth = rawData.trainings.filter(training => {
+      const trainingMonthIndex = monthMap[training.month.toLowerCase()];
+      return (trainingMonthIndex > nextMonthIndex && !training.delivered);
+    });
   
     // Render functions
     const renderSession = (session) => {
@@ -1098,7 +1595,7 @@ const Navbar = () => {
             <CalendarTodayIcon fontSize="medium" />
           </ListItemIcon>
           <ListItemText
-            primary={`${session.name}`}
+            primary={`${session.name} (${getTrainingById(session.training)?.title})`}
             secondary={
               <>
                 <Typography variant="body2">
@@ -1153,7 +1650,6 @@ const Navbar = () => {
       );
     };    
     const renderTraining = (training) => {
-      console.log(training.confirmedtrainees);
       return (
         <Box
           key={training._id}
@@ -1185,7 +1681,7 @@ const Navbar = () => {
                 </>
               }
             />
-            <Rating name="Score" value={Math.round((training.hotEvalRate+training.coldEvalRate)/2)} readOnly />
+            {user?.role !== "trainee" && selectedRole!== "trainee"?<Rating name="Score" value={Math.round(((training.hotEvalRate || 2)+(training.coldEvalRate || 2))/2)} readOnly />:null}
             <Tooltip title={training.showDetails ? t("hide_details") : t("view_details")} arrow>
               <IconButton
                 sx={{ color: "darkgrey" }}
@@ -1256,7 +1752,7 @@ const Navbar = () => {
                         </Typography>
                       </Box>
                 </Box>:null}
-                {filteredData.sessions
+                {rawData.sessions
                 .filter((session) => session.training === training._id)
                 .map((session) => (
                   <Box
@@ -1301,9 +1797,17 @@ const Navbar = () => {
                         marginTop: 1,
                     }}
                 >
-                    {t("trainees_details")}
+                    {(user.role === "trainee" || selectedRole === "trainee")?t("your_details"):t("trainees_details")}
                 </Typography>
-                {training.confirmedtrainees?.map((traineeId) => {
+                {training.confirmedtrainees?.filter((traineeId) => {
+                    const trainee = user._id === traineeId;
+                    const isTrainer = (user?.role === "trainer" || selectedRole === "trainer");
+                    const isTrainee = (user?.role === "trainee" || selectedRole === "trainee"); 
+                    const isManager = (user?.role === "manager");
+                    return (
+                      (trainee && isTrainee) || isManager || isTrainer
+                    );
+                  }).map((traineeId) => {
                   const user = filteredData.users.find(u => u._id === traineeId);
                   const trainingData = user?.trainingsAttended?.find(
                     t => t.training === training._id
@@ -1337,6 +1841,91 @@ const Navbar = () => {
         </Box>
       );
     };
+    const renderNews = (training) => {
+      return (
+        <ListItem key={training._id} disableGutters sx={{width:"100%"}}>
+          <ListItemIcon>
+            <CalendarTodayIcon fontSize="medium" />
+          </ListItemIcon>
+          <ListItemText
+            primary={`${training.title}`}
+            secondary={
+              <>
+                <Typography variant="body2">
+                  {`${formatDaysWithMonth(training.date,training.month)} (${training.location})`}
+                </Typography>
+                <Typography variant="caption" color="text.primary" sx={{position:"absolute", right:0}}>
+                  {`${training?.nbOfParticipants - (training?.nbOfConfirmedRequests || 0)} places left (${(training?.nbOfConfirmedRequests || 0)}/${training?.nbOfParticipants})`}
+                </Typography>
+              </>
+            }
+          />
+        </ListItem>
+      );
+    };
+    const renderEmployeeTraining = (id) => {
+      const training = getTrainingById(id);
+      const sessions = getTrainingSessionsById(id);
+
+      if (!training) return null;
+
+      return (
+        <Box sx={{ width: '100%', 
+          padding: '8px 12px',
+          display: 'flex',
+          flexDirection: "row",
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}>
+          <Box
+            sx={{
+              width: '30%',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+            }}
+          >
+            <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+              {training.title}
+            </Typography>
+            <Box sx={{ marginLeft: 2, marginBottom: 2 }}>
+              {sessions.map((session) => (
+                <Typography key={session._id} variant="body2">
+                  {session.name}
+                </Typography>
+              ))}
+            </Box>
+          </Box>
+          <Table size="small" sx={{ minWidth: '70%', border: '1px solid #ccc' }}>
+            <TableHead>
+              <TableRow>
+                <TableCell align="center" sx={{ fontWeight: 'bold', width: 250 }}>Month</TableCell>
+                <TableCell align="center" sx={{ fontWeight: 'bold', width: 250 }}>Type</TableCell>
+                <TableCell align="center" sx={{ fontWeight: 'bold', width: 250 }}>Date</TableCell>
+                <TableCell align="center" sx={{ fontWeight: 'bold', width: 250 }}>Number Of Hours</TableCell>
+                <TableCell align="center" sx={{ fontWeight: 'bold', width: 250 }}>Location</TableCell>
+                <TableCell align="center" sx={{ fontWeight: 'bold', width: 250 }}>Mode</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              <TableRow>
+                <TableCell align="center">{t(training.month)}</TableCell>
+                <TableCell align="center">{t(training.type)}</TableCell>
+                <TableCell align="center">{formatDaysWithMonth(training.date,training.month)}</TableCell>
+                <TableCell align="center">{training.nbOfHours}</TableCell>
+                <TableCell align="center">{training.location}</TableCell>
+                <TableCell align="center">{t(training.mode)}</TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+        </Box>
+      );
+    };
+
+
+    // Selected Training in the recap .........
+    const [selectedTraining, setSelectedTraining] = useState('all');
 
     // Tables ..............
     const firstmetrics = [
@@ -1345,7 +1934,7 @@ const Navbar = () => {
       { name: 'Total Number of delivered Soft skills Trainings', recap: metrics.numberOfSoftSkillsTrainings, objGap: '' },
       { name: 'Total Number of delivered Technical skills Trainings conducted by Internal trainers', recap: metrics.numberOfInternTechnicalSkillsTrainings, objGap: '' },
       { name: 'Total Number of delivered Technical skills Trainings conducted by External trainers', recap: metrics.numberOfExternTechnicalSkillsTrainings, objGap: '' },
-      { name: 'Training Completion rate (Delivered/Planned) (obj 80%)', recap: ((completedTrainings.length / metrics.numberOfTrainings) * 100).toFixed(2) + '%', objGap: (80 - (completedTrainings.length / metrics.numberOfTrainings) * 100).toFixed(2) + '%'},
+      { name: 'Training Completion rate (Delivered/Planned) (obj 80%)', recap: ((completedTrainings.length / metrics.numberOfTrainings) * 100).toFixed(2) + '%', objGap: (80 - (completedTrainings.length / metrics.numberOfTrainings) * 100)  + '%'},
       { name: 'Total number of face to face trainings', recap: metrics.numberOfFTFTrainings, objGap: '' },
       { name: 'Percentage of face to face Trainings (Obj 75%)', recap: ((metrics.numberOfFTFTrainings/metrics.numberOfTrainings)*100).toFixed(2) + '%', objGap: (75 - (metrics.numberOfFTFTrainings/metrics.numberOfTrainings)*100).toFixed(2) +'%' },
       { name: 'Total number of online trainings', recap: metrics.numberOfOnlineTrainings, objGap: '' },
@@ -1354,73 +1943,61 @@ const Navbar = () => {
       { name: 'Total Hours of Soft skills training', recap: metrics.numberOfSoftSkillsHours, objGap: '' },
       { name: 'Total Hours of Technical skills training', recap: metrics.numberOfTechnicalSkillsHours, objGap: '' },
       { name: 'Total number of Training hours', recap: metrics.numberOfSoftSkillsHours + metrics.numberOfTechnicalSkillsHours, objGap: '' },
-      { name: 'Total Number of trained employees per one training', recap: Math.round(metrics.numberOfTrainedEmployees / completedTrainings.length), objGap: '' },
+      { name: 'Total Number of trained employees per one training', recap: metrics.numberOfTrainedEmployees, objGap: ''},
       { name: 'Percentage of participation (number of trained employees/HC)', recap: ((metrics.numberOfTrainedEmployees/metrics.numberOfEmployees)*100).toFixed(2) + '%', objGap: '' },
       { name: 'Total number of hours per trainees', recap: metrics.numberOfAttendedHours, objGap: '' },
-      { name: 'Average Number of hours per Trained employee', recap: (metrics.numberOfAttendedHours/metrics.numberOfTrainedEmployees), objGap: '' },
-      { name: 'Average Training Duration by participant(number of training hours per part/ Number of trained Employees)', recap: '', objGap: '' },
+      { name: 'Average Number of hours per Trained employee', recap: (metrics.numberOfAttendedHours/(metrics.numberOfSoftSkillsHours + metrics.numberOfTechnicalSkillsHours)).toFixed(2), objGap: '' },
+      { name: 'Average Training Duration by participant(number of training hours per part/ Number of trained Employees)', recap: (metrics.numberOfAttendedHours/metrics.numberOfTrainedEmployees), objGap: '' },
       { name: 'Current internal trainers number', recap: metrics.numberOfInternalTrainers, objGap: '' },
       { name: 'Internal Trainers Ratio ( number of trainers/current HC)', recap: metrics.numberOfInternalTrainers/metrics.numberOfEmployees , objGap: '' },
       { name: 'Current External Trainers', recap: metrics.numberOfEmployees - metrics.numberOfInternalTrainers, objGap: '' },
       { name: `Number of Satisfactorily Evaluated Trainings en ${new Date().getFullYear()}`, recap: metrics.numberOfSatisfactorilyEvaluatedTrainings, objGap: '' },
       { name: `Training Effectiveness Rate in ${new Date().getFullYear()} (obj 80%)`, recap: ((metrics.numberOfSatisfactorilyEvaluatedTrainings/completedTrainings.length)*100).toFixed(2) + '%', objGap: (80 - ((metrics.numberOfSatisfactorilyEvaluatedTrainings/completedTrainings.length)*100).toFixed(2)) + '%'},
     ];
-
     const secondmetrics = [
-      { name: 'Type', recap: metrics.numberOfTrainings, objGap: '' },
-      { name: 'Location', recap: completedTrainings.length, objGap: '' },
-      { name: 'Number of hours', recap: metrics.numberOfSoftSkillsTrainings, objGap: '' },
-      { name: 'Number of received requests', recap: metrics.numberOfInternTechnicalSkillsTrainigs, objGap: '' },
-      { name: 'Number of invited participants (enrolled individuals)', recap: metrics.numberOfExternTechnicalSkillsTrainigs, objGap: '' },
-      { name: 'NB of attendees', recap: ((completedTrainings.length / metrics.numberOfTrainings) * 100).toFixed(2) + '%', objGap: (80 - (completedTrainings.length / metrics.numberOfTrainings) * 100).toFixed(2) + '%'},
-      { name: 'Attendance rate( Nb of attendees/ nb of invited participants)', recap: metrics.numberOfFTFTrainings, objGap: '' },
-      { name: 'Number of attendees who completed the training', recap: ((metrics.numberOfFTFTrainings/metrics.numberOfTrainings)*100).toFixed(2) + '%', objGap: (75 - (metrics.numberOfFTFTrainings/metrics.numberOfTrainings)*100).toFixed(2) +'%' },
-      { name: 'Hot Evaluation total rate (Objective 80%)', recap: metrics.numberOfOnlineTrainings, objGap: '' },
-      { name: 'Cold Evaluation total rate (Objective 70%)', recap: ((metrics.numberOfOnlineTrainings/metrics.numberOfTrainings)*100).toFixed(2) + '%', objGap: (25 - (metrics.numberOfOnlineTrainings/metrics.numberOfTrainings)*100).toFixed(2) + '%' },
-      { name: 'Training fill rate (Number of Attendees/available seats=12)', recap: metrics.numberOfParticipants, objGap: '' },
-      { name: 'Completion rate (Number of attendees who completed/ nb of attendees)', recap: metrics.numberOfSoftSkillsHours, objGap: '' },
-      { name: 'Training cost per trainer (TND)', recap: metrics.numberOfTechnicalSkillsHours, objGap: '' },
-      { name: 'Training cost per trainee (TND)', recap: metrics.numberOfSoftSkillsHours + metrics.numberOfTechnicalSkillsHours, objGap: '' },
+      { name: 'Type', recap: t(getTrainingById(selectedTraining)?.type), objGap: '' },
+      { name: 'Location', recap: getTrainingById(selectedTraining)?.location, objGap: '' },
+      { name: 'Number of hours', recap: getTrainingById(selectedTraining)?.nbOfHours, objGap: '' },
+      { name: 'Number of received requests', recap: getTrainingById(selectedTraining)?.nbOfReceivedRequests, objGap: '' },
+      { name: 'Number of invited participants (enrolled individuals)', recap: getTrainingById(selectedTraining)?.nbOfParticipants, objGap: '' },
+      { name: 'NB of attendees', recap: getFirstSessionByTraining(selectedTraining)?.presenttrainees?.length ?? 0, objGap: ''},
+      { name: 'Number of attendees who completed the training', recap: getLastSessionByTraining(selectedTraining)?.presenttrainees?.length ?? 0, objGap: '' },
+      { name: 'Hot Evaluation total rate (Objective 80%)', recap: (getTrainingById(selectedTraining)?.hotEvalRate*100 || 0)/5 + '%' , objGap: 80 - (getTrainingById(selectedTraining)?.hotEvalRate*100 || 0)/5 + '%' },
+      { name: 'Cold Evaluation total rate (Objective 70%)', recap: (getTrainingById(selectedTraining)?.coldEvalRate*100 || 0)/5 + '%' , objGap: 70 - (getTrainingById(selectedTraining)?.coldEvalRate*100 || 0)/5 + '%' },
+      { name: 'Training fill rate (Number of Attendees/available seats=12)', recap: ((getFirstSessionByTraining(selectedTraining)?.presenttrainees?.length ?? 0) / (getTrainingById(selectedTraining)?.nbOfParticipants)), objGap: '' },
+      { name: 'Completion rate (Number of attendees who completed/ nb of attendees)',recap: ((getFirstSessionByTraining(selectedTraining)?.presenttrainees?.length ?? 0) / (getLastSessionByTraining(selectedTraining)?.presenttrainees?.length ?? 0)), objGap: '' },
+      { name: 'Training cost per trainer (TND)', recap: t(getTrainingById(selectedTraining)?.costPerTrainer), objGap: '' },
+      { name: 'Training cost per trainee (TND)', recap: t(getTrainingById(selectedTraining)?.costPerTrainee), objGap: '' },
     ];
     const fourthmetrics = [
-      { grade: 'F1', nboftrainees: metrics.numberOfF1Trainees, employees: '', HCgradesdistribution: metrics.rateOfF1Grade, participationRate: metrics.rateOfF1ConfirmedGrade },
-      { grade: 'F2', nboftrainees: metrics.numberOfF2Trainees, employees: '', HCgradesdistribution: metrics.rateOfF2Grade, participationRate: metrics.rateOfF2ConfirmedGrade },
-      { grade: 'F3', nboftrainees: metrics.numberOfF3Trainees, employees: '', HCgradesdistribution: metrics.rateOfF3Grade, participationRate: metrics.rateOfF3ConfirmedGrade },
-      { grade: 'F4', nboftrainees: metrics.numberOfF4Trainees, employees: '', HCgradesdistribution: metrics.rateOfF4Grade, participationRate: metrics.rateOfF4ConfirmedGrade },
-      { grade: 'M1', nboftrainees: metrics.numberOfM1Trainees, employees: '', HCgradesdistribution: metrics.rateOfM1Grade, participationRate: metrics.rateOfM1ConfirmedGrade },
-      { grade: 'M2', nboftrainees: metrics.numberOfM2Trainees, employees: '', HCgradesdistribution: metrics.rateOfM2Grade, participationRate: metrics.rateOfM2ConfirmedGrade },
-      { grade: 'M3', nboftrainees: metrics.numberOfM3Trainees, employees: '', HCgradesdistribution: metrics.rateOfM3Grade, participationRate: metrics.rateOfM3ConfirmedGrade },
-      { grade: 'M4', nboftrainees: metrics.numberOfM4Trainees, employees: '', HCgradesdistribution: metrics.rateOfM4Grade, participationRate: metrics.rateOfM4ConfirmedGrade },
-      { grade: 'M5', nboftrainees: metrics.numberOfM5Trainees, employees: '', HCgradesdistribution: metrics.rateOfM5Grade, participationRate: metrics.rateOfM5ConfirmedGrade },
-      { grade: 'M6', nboftrainees: metrics.numberOfM6Trainees, employees: '', HCgradesdistribution: metrics.rateOfM6Grade, participationRate: metrics.rateOfM6ConfirmedGrade },
+      { grade: 'F1', nboftrainees: metrics.numberOfF1ConfirmedTrainees, employees: metrics.numberOfF1Trainees, HCgradesdistribution: metrics.rateOfF1Grade.toFixed(2) + '%', participationRate: metrics.rateOfF1ConfirmedGrade.toFixed(2) + '%', participationRateDist : ((metrics.numberOfF1Trainees/trainedEmployees.length)*100).toFixed(2) + '%'},
+      { grade: 'F2', nboftrainees: metrics.numberOfF2ConfirmedTrainees, employees: metrics.numberOfF2Trainees, HCgradesdistribution: metrics.rateOfF2Grade.toFixed(2) + '%', participationRate: metrics.rateOfF2ConfirmedGrade.toFixed(2) + '%', participationRateDist : ((metrics.numberOfF2Trainees/trainedEmployees.length)*100).toFixed(2) + '%'},
+      { grade: 'F3', nboftrainees: metrics.numberOfF3ConfirmedTrainees, employees: metrics.numberOfF3Trainees, HCgradesdistribution: metrics.rateOfF3Grade.toFixed(2) + '%', participationRate: metrics.rateOfF3ConfirmedGrade.toFixed(2) + '%', participationRateDist : ((metrics.numberOfF3Trainees/trainedEmployees.length)*100).toFixed(2) + '%'},
+      { grade: 'F4', nboftrainees: metrics.numberOfF4ConfirmedTrainees, employees: metrics.numberOfF4Trainees, HCgradesdistribution: metrics.rateOfF4Grade.toFixed(2) + '%', participationRate: metrics.rateOfF4ConfirmedGrade.toFixed(2) + '%' , participationRateDist : ((metrics.numberOfF4Trainees/trainedEmployees.length)*100).toFixed(2) + '%'},
+      { grade: 'M1', nboftrainees: metrics.numberOfM1ConfirmedTrainees, employees: metrics.numberOfM1Trainees, HCgradesdistribution: metrics.rateOfM1Grade.toFixed(2) + '%', participationRate: metrics.rateOfM1ConfirmedGrade.toFixed(2) + '%' , participationRateDist : ((metrics.numberOfM1Trainees/trainedEmployees.length)*100).toFixed(2) + '%'},
+      { grade: 'M2', nboftrainees: metrics.numberOfM2ConfirmedTrainees, employees: metrics.numberOfM2Trainees, HCgradesdistribution: metrics.rateOfM2Grade.toFixed(2) + '%', participationRate: metrics.rateOfM2ConfirmedGrade.toFixed(2) + '%' , participationRateDist : ((metrics.numberOfM2Trainees/trainedEmployees.length)*100).toFixed(2) + '%'},
+      { grade: 'M3', nboftrainees: metrics.numberOfM3ConfirmedTrainees, employees: metrics.numberOfM3Trainees, HCgradesdistribution: metrics.rateOfM3Grade.toFixed(2) + '%', participationRate: metrics.rateOfM3ConfirmedGrade.toFixed(2) + '%' , participationRateDist : ((metrics.numberOfM3Trainees/trainedEmployees.length)*100).toFixed(2) + '%'},
+      { grade: 'M4', nboftrainees: metrics.numberOfM4ConfirmedTrainees, employees: metrics.numberOfM4Trainees, HCgradesdistribution: metrics.rateOfM4Grade.toFixed(2) + '%', participationRate: metrics.rateOfM4ConfirmedGrade.toFixed(2) + '%' , participationRateDist : ((metrics.numberOfM4Trainees/trainedEmployees.length)*100).toFixed(2) + '%'},
+      { grade: 'M5', nboftrainees: metrics.numberOfM5ConfirmedTrainees, employees: metrics.numberOfM5Trainees, HCgradesdistribution: metrics.rateOfM5Grade.toFixed(2) + '%', participationRate: metrics.rateOfM5ConfirmedGrade.toFixed(2) + '%' , participationRateDist : ((metrics.numberOfM5Trainees/trainedEmployees.length)*100).toFixed(2) + '%'},
+      { grade: 'M6', nboftrainees: metrics.numberOfM6ConfirmedTrainees, employees: metrics.numberOfM6Trainees, HCgradesdistribution: metrics.rateOfM6Grade.toFixed(2) + '%', participationRate: metrics.rateOfM6ConfirmedGrade.toFixed(2) + '%' , participationRateDist : ((metrics.numberOfM6Trainees/trainedEmployees.length)*100).toFixed(2) + '%'},
+      { grade: 'L1', nboftrainees: metrics.numberOfL1ConfirmedTrainees, employees: metrics.numberOfL1Trainees, HCgradesdistribution: metrics.rateOfL1Grade.toFixed(2) + '%', participationRate: metrics.rateOfL1ConfirmedGrade.toFixed(2) + '%', participationRateDist : ((metrics.numberOfL1Trainees/trainedEmployees.length)*100).toFixed(2) + '%'},
+      { grade: 'L2', nboftrainees: metrics.numberOfL2ConfirmedTrainees, employees: metrics.numberOfL2Trainees, HCgradesdistribution: metrics.rateOfL2Grade.toFixed(2) + '%', participationRate: metrics.rateOfL2ConfirmedGrade.toFixed(2) + '%' , participationRateDist : ((metrics.numberOfL2Trainees/trainedEmployees.length)*100).toFixed(2) + '%'},
+      { grade: 'L3', nboftrainees: metrics.numberOfL3ConfirmedTrainees, employees: metrics.numberOfL3Trainees, HCgradesdistribution: metrics.rateOfL3Grade.toFixed(2) + '%', participationRate: metrics.rateOfL3ConfirmedGrade.toFixed(2) + '%' , participationRateDist : ((metrics.numberOfL3Trainees/trainedEmployees.length)*100).toFixed(2) + '%'},
+      { grade: 'L4', nboftrainees: metrics.numberOfL4ConfirmedTrainees, employees: metrics.numberOfL4Trainees, HCgradesdistribution: metrics.rateOfL4Grade.toFixed(2) + '%', participationRate: metrics.rateOfL4ConfirmedGrade.toFixed(2) + '%' , participationRateDist : ((metrics.numberOfL4Trainees/trainedEmployees.length)*100).toFixed(2) + '%'},
     ];
-
-    const fivemetrics = [
-      { grade: 'F1', nboftrainees: trainedEmployees.filter((e) => e.grade === "F1").length, employees: '', HCgradesdistribution: '', participationRate: '' },
-      { grade: 'F2', nboftrainees: trainedEmployees.filter((e) => e.grade === "F2").length, employees: '', HCgradesdistribution: '', participationRate: '' },
-      { grade: 'F3', nboftrainees: trainedEmployees.filter((e) => e.grade === "F3").length, employees: '', HCgradesdistribution: '', participationRate: '' },
-      { grade: 'F4', nboftrainees: trainedEmployees.filter((e) => e.grade === "F4").length, employees: '', HCgradesdistribution: '', participationRate: '' },
-      { grade: 'M1', nboftrainees: trainedEmployees.filter((e) => e.grade === "M1").length, employees: '', HCgradesdistribution: '', participationRate: '' },
-      { grade: 'M2', nboftrainees: trainedEmployees.filter((e) => e.grade === "M2").length, employees: '', HCgradesdistribution: '', participationRate: ''},
-      { grade: 'M3', nboftrainees: trainedEmployees.filter((e) => e.grade === "M3").length, employees: '', HCgradesdistribution: '', participationRate: '' },
-      { grade: 'M4', nboftrainees: trainedEmployees.filter((e) => e.grade === "M4").length, employees: '', HCgradesdistribution: '', participationRate: '' },
-      { grade: 'M5', nboftrainees: trainedEmployees.filter((e) => e.grade === "M5").length, employees: '', HCgradesdistribution: '', participationRate: '' },
-      { grade: 'M6', nboftrainees: trainedEmployees.filter((e) => e.grade === "M6").length, employees: '', HCgradesdistribution: '', participationRate: '' },
-    ];
-
     const sixmetrics = [
-      { activity: 'Space', nboftrainees: metrics.numberOfSpaceTrainees, employees: '', hcbyactivity: metrics.rateOfSpaceActivity, participationRate: metrics.rateOfSpaceConfirmedActivity, participationRateByAct: ''},
-      { activity: 'Electronics', nboftrainees: metrics.numberOfElectronicsTrainees, employees: '', hcbyactivity: metrics.rateOfElectronicsActivity, participationRate: metrics.rateOfElectronicsConfirmedActivity, participationRateByAct: '' },
-      { activity: 'Media & Energy', nboftrainees: metrics.numberOfMediaAndEnergyTrainees, employees: '', hcbyactivity: metrics.rateOfMediaAndEnergyActivity, participationRate: metrics.rateOfMediaAndEnergyConfirmedActivity, participationRateByAct: '' },
-      { activity: 'E-paysys', nboftrainees: metrics.numberOfEpaysysTrainees, employees: '', hcbyactivity: metrics.rateOfEpaysysActivity, participationRate: metrics.rateOfEpaysysConfirmedActivity, participationRateByAct: '' },
-      { activity: 'Quality', nboftrainees: metrics.numberOfQualityTrainees, employees: '', hcbyactivity: metrics.rateOfQualityActivity, participationRate: metrics.rateOfQualityConfirmedActivity, participationRateByAct: '' },
-      { activity: 'Telecom', nboftrainees: metrics.numberOfTelecomTrainees, employees: '', hcbyactivity: metrics.rateOfTelecomActivity, participationRate: metrics.rateOfTelecomConfirmedActivity, participationRateByAct: ''},
-      { activity: 'Databox', nboftrainees: metrics.numberOfDataboxTrainees, employees: '', hcbyactivity: metrics.rateOfDataboxActivity, participationRate: metrics.rateOfDataboxConfirmedActivity, participationRateByAct: '' },
-      { activity: 'Information Systems', nboftrainees: metrics.numberOfInformationSystemsTrainees, employees: '', hcbyactivity: metrics.rateOfInformationSystemsActivity, participationRate: metrics.rateOfInformationSystemsConfirmedActivity, participationRateByAct: '' },
-      { activity: 'Mechanical', nboftrainees: metrics.numberOfMechanicalTrainees, employees: '', hcbyactivity: metrics.rateOfMechanicalActivity, participationRate: metrics.rateOfMechanicalConfirmedActivity, participationRateByAct: '' },
-      { activity: 'Enablers', nboftrainees: metrics.numberOfEnablersTrainees, employees: '', hcbyactivity: metrics.rateOfEnablersActivity, participationRate: metrics.rateOfEnablersConfirmedActivity, participationRateByAct: '' },
+      { activity: 'Space', nboftrainees: metrics.numberOfSpaceConfirmedTrainees, employees: metrics.numberOfSpaceTrainees, hcbyactivity: metrics.rateOfSpaceActivity.toFixed(2) + '%', participationRate: metrics.rateOfSpaceConfirmedActivity.toFixed(2) + '%', participationRateByAct: ((metrics.numberOfSpaceTrainees/trainedEmployees.length)*100).toFixed(2) + '%'},
+      { activity: 'Electronics', nboftrainees: metrics.numberOfElectronicsConfirmedTrainees, employees: metrics.numberOfElectronicsTrainees, hcbyactivity: metrics.rateOfElectronicsActivity.toFixed(2) + '%', participationRate: metrics.rateOfElectronicsConfirmedActivity.toFixed(2) + '%', participationRateByAct:((metrics.numberOfElectronicsTrainees/trainedEmployees.length)*100).toFixed(2) + '%'},
+      { activity: 'Media & Energy', nboftrainees: metrics.numberOfMediaAndEnergyConfirmedTrainees, employees: metrics.numberOfMediaAndEnergyTrainees, hcbyactivity: metrics.rateOfMediaAndEnergyActivity.toFixed(2) + '%', participationRate: metrics.rateOfMediaAndEnergyConfirmedActivity.toFixed(2) + '%', participationRateByAct:((metrics.numberOfMediaAndEnergyTrainees/trainedEmployees.length)*100).toFixed(2) + '%'},
+      { activity: 'E-paysys', nboftrainees: metrics.numberOfEpaysysConfirmedTrainees, employees: metrics.numberOfEpaysysTrainees, hcbyactivity: metrics.rateOfEpaysysActivity.toFixed(2) + '%', participationRate: metrics.rateOfEpaysysConfirmedActivity.toFixed(2) + '%', participationRateByAct:((metrics.numberOfEpaysysTrainees/trainedEmployees.length)*100).toFixed(2) + '%'},
+      { activity: 'Quality', nboftrainees: metrics.numberOfQualityConfirmedTrainees, employees: metrics.numberOfQualityTrainees, hcbyactivity: metrics.rateOfQualityActivity.toFixed(2) + '%', participationRate: metrics.rateOfQualityConfirmedActivity.toFixed(2) + '%', participationRateByAct:((metrics.numberOfQualityTrainees/trainedEmployees.length)*100).toFixed(2) + '%'},
+      { activity: 'Telecom', nboftrainees: metrics.numberOfTelecomConfirmedTrainees, employees: metrics.numberOfTelecomTrainees, hcbyactivity: metrics.rateOfTelecomActivity.toFixed(2) + '%', participationRate: metrics.rateOfTelecomConfirmedActivity.toFixed(2) + '%', participationRateByAct:((metrics.numberOfTelecomTrainees/trainedEmployees.length)*100).toFixed(2) + '%'},
+      { activity: 'Databox', nboftrainees: metrics.numberOfDataboxConfirmedTrainees, employees: metrics.numberOfDataboxTrainees, hcbyactivity: metrics.rateOfDataboxActivity.toFixed(2) + '%', participationRate: metrics.rateOfDataboxConfirmedActivity.toFixed(2) + '%', participationRateByAct:((metrics.numberOfDataboxTrainees/trainedEmployees.length)*100).toFixed(2) + '%'},
+      { activity: 'Information Systems', nboftrainees: metrics.numberOfInformationSystemsConfirmedTrainees, employees: metrics.numberOfInformationSystemsTrainees, hcbyactivity: metrics.rateOfInformationSystemsActivity.toFixed(2) + '%', participationRate: metrics.rateOfInformationSystemsConfirmedActivity.toFixed(2) + '%', participationRateByAct:((metrics.numberOfInformationSystemsTrainees/trainedEmployees.length)*100).toFixed(2) + '%'},
+      { activity: 'Mechanical', nboftrainees: metrics.numberOfMechanicalConfirmedTrainees, employees: metrics.numberOfMechanicalTrainees, hcbyactivity: metrics.rateOfMechanicalActivity.toFixed(2) + '%', participationRate: metrics.rateOfMechanicalConfirmedActivity.toFixed(2) + '%', participationRateByAct:((metrics.numberOfMechanicalTrainees/trainedEmployees.length)*100).toFixed(2) + '%'},
+      { activity: 'Enablers', nboftrainees: metrics.numberOfEnablersConfirmedTrainees, employees: metrics.numberOfEnablersTrainees, hcbyactivity: metrics.rateOfEnablersActivity.toFixed(2) + '%', participationRate: metrics.rateOfEnablersConfirmedActivity.toFixed(2) + '%', participationRateByAct:((metrics.numberOfEnablersTrainees/trainedEmployees.length)*100).toFixed(2) + '%'},
+      { activity: 'Other', nboftrainees: metrics.numberOfOtherConfirmedAct, employees: metrics.numberOfOtherAct, hcbyactivity: metrics.rateOfOtherActivity.toFixed(2) + '%', participationRate: metrics.rateOfOtherConfirmedActivity.toFixed(2) + '%', participationRateByAct:((metrics.numberOfOtherAct/trainedEmployees.length)*100).toFixed(2) + '%'},
     ];
-
 
     return (
         <Box
@@ -1517,6 +2094,12 @@ const Navbar = () => {
                 >
                   {t("employees")}
                 </Button>
+                <Button
+                  sx={subButtonStyle("employees_details")}
+                  onClick={() => setStatView("employees_details")}
+                >
+                  {t("employees_details")}
+                </Button>
               </Box>
               :null}
             </Box>
@@ -1557,7 +2140,7 @@ const Navbar = () => {
               >
                   {t(view)}
               </Typography>
-              {user?.role === "manager" && view === "statistics"?<Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+              {user?.role === "manager"?<Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                   <DatePicker
                     views={['month']}
@@ -1649,9 +2232,30 @@ const Navbar = () => {
                   sx={paperStyle}
                   ref={gradeChart}
                 />
-              </Box>:null}  
+              </Box>:null}
               {statView === "charts"?<Box
-                id="section5"
+                sx={{
+                  width:"100%",
+                  display: "flex",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "start",
+                  gap:"20px",
+                }}
+              >
+                <Box
+                  id="section5"
+                  sx={paperStyle}
+                  ref={trainingsByMonthChart}
+                />
+                <Box
+                  id="section6"
+                  sx={paperStyle}
+                  ref={traineesByMonthChart}
+                />
+              </Box>:null}   
+              {statView === "charts"?<Box
+                id="section7"
                 sx={paperStyle}
                 ref={genderChart}
               />:null} 
@@ -1660,7 +2264,7 @@ const Navbar = () => {
                   <TableHead>
                     <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
                       <TableCell align="center" sx={{ fontWeight: 'bold', width: '60%' }}>Recap</TableCell>
-                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '20%' }}>Total -25</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '20%' }}>Total - {new Date().getFullYear()}</TableCell>
                       <TableCell align="center" sx={{ fontWeight: 'bold', width: '20%' }}>Obj Gap</TableCell>
                     </TableRow>
                   </TableHead>
@@ -1677,12 +2281,29 @@ const Navbar = () => {
                   </TableBody>
                 </Table>
               </TableContainer>:null} 
+              {statView === "recap"?<TextField
+                  select
+                  label={t("training")}
+                  value={selectedTraining}
+                  onChange={(e) => setSelectedTraining(e.target.value)}
+                  sx={{ width: '20%' }}
+              >
+                  <MenuItem key="all" value="all">
+                      {t("select_training")}
+                  </MenuItem>
+
+                  {filteredData.trainings.map((training) => (
+                      <MenuItem key={training._id} value={training._id}>
+                          {training.title} 
+                      </MenuItem>
+                  ))}
+              </TextField>:null}
               {statView === "recap"?<TableContainer id="section7" component={Paper}>
                 <Table sx={{ minWidth: 400 }} aria-label="training metrics table">
                   <TableHead>
                     <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
                       <TableCell align="center" sx={{ fontWeight: 'bold', width: '60%' }}>Recap</TableCell>
-                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '20%' }}>Total -25</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '20%' }}>Total - {new Date().getFullYear()}</TableCell>
                       <TableCell align="center" sx={{ fontWeight: 'bold', width: '20%' }}>Obj Gap</TableCell>
                     </TableRow>
                   </TableHead>
@@ -1734,7 +2355,7 @@ const Navbar = () => {
                         <TableCell align="center">{t(metric.gender)}</TableCell>
                         <TableCell align="center">{metric.grade}</TableCell>
                         <TableCell align="center">{t(metric.jobtitle)}</TableCell>
-                        <TableCell align="center">N+1</TableCell>
+                        <TableCell align="center">{metric.chef}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -1762,6 +2383,7 @@ const Navbar = () => {
                       <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Employees</TableCell>
                       <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>HC Grade'distribution</TableCell>
                       <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Participation Rate</TableCell>
+                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Participation Rate Distribution By Grade</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -1774,32 +2396,7 @@ const Navbar = () => {
                         <TableCell align="center">{t(metric.employees)}</TableCell>
                         <TableCell align="center">{metric.HCgradesdistribution}</TableCell>
                         <TableCell align="center">{t(metric.participationRate)}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>:null}
-              {statView === "employees"?<TableContainer id="section10" component={Paper}>
-                <Table sx={{ minWidth: 400 }} aria-label="training metrics table">
-                  <TableHead>
-                    <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Grade</TableCell>
-                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Employees</TableCell>
-                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Participation Rate</TableCell>
-                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Total NB Of Trainees</TableCell>
-                      <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Participation Rate</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {fourthmetrics.map((metric, index) => (
-                      <TableRow key={index}>
-                        <TableCell component="th" scope="row" sx={{textAlign:"center"}}>
-                          <Typography variant="body2">{metric.grade}</Typography>
-                        </TableCell>
-                        <TableCell align="center">{t(metric.employees)}</TableCell>
-                        <TableCell align="center">{t(metric.participationRate)}</TableCell>
-                        <TableCell align="center">{metric.nboftrainees}</TableCell>
-                        <TableCell align="center">{t(metric.participationRate)}</TableCell>
+                        <TableCell align="center">{t(metric.participationRateDist)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -1827,12 +2424,81 @@ const Navbar = () => {
                         <TableCell align="center">{t(metric.employees)}</TableCell>
                         <TableCell align="center">{metric.hcbyactivity}</TableCell>
                         <TableCell align="center">{t(metric.participationRate)}</TableCell>
-                        <TableCell align="center">{t(metric.participationRateDestByAct)}</TableCell>
+                        <TableCell align="center">{t(metric.participationRateByAct)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </TableContainer>:null}
+              {statView === "employees_details" ? (
+                <TableContainer
+                  id="section8"
+                  component={Paper}
+                  sx={{
+                    maxWidth: '100vw',
+                    overflowX: 'auto',
+                    margin: 'auto',
+                  }}
+                >
+                  <Table
+                    sx={{
+                      minWidth: 1500,
+                      tableLayout: 'fixed',
+                    }}
+                    aria-label="employee details table"
+                  >
+                    <TableHead>
+                      <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                        <TableCell align="center" sx={{ fontWeight: 'bold', width: 60 }}>NB</TableCell>
+                        <TableCell align="center" sx={{ fontWeight: 'bold', width: 200 }}>Name</TableCell>
+                        <TableCell align="center" sx={{ fontWeight: 'bold', width: 120 }}>Gender</TableCell>
+                        <TableCell align="center" sx={{ fontWeight: 'bold', width: 180 }}>Activity</TableCell>
+                        <TableCell align="center" sx={{ fontWeight: 'bold', width: 150 }}>{`Grade ${new Date().getFullYear()}`}</TableCell>
+                        <TableCell align="center" sx={{ fontWeight: 'bold', width: 200 }}>{`Job Title ${new Date().getFullYear()}`}</TableCell>
+                        <TableCell align="center" sx={{ fontWeight: 'bold', width: 180 }}>N + 1</TableCell>
+                        <TableCell align="center" sx={{ fontWeight: 'bold', width: 1500 }}>Trainings</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {trainedEmployees.map((metric, index) => (
+                        <TableRow key={index}>
+                          <TableCell component="th" scope="row" align="center">
+                            <Typography variant="body2">{index + 1}</Typography>
+                          </TableCell>
+                          <TableCell align="center">{metric.name}</TableCell>
+                          <TableCell align="center">{t(metric.gender)}</TableCell>
+                          <TableCell align="center">{t(metric.activity)}</TableCell>
+                          <TableCell align="center">{metric.grade}</TableCell>
+                          <TableCell align="center">{t(metric.jobtitle)}</TableCell>
+                          <TableCell align="center">{metric.chef}</TableCell>
+                          <TableCell align="center" sx={{padding: "0px"}}>
+                            <Box
+                              sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              {metric.trainingsAttended?.map((training, i) => (
+                                <Box
+                                  key={i}
+                                  sx={{
+                                    width: '100%',
+                                    height: "auto",
+                                  }}
+                                >
+                                  {renderEmployeeTraining(training.training)}
+                                </Box>
+                              ))}
+                            </Box>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+            ) : null}
             </Box>:null}
             {view === "trainings" ? 
             <Box
@@ -1859,137 +2525,117 @@ const Navbar = () => {
                 }}
               >
                 <Box sx={{...paperStyle, height: "auto", width: "100%"}}>
-                <Typography
-                  sx={{
-                    fontSize: 20,
-                    fontWeight: "bold",
-                    textAlign: "center",
-                    letterSpacing: 0.5,
-                    lineHeight: 1.2,
-                    userSelect: "none",
-                    cursor: "default",
-                    color: "#333", 
-                    fontFamily: "sans-serif",
-                  }}
-                >
-                  {t("upcoming_sessions")}
-                </Typography>
-                <Box
+                  <Typography
                     sx={{
-                      display: "flex",
-                      flexDirection: "row",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      gap: '20px',
-                      marginTop: "30px",
+                      fontSize: 20,
+                      fontWeight: "bold",
+                      textAlign: "center",
+                      letterSpacing: 0.5,
+                      lineHeight: 1.2,
+                      userSelect: "none",
+                      cursor: "default",
+                      color: "#333", 
+                      fontFamily: "sans-serif",
                     }}
-                >
-                    <Button 
-                        sx={filterStyle}
-                        onClick={() => setSelectedFilter("all")}
-                    >
-                    {selectedFilter === "all" && (
-                        <Box
-                        sx={{
-                            width: 12,
-                            height: 12, 
-                            backgroundColor: "#2CA8D5", 
-                            borderRadius: "50%",
-                            position: "absolute",
-                            top: 10, 
-                            right: 10, 
-                            boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
-                        }}
-                        />
-                    )}
-                        {t("all")}
-                    </Button>
-                    <Button 
-                        sx={{...filterStyle, backgroundColor : "#E0E0E0"}}
-                        onClick={() => setSelectedFilter("scheduled")}
-                    >
-                    {selectedFilter === "scheduled" && (
-                        <Box
-                        sx={{
-                            width: 12,
-                            height: 12, 
-                            backgroundColor: "#2CA8D5", 
-                            borderRadius: "50%",
-                            position: "absolute",
-                            top: 10, 
-                            right: 10, 
-                            boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
-                        }}
-                        />
-                    )}
-                        {metrics.numberOfScheduled}<br/>{t("scheduled")}
-                    </Button>
-                    <Button 
-                    sx={{
-                        ...filterStyle,
-                        backgroundColor: "#90CAF9",
-                        position: "relative",
-                    }}
-                    onClick={() => setSelectedFilter("in_progress")}
-                    >
-                    {selectedFilter === "in_progress" && (
-                        <Box
-                        sx={{
-                            width: 12,
-                            height: 12, 
-                            backgroundColor: "#2CA8D5", 
-                            borderRadius: "50%",
-                            position: "absolute",
-                            top: 10, 
-                            right: 10, 
-                            boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
-                        }}
-                        />
-                    )}
-                    {metrics.numberOfInProgress}<br/>{t("in_progress")}
-                    <br />
-                    </Button>
-                    <Button 
-                        sx={{...filterStyle, backgroundColor:"#A5D6A7"}}
-                        onClick={() => setSelectedFilter("completed")}
-                    >
-                    {selectedFilter === "completed" && (
-                        <Box
-                        sx={{
-                            width: 12,
-                            height: 12, 
-                            backgroundColor: "#2CA8D5", 
-                            borderRadius: "50%",
-                            position: "absolute",
-                            top: 10, 
-                            right: 10, 
-                            boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
-                        }}
-                        />
-                    )}
-                    {metrics.numberOfCompleted}<br/>{t("completed")}
-                    </Button>
-                </Box>
-                {sessionsNextWeek.length > 0 && (
-                  <>
-                    <Typography variant="subtitle1" fontWeight="bold" mt={5}>{t("next_week")}</Typography>
-                    <List dense sx={{width:"100%", marginBottom: 2}}>{sessionsNextWeek.map(renderSession)}</List>
-                  </>
-                )}
-                {sessionsNextWeek.length !== 0 && <Divider sx={{ width: "90%" }} />}
-                {sessionsLaterThisMonth.length > 0 && (
-                  <>
-                    <Typography variant="subtitle1" fontWeight="bold" mt={2}>{t("later_this_month")}</Typography>
-                    <List dense sx={{width:"100%" , marginBottom: 2}}>{sessionsLaterThisMonth.map(renderSession)}</List>
-                  </>
-                )}
-                {sessionsLaterThisMonth.length !== 0 && <Divider sx={{ width: "90%" }} />}
-                {sessionsAfterOneMonth.length > 0 && (
-                  <>
-                    <Typography variant="subtitle1" fontWeight="bold" mt={2}>{t("after_one_month")}</Typography>
-                    <List dense sx={{width:"100%", marginBottom: 2}}>{sessionsAfterOneMonth.map(renderSession)}</List>
-                  </>
-                )}
+                  >
+                    {(user.role==="trainee" || selectedRole==="trainee")?t("upcoming_enrolled_sessions"):t("upcoming_sessions")}
+                  </Typography>
+                  <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "row",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        gap: '20px',
+                        marginTop: "30px",
+                      }}
+                  >
+                      <Button 
+                          sx={filterStyle}
+                          onClick={() => setSelectedFilter("all")}
+                      >
+                      {selectedFilter === "all" && (
+                          <Box
+                          sx={{
+                              width: 12,
+                              height: 12, 
+                              backgroundColor: "#2CA8D5", 
+                              borderRadius: "50%",
+                              position: "absolute",
+                              top: 10, 
+                              right: 10, 
+                              boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
+                          }}
+                          />
+                      )}
+                          {t("all")}
+                      </Button>
+                      <Button 
+                          sx={{...filterStyle, backgroundColor : "#E0E0E0"}}
+                          onClick={() => setSelectedFilter("scheduled")}
+                      >
+                      {selectedFilter === "scheduled" && (
+                          <Box
+                          sx={{
+                              width: 12,
+                              height: 12, 
+                              backgroundColor: "#2CA8D5", 
+                              borderRadius: "50%",
+                              position: "absolute",
+                              top: 10, 
+                              right: 10, 
+                              boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
+                          }}
+                          />
+                      )}
+                          {metrics.numberOfScheduled}<br/>{t("scheduled")}
+                      </Button>
+                      <Button 
+                      sx={{
+                          ...filterStyle,
+                          backgroundColor: "#90CAF9",
+                          position: "relative",
+                      }}
+                      onClick={() => setSelectedFilter("in_progress")}
+                      >
+                      {selectedFilter === "in_progress" && (
+                          <Box
+                          sx={{
+                              width: 12,
+                              height: 12, 
+                              backgroundColor: "#2CA8D5", 
+                              borderRadius: "50%",
+                              position: "absolute",
+                              top: 10, 
+                              right: 10, 
+                              boxShadow: "0 0 8px rgba(0, 0, 0, 0.2)", 
+                          }}
+                          />
+                      )}
+                      {metrics.numberOfInProgress}<br/>{t("in_progress")}
+                      <br />
+                      </Button>
+                  </Box>
+                  {sessionsNextWeek.length > 0 && (
+                    <>
+                      <Typography variant="subtitle1" fontWeight="bold" mt={5}>{t("next_week")}</Typography>
+                      <List dense sx={{width:"100%", marginBottom: 2}}>{sessionsNextWeek.map(renderSession)}</List>
+                    </>
+                  )}
+                  {sessionsNextWeek.length !== 0 && <Divider sx={{ width: "90%" }} />}
+                  {sessionsLaterThisMonth.length > 0 && (
+                    <>
+                      <Typography variant="subtitle1" fontWeight="bold" mt={2}>{t("later_this_month")}</Typography>
+                      <List dense sx={{width:"100%" , marginBottom: 2}}>{sessionsLaterThisMonth.map(renderSession)}</List>
+                    </>
+                  )}
+                  {sessionsLaterThisMonth.length !== 0 && <Divider sx={{ width: "90%" }} />}
+                  {sessionsAfterOneMonth.length > 0 && (
+                    <>
+                      <Typography variant="subtitle1" fontWeight="bold" mt={2}>{t("after_one_month")}</Typography>
+                      <List dense sx={{width:"100%", marginBottom: 2}}>{sessionsAfterOneMonth.map(renderSession)}</List>
+                    </>
+                  )}
                 </Box>
                 <Box sx={{...paperStyle, height: "auto", width: "100%"}}>
                   <Typography
@@ -2028,7 +2674,7 @@ const Navbar = () => {
               </Box>
               <Box
                 sx={{
-                  width:"100%",
+                  width:"50%",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
@@ -2050,11 +2696,43 @@ const Navbar = () => {
                       fontFamily: "sans-serif",
                     }}
                   >
-                    {t("registrations")}
+                    {(user.role==="trainee" || selectedRole==="trainee")?t("news"):t("registrations")}
                   </Typography>
-                  <Typography variant="body2" sx={{marginTop: "30px",fontWeight:"bold",marginBottom:"5px"}}>
+                  {(user.role==="trainee" || selectedRole==="trainee")?
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      width:"100%",
+                      justifyContent: "start",
+                      alignItems: "start",
+                      gap: '5px',
+                      marginBottom: "20px",
+                    }}
+                  >
+                    {TrainingsThisMonth.length > 0 && (
+                      <>
+                        <Typography variant="subtitle1" fontWeight="bold" mt={5}>{t("this_month")}</Typography>
+                        <List dense sx={{width:"100%", marginBottom: 2}}>{TrainingsThisMonth.map(renderNews)}</List>
+                      </>
+                    )}
+                    {TrainingsNextMonth.length > 0 && (
+                      <>
+                        <Typography variant="subtitle1" fontWeight="bold" mt={5}>{t("next_month")}</Typography>
+                        <List dense sx={{width:"100%", marginBottom: 2}}>{TrainingsNextMonth.map(renderNews)}</List>
+                      </>
+                    )}
+                    {TrainingsAfterNextMonth.length > 0 && (
+                      <>
+                        <Typography variant="subtitle1" fontWeight="bold" mt={5}>{t("after_next_month")}</Typography>
+                        <List dense sx={{width:"100%", marginBottom: 2}}>{TrainingsAfterNextMonth.map(renderNews)}</List>
+                      </>
+                    )}
+                  </Box>:null}
+                  {(user.role!=="trainee" && selectedRole!=="trainee")?<Typography variant="body2" sx={{marginTop: "30px",fontWeight:"bold",marginBottom:"5px"}}>
                     {t("this_month")}
-                  </Typography>
+                  </Typography>:null}
+                  {(user.role!=="trainee" && selectedRole!=="trainee")?
                   <Box
                     sx={{
                       display: "flex",
@@ -2086,16 +2764,16 @@ const Navbar = () => {
                       >
                       {metrics.numberOfConfirmed}<br/>{t("confirmed")}
                       </Button>
-                  </Box>
-                  <Typography variant="body2" sx={{marginTop: "20px",fontWeight:"bold",marginBottom:"5px"}}>
+                  </Box>:null}
+                  {(user.role!=="trainee" && selectedRole!=="trainee")?<Typography variant="body2" sx={{marginTop: "20px",fontWeight:"bold",marginBottom:"5px"}}>
                     {t("registrations_received_by_month")}
-                  </Typography>
-                  <Box
+                  </Typography>:null}
+                  {(user.role!=="trainee" && selectedRole!=="trainee")?<Box
                     sx={{...paperStyle, width: "100%"}}
                     ref={regisChart}
-                  />
+                  />:null}
                 </Box>
-                <Box sx={{...paperStyle, height: "auto", width: "100%"}}>
+                {(user.role!=="trainee" && selectedRole!=="trainee")?<Box sx={{...paperStyle, height: "auto", width: "100%"}}>
                   <Typography
                     sx={{
                       fontSize: 20,
@@ -2115,6 +2793,8 @@ const Navbar = () => {
                     sx={{
                       width:"100%",
                       paddingTop:"20px",
+                      maxHeight: "500px",
+                      overflowY: "auto",
                     }}
                   >
                     {allRequests?.map((req) => (
@@ -2129,7 +2809,7 @@ const Navbar = () => {
                       </Box>
                     ))}
                   </Box>
-                </Box>
+                </Box>:null}
               </Box>
             </Box>
             :null}

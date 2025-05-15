@@ -220,6 +220,7 @@ const TrainerRequest = () => {
         });
         
         const addSessions = (trainingId) => {
+        const recipients = [trainerInfo.email];
         for (let i = 0; i < newTrainingNbOfSessions; i++) {
             const newSession = {
             name: newSessionsNames[i],
@@ -228,9 +229,23 @@ const TrainerRequest = () => {
             location: newSessionsLocations[i],
             training: trainingId, 
             };
+            const sessionDate = new Date(newSessionsDates[i]); 
+            const sessionEnd = new Date(sessionDate.getTime() + newSessionsDurations[i] * 60 * 60 * 1000);
         
             api.post("/api/sessions", newSession)
             .then(() => {
+                const eventDetails = {
+                    start: sessionDate,
+                    end: sessionEnd,
+                    summary: newSessionsNames[i] || newTrainingTitle,
+                    description: newTrainingDescription || 'Training session',
+                    location: newSessionsLocations[i] || newTrainingLocation,
+                    url: 'http://localhost:3000/trainertraining',
+                };
+                api.post("/send-calendar-event", {
+                    recipients,
+                    eventDetails
+                });
             })
             .catch((error) => {
             });

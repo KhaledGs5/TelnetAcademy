@@ -372,6 +372,14 @@ const translations = {
       "costs": "Costs",
       "cost_per_trainee": "Cost Per Trainee",
       "cost_per_trainer": "Cost Per Trainer",
+      "upcoming_enrolled_sessions": "Upcoming Enrolled Sessions",
+      "news": "News",
+      "employees_details": "Employees Details",
+      "select_training": "Select Training",
+      "after_next_month": "After Next Month",
+      "manage_trainings_sessions": "Manage Trainings Sessions",
+      "trainings_list": "List Of Trainings",
+      "send_trainings_email": "Send Trainings Email",
     },
     "fr": {
       "name": "Nom",
@@ -742,7 +750,15 @@ const translations = {
       "number_of_present_trainee": "Nombre de stagiaires présents",
       "costs": "Coûts",
       "cost_per_trainee": "Coût par formé",
-      "cost_per_trainer": "Coût par formateur"
+      "cost_per_trainer": "Coût par formateur",
+      "upcoming_enrolled_sessions": "Sessions à venir inscrites",
+      "news": "Nouvelles",
+      "employees_details": "Détails des employés",
+      "select_training": "Sélectionner une formation",
+      "after_next_month": "Après le mois prochain",
+      "manage_trainings_sessions": "Gérer les sessions de formation",
+      "trainings_list": "Liste des formations",
+      "send_trainings_email": "Envoyer un email de formation",
     }
   };
   

@@ -55,7 +55,6 @@ const signUser = async (req, res) => {
   res.json({ user: userResponse, token, id:user._id});
 };
 
-
 const verifyEmail = async (req, res) => {
   try {
     const { email } = req.body;
@@ -153,7 +152,6 @@ const updatePasswordByEmail = async (req, res) => {
     res.status(500).json({ message: err.message });
   }
 };
-
 
 const deleteUser = async (req, res) => {
     try {

@@ -165,28 +165,28 @@ const TraineeTrainings = () => {
         });
   };
 
-  console.log(requestResponseTrainings);
-  const formatDaysWithMonth = (dateString, month) => {
-    if (!dateString) return "";
-  
-    const days = dateString.split(" ").map(Number);
+    console.log(requestResponseTrainings);
+        const formatDaysWithMonth = (dateString, month) => {
+        if (!dateString) return "";
 
-    const getDayWithSuffix = (day) => {
-      if (day >= 11 && day <= 13) return `${day}th`; 
-      const lastDigit = day % 10;
-      if (lastDigit === 1) return `${day}st`;
-      if (lastDigit === 2) return `${day}nd`;
-      if (lastDigit === 3) return `${day}rd`;
-      return `${day}th`;
+        const days = dateString.split(" ").map(Number);
+
+        const getDayWithSuffix = (day) => {
+            if (day >= 11 && day <= 13) return `${day}th`; 
+            const lastDigit = day % 10;
+            if (lastDigit === 1) return `${day}st`;
+            if (lastDigit === 2) return `${day}nd`;
+            if (lastDigit === 3) return `${day}rd`;
+            return `${day}th`;
+        };
+
+        const formattedDays = days.map(getDayWithSuffix);
+        const finalDaysFormat = formattedDays.length > 1 
+            ? formattedDays.slice(0, -1).join(", ") + " and " + formattedDays.slice(-1) 
+            : formattedDays[0];
+
+        return `${finalDaysFormat} ${month}`;
     };
-  
-    const formattedDays = days.map(getDayWithSuffix);
-    const finalDaysFormat = formattedDays.length > 1 
-      ? formattedDays.slice(0, -1).join(", ") + " and " + formattedDays.slice(-1) 
-      : formattedDays[0];
-  
-    return `${finalDaysFormat} ${month}`;
-};
 
     // handle changings in trainings
 
@@ -234,6 +234,25 @@ const TraineeTrainings = () => {
     const handleAttendanceVerification = () => {
         api.put(`/api/trainings/confirm/${selectedTrainingId}`, {trainee:user?._id})
             .then(() => {
+                const recipients = [user?.email];
+                const training = getTrainingById(selectedTrainingId);
+                training.sessions.forEach((session, i) => {
+                    const sessionDate = new Date(session.date); 
+                    const sessionEnd = new Date(sessionDate.getTime() + session.duration * 60 * 60 * 1000);
+                    const eventDetails = {
+                        start: sessionDate, 
+                        end: sessionEnd, 
+                        summary: session.name || training.title,
+                        description: training.description || 'Training session',
+                        location: session.location || training.location,
+                        url: 'http://localhost:3000/trainertraining',
+                    };
+
+                    api.post("/send-calendar-event", {
+                        recipients,
+                        eventDetails,
+                    });
+                });
                 setVerifyAlert("success");
                 setVerifyAlertMessage("attendance_confirmed_successfully");
                 setShowsVerifificationAlert(true);
@@ -261,7 +280,7 @@ const TraineeTrainings = () => {
     const [feedbackType, setFeedbackType] = useState("cold_feedback");
     const [canAddColdFeedback, setCanSendColdFeedback] = useState([]);
     const [canAddHotFeedback, setCanSendHotFeedback] = useState([]);
-    const { numberOfNewFeedbacksReq ,setNumberOfNewFeedbacksReq } = useNavbar();
+    const {numberOfNewFeedbacksReq ,setNumberOfNewFeedbacksReq } = useNavbar();
     const [trainingsHaveFeedbackReq, setTrainingsHaveFeedbackReq] = useState([]);
 
     useEffect(() => {
@@ -384,7 +403,6 @@ const TraineeTrainings = () => {
 
     const [formFields, setFormFields] = useState([]);
     const [fieldValues, setFieldValues] = useState({});
-    console.log(fieldValues);
 
     const fetchForms = async () => {
         try {
@@ -571,8 +589,6 @@ const TraineeTrainings = () => {
         }
     };
       
-
-
     // Order ........................
     const [orderState, setOrderState] = useState('Down');
     const [trainingOrderState, setTrainingOrderState]= useState('Down');  

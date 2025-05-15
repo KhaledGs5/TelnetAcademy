@@ -236,7 +236,7 @@ const Navbar = () => {
             socket.off("readRequestTraineeNotifications");
             socket.off("readTrainerQuizNotifications");
         };
-    }, []);
+    }, [user]);
           
     
     const handleOpenCallNotifications = async () => {
@@ -511,9 +511,9 @@ const Navbar = () => {
                 .then(() => {
                     setNumberOfRoleChanged(0);
                     setCookie("SignedIn",false,5);
-                    setCookie("Role",false,5);
                     deleteCookie("User");
                     deleteCookie("Role");
+                    deleteCookie("Token");
                     window.location.href = "/";
                 })
           } catch (error) {

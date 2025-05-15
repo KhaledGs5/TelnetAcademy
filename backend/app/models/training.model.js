@@ -19,7 +19,7 @@ const trainingSchema = new mongoose.Schema({
   costPerTrainer: {type: Number},
   costPerTrainee: {type: Number},
   nbOfSessions: { type: Number , required: true},
-  delivered: {type: Boolean},
+  delivered: {type: Boolean, default: false},
   mode: {type: String, required: true},
   comment: {type: String},
   type: {type: String, required: true},

@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
 const express = require("express");
-const session = require('express-session');
 const cors = require("cors");
 const http = require('http');
 const socketIo = require('socket.io');
@@ -108,36 +107,17 @@ const sendCalendarEvent = async (to, eventDetails) => {
       const mailOptions = {
         from: process.env.EMAIL_USER,
         to,
-        subject: 'You have a new calendar event!',
-        text: 'Please find the event details attached.',
-        html: `
-          <p>You have a new calendar event:</p>
-          <ul>
-            <li><strong>Summary:</strong> ${eventDetails.summary}</li>
-            <li><strong>Description:</strong> ${eventDetails.description}</li>
-            <li><strong>Location:</strong> ${eventDetails.location}</li>
-            <li><strong>Start:</strong> ${new Date(eventDetails.start).toLocaleString()}</li>
-            <li><strong>End:</strong> ${new Date(eventDetails.end).toLocaleString()}</li>
-          </ul>
-          <p>
-            <a href="cid:event.ics" download="event.ics" style="
-              background-color: #007bff;
-              color: white;
-              padding: 10px 20px;
-              text-decoration: none;
-              border-radius: 5px;
-              font-family: sans-serif;
-            ">Add to Calendar</a>
-          </p>
-        `,
-        attachments: [
-          {
-            filename: 'event.ics',
-            path: filePath,
-            cid: 'event.ics', 
-            contentDisposition: 'attachment'
-          },
-        ],
+        subject: 'Training Calendar Invite',
+        text: 'You have a training session. Please check your calendar.',
+        alternatives: [{
+          contentType: 'text/calendar; charset="UTF-8"; method=REQUEST',
+          content: icsContent,
+        }],
+        attachments: [{
+          filename: 'invite.ics',
+          content: icsContent,
+          contentType: 'text/calendar',
+        }],
       };
 
       await transporter.sendMail(mailOptions);
@@ -425,6 +405,7 @@ app.post("/send-trainings-email", async (req, res) => {
           <th style="border: 1px solid #ccc; padding: 8px;">Date</th>
           <th style="border: 1px solid #ccc; padding: 8px;">Duration</th>
           <th style="border: 1px solid #ccc; padding: 8px;">Location</th>
+          <th style="border: 1px solid #ccc; padding: 8px;">Places</th>
         </tr>
       </thead>
       <tbody>
@@ -435,6 +416,7 @@ app.post("/send-trainings-email", async (req, res) => {
             <td style="border: 1px solid #ccc; padding: 8px;">${formatDaysWithMonth(t.date, t.month)}</td>
             <td style="border: 1px solid #ccc; padding: 8px;">${t.nbOfHours}</td>
             <td style="border: 1px solid #ccc; padding: 8px;">${t.location}</td>
+            <td style="border: 1px solid #ccc; padding: 8px;">${t.nbOfParticipants}</td>
           </tr>
         `).join('')}
       </tbody>
@@ -482,8 +464,6 @@ app.post("/training-changed", async (req, res) => {
   }
 });
 
-
-
 // Fetch All Users from excel to mongoDB
 app.post("/api/uploadUsers", async (req, res) => {
   const data = req.body.data;
@@ -498,10 +478,3 @@ app.post("/api/uploadUsers", async (req, res) => {
 
 const PORT = process.env.PORT;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
-if (process.env.NODE_ENV === "production") {
-  app.use(express.static("../frontend/build"));
-  app.get("*", (req, res) => {
-    res.sendFile(path.resolve(__dirname, "../frontend", "build", "index.html"));
-  });
-}
