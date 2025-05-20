@@ -10,17 +10,23 @@ const path = require('path');
 const connectDB = require("./db");
 require("dotenv").config();
 
+const clientBuildPath = path.join(__dirname, '../frontend/build');
+
 const app = express();
 const server = http.createServer(app);
+
 const io = socketIo(server, {
   cors: {
-    origin: "http://localhost:3000", 
-    methods: ["GET", "POST"],
-    credentials: true
+    origin: '*',
+    methods: ['GET', 'POST'],
+    credentials: true,
   },
-  pingInterval: 25000, 
-  pingTimeout: 60000,  
+  pingInterval: 25000,
+  pingTimeout: 60000,
 });
+
+// Middleware
+app.use(cors({ origin: '*', credentials: true }));
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -30,23 +36,24 @@ app.use((req, res, next) => {
   next();
 });
 
-
-app.use(cors({ origin: "http://localhost:3000" }));
-
 connectDB();
-io.on('connection', (socket) => {
-  socket.on('joinRoom', (userId) => {
-    socket.join(userId); 
+io.on("connection", (socket) => {
+
+  socket.on("joinRoom", (userId) => {
+    console.log("joinRoom event received:", userId);
+    socket.join(userId);
   });
 
-  socket.on('disconnect', (reason) => {
-    console.log(`Client disconnected: ${reason}`);
+  socket.on("disconnect", (reason) => {
+    console.log(`Socket disconnected: ${reason}`);
   });
 });
 
+
+
 module.exports.io = io;
 
-app.get("/", (req, res) => {
+app.get("/api/status", (req, res) => {
   res.send("MongoDB is connected!");
 });
 
@@ -476,5 +483,15 @@ app.post("/api/uploadUsers", async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT;
-server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.use(express.static(clientBuildPath));
+
+app.get('*', (req, res) => {
+  res.sendFile(path.join(clientBuildPath, 'index.html'));
+});
+
+const PORT = 49880;
+const HOST = '0.0.0.0'; 
+
+server.listen(PORT, HOST, () => {
+  console.log(`Server running at http://${HOST}:${PORT}`);
+});

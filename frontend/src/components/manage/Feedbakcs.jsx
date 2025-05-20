@@ -63,16 +63,22 @@ const FormBuilder = () => {
     }
   };
 
-  const fetchForms = async () => {
-    try {
-      const response = await api.get("/api/dynamicform/forms")
-      const form =  response.data.forms.filter((form) => form.type === formType);
+const fetchForms = async () => {
+  try {
+    const response = await api.get("/api/dynamicform/forms");
+    const form = response.data.forms.filter((form) => form.type === formType);
+    
+    if (form.length > 0) {
       setFormFields(form[0].fields);
-    } catch (error) {
-      console.error('Error getting forms', error);
-      throw error;
+    }else{
+      setFormFields([]);
     }
-  };
+
+  } catch (error) {
+    console.error('Error getting forms', error);
+  }
+};
+
 
   useEffect(() => {
     fetchForms();

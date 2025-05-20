@@ -1,7 +1,10 @@
 import Cookies from 'js-cookie';
 
 export const setCookie = (name, value, days) => {
-  Cookies.set(name, JSON.stringify(value), { expires: days });
+    Cookies.set(name, JSON.stringify(value), {
+      expires: days,
+      path: '/', 
+    });
 };
 
 export const getCookie = (name) => {

@@ -9,22 +9,26 @@ export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const fetchUserFromCookie = async () => {
-      const userCookie = getCookie("User");
-      console.log(userCookie);
-      if (userCookie) {
-        try {
-          const response = await api.get(`/api/users/${userCookie}`);
-          console.log(response.data);
-          setUser(response.data);
-        } catch (error) {
-          console.error("Error fetching user:", error);
+    const timeout = setTimeout(() => {
+      const fetchUserFromCookie = async () => {
+        const userCookie = getCookie("User");
+        console.log("Cookie inside delayed effect:", userCookie);
+        if (userCookie) {
+          try {
+            const response = await api.get(`/api/users/${userCookie}`);
+            setUser(response.data);
+            console.log("User fetched from cookie:", response.data);
+          } catch (error) {
+            console.error("Error fetching user:", error);
+          }
         }
-      }
-    };
+      };
+      fetchUserFromCookie();
+    }, 50); 
 
-    fetchUserFromCookie();
+    return () => clearTimeout(timeout);
   }, []);
+
 
   return (
     <UserContext.Provider value={{ user, setUser }}>

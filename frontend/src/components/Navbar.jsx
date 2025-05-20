@@ -30,6 +30,7 @@ import { useNavbar } from '../NavbarContext';
 import socket from '../socket';
 import { useLanguage } from "../languagecontext";
 import { useUser } from '../UserContext';
+import { io } from "socket.io-client";
 
 const Navbar = () => {
 
@@ -204,11 +205,20 @@ const Navbar = () => {
     }, []);
 
     useEffect(() => {
-        if (!user) return; 
-        
+
+        if (!user) return;
+
         if (!socket.connected) {
+            console.log("Socket not connected yet. Calling socket.connect()...");
             socket.connect();
+        } else {
+            console.log("Socket already connected.");
         }
+
+        socket.on("connect", () => {
+            console.log("Socket connected!", socket.id);
+        });
+
         socket.emit("joinRoom", user?._id);
         
         socket.on("newNotification", fetchNotifications);
