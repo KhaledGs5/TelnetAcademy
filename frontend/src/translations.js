@@ -380,6 +380,7 @@ const translations = {
       "manage_trainings_sessions": "Manage Trainings Sessions",
       "trainings_list": "List Of Trainings",
       "send_trainings_email": "Send Trainings Email",
+      "sign_in_error": "Email/Password incorrect",
     },
     "fr": {
       "name": "Nom",
@@ -759,6 +760,7 @@ const translations = {
       "manage_trainings_sessions": "Gérer les sessions de formation",
       "trainings_list": "Liste des formations",
       "send_trainings_email": "Envoyer un email de formation",
+      "sign_in_error": "Email/Mot de passe incorrect",
     }
   };
   

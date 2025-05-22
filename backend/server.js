@@ -10,7 +10,7 @@ const path = require('path');
 const connectDB = require("./db");
 require("dotenv").config();
 
-const clientBuildPath = path.join(__dirname, '../frontend/build');
+
 
 const app = express();
 const server = http.createServer(app);
@@ -483,14 +483,16 @@ app.post("/api/uploadUsers", async (req, res) => {
   }
 });
 
-app.use(express.static(clientBuildPath));
+// const clientBuildPath = path.join(__dirname, '../frontend/build');
 
-app.get('*', (req, res) => {
-  res.sendFile(path.join(clientBuildPath, 'index.html'));
-});
+// app.use(express.static(clientBuildPath));
 
-const PORT = 49880;
-const HOST = '0.0.0.0'; 
+// app.get('*', (req, res) => {
+//   res.sendFile(path.join(clientBuildPath, 'index.html'));
+// });
+
+const PORT = 5000;
+const HOST = 'localhost'; 
 
 server.listen(PORT, HOST, () => {
   console.log(`Server running at http://${HOST}:${PORT}`);

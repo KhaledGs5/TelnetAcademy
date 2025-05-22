@@ -1,5 +1,9 @@
 const User = require("../models/user.model");
 const Training = require("../models/training.model");
+const Session = require("../models/session.model");
+const HotFeedback = require("../models/hotfeedback.model");
+const ColdFeedback = require("../models/coldfeedback.model");
+const Notification = require("../models/notification.model");
 const jwt = require("jsonwebtoken");
 const { notifyUsers, deleteNotif,notify } = require("../controllers/notification.controllers");
 
@@ -28,10 +32,10 @@ const getUserById = async (req, res) => {
 const signUser = async (req, res) => {
   const { email, password} = req.body;
   const user = await User.findOne({ email });
-  if (!user) return res.status(401).json({ message: "email_not_found" });
+  if (!user) return res.status(401).json({ message: "sign_in_error" });
 
   const passwordMatch = (password === user.password); 
-  if (!passwordMatch) return res.status(401).json({ message: "incorrect_password" });
+  if (!passwordMatch) return res.status(401).json({ message: "sign_in_error" });
 
   const token = jwt.sign(
     { id: user._id, role: user.role },
@@ -154,16 +158,53 @@ const updatePasswordByEmail = async (req, res) => {
 };
 
 const deleteUser = async (req, res) => {
-    try {
-      const { id: _id } = req.params;
-      const deletedUser = await User.findByIdAndDelete(_id);
+  try {
+    const { id: _id } = req.params;
 
-      if (!deletedUser) return res.status(404).json({ message: "User not found" });
-      res.json({ message: "User deleted successfully", deletedUser });
-    } catch (err) {
+    const deletedUser = await User.findByIdAndDelete(_id);
+    if (!deletedUser) return res.status(404).json({ message: "User not found" });
+
+    await Training.deleteMany({ trainer: _id });
+
+    await Training.updateMany(
+      {},
+      {
+        $pull: {
+          traineesrequests: { trainee: _id },
+          requestshistory: { trainee: _id },
+          acceptedtrainees: _id,
+          confirmedtrainees: _id,
+          rejectedtrainees: _id,
+        },
+      }
+    );
+
+    await Session.updateMany(
+      {},
+      {
+        $pull: {
+          presenttrainees: _id
+        }
+      }
+    );
+    await HotFeedback.deleteMany({ trainee: _id });
+    await ColdFeedback.deleteMany({ trainee: _id });
+
+    await Notification.deleteMany({
+      $or: [
+        { recipient: _id },
+        { sender: _id }
+      ]
+    });
+
+    res.json({ message: "User deleted successfully", deletedUser });
+
+  } catch (err) {
+    console.error("Error deleting user:", err);
     res.status(500).json({ message: err.message });
-    }
-}
+  }
+};
+
 
 const callForTrainers = async (req, res) => { 
   try {
@@ -226,7 +267,6 @@ const uploadQuiz = async (req, res) => {
         quizPreTraining: {},
         quizPostTraining: {},
       };
-      user.trainingsAttended.push(trainingRecord);
     }
 
     const type = training.quiz?.type;
@@ -245,7 +285,8 @@ const uploadQuiz = async (req, res) => {
     } else {
       return res.status(400).json({ message: "Invalid quiz type" });
     }
-
+    
+    user.trainingsAttended.push(trainingRecord);
     notify(training.trainer, userId, "Quiz_Uploaded_From_Trainee", trainingId.toString());
     await user.save();
     res.status(200).json({ message: "quiz uploaded successfully" });

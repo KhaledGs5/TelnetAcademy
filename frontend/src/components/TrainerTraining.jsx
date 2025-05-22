@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Box, Typography,Tooltip,IconButton, Button, TableCell,TableRow,TableHead,TableContainer,Paper,TextField
-    ,Checkbox,FormControlLabel,TableBody,Table,Snackbar, Alert
+    ,Checkbox,FormControlLabel,TableBody,Table,Snackbar, Alert,OutlinedInput,InputLabel,FormControl,MenuItem,Dialog
 } from "@mui/material";
 import { useLanguage } from "../languagecontext";
 import api from "../api";
@@ -97,6 +97,14 @@ const TrainerTraining = () => {
         motivation: "",
         trainer: user?._id,
     });
+
+    const UserActivities = ["enablers", "mechanical", "formation_systems", "databox", "telecom", "quality", "e-paysys", "media&energy", "electronics", "space"];
+    const [otherActivity, setOtherActivity]= useState(false);
+    const UserJobTitles = ["associate_engineer","engineer","team_leader","technical_leader","senior_team_leader","senior_technical_leader","project_manager",
+    "consulting_manager","senior_project_manager","expert","program_manager","senior_expert","senior_program_manager","architect","program_director",
+    "senior_architect"
+    ];
+    const [otherJobTitle, setOtherJobTitle] = useState(false);
     
     const handleChange = (field, value) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
@@ -296,24 +304,7 @@ const TrainerTraining = () => {
                             </Button>
                         </Tooltip>
                     </Box>
-                </Box>
-                <Typography
-                    sx={{
-                        fontSize: 20,
-                        fontWeight: "bold",
-                        textAlign: "center",
-                        letterSpacing: 0.2,
-                        lineHeight: 1.5,
-                        userSelect: "none",
-                        cursor: "pointer",
-                        color: "text.primary",
-                        width: "100%",
-                        marginBottom: "10px",
-                    }}
-                >
-                {t("list_of_training_calls")}
-                </Typography>  
-                <TrainerCalls w="100%" p="0px"/>
+                </Box> 
                 <Box
                 sx={{
                     width: '100%',
@@ -379,14 +370,162 @@ const TrainerTraining = () => {
                     value={formData.name} 
                     onChange={(e) => handleChange("name", e.target.value)} 
                     />
-                    <TextField label={t("position")} variant="outlined" 
-                    value={formData.position} 
-                    onChange={(e) => handleChange("position", e.target.value)} 
-                    />
-                    <TextField label={t("activity_department")} variant="outlined" 
-                    value={formData.activity} 
-                    onChange={(e) => handleChange("activity", e.target.value)} 
-                    />
+                    <TextField
+                        select={!otherJobTitle  && (UserJobTitles.includes(formData.position) || formData.position === "")}
+                        required
+                        label={t("position")}
+                        value={formData.position} 
+                        onChange={(e) => handleChange("position", e.target.value)} 
+                        sx={{
+                            width: '100%',
+                        }}
+                    >
+                        {UserJobTitles.map((jobtitle) => (
+                            <MenuItem key={jobtitle} value={jobtitle}>
+                                {t(jobtitle)}
+                            </MenuItem>
+                        ))}
+                        <Button 
+                            sx={{
+                                width: "100%",
+                                textTransform: "none",
+                                color: "black",
+                            }}
+                            onClick={() => setOtherJobTitle(true)}
+                        >
+                            {t("other")}...
+                        </Button>
+                    </TextField>
+                    <Dialog
+                        open={otherJobTitle}
+                        onClose={() => setOtherJobTitle(false)}
+                        disableScrollLock={true}
+                        PaperProps={{
+                            sx: {
+                                width: "auto",  
+                                height: "auto", 
+                                display: "flex",
+                                flexDirection: "column",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                borderRadius: "10px",
+                                padding: '20px',
+                            }
+                        }}
+                    >
+                        <FormControl variant="outlined" sx={{ 
+                                width: '200px',
+                            }}
+                        >
+                            <InputLabel required>{t("position")}</InputLabel>
+                            <OutlinedInput
+                                value={formData.position} 
+                                onChange={(e) => handleChange("position", e.target.value)} 
+                                label="position  ................"
+                            />
+                        </FormControl>
+                        <Button
+                            sx={{
+                                color: 'white',
+                                backgroundColor: '#2CA8D5',
+                                padding: '5px 10px',
+                                borderRadius: '10px',
+                                textDecoration: 'none',
+                                fontWeight: 'bold',
+                                width: '100px',
+                                height: '40px',
+                                marginTop: '10px',
+                                textTransform: "none",
+                                '&:hover': {
+                                    backgroundColor: '#76C5E1',
+                                    color: 'white',
+                                },
+                            }}
+                            onClick={() => {
+                                setOtherJobTitle(false);
+                            }}
+                        >
+                            {t("save")}
+                        </Button>
+                    </Dialog>
+                    <TextField
+                        select={!otherActivity  && (UserActivities.includes(formData.activity) || formData.activity === "")}
+                        required
+                        label={t("activity")}
+                        value={formData.activity}
+                        onChange={(e) => handleChange("activity", e.target.value)} 
+                        sx={{
+                            width: '100%',
+                        }}
+                    >
+                        {UserActivities.map((activity) => (
+                            <MenuItem key={activity} value={activity}>
+                                {t(activity)}
+                            </MenuItem>
+                        ))}
+                        <Button 
+                            sx={{
+                                width: "100%",
+                                textTransform: "none",
+                                color: "black",
+                            }}
+                            onClick={() => setOtherActivity(true)}
+                        >
+                            {t("other")}...
+                        </Button>
+                    </TextField>
+                    <Dialog
+                        open={otherActivity}
+                        onClose={() => setOtherActivity(false)}
+                        disableScrollLock={true}
+                        PaperProps={{
+                            sx: {
+                                width: "auto",  
+                                height: "auto", 
+                                display: "flex",
+                                flexDirection: "column",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                borderRadius: "10px",
+                                padding: '20px',
+                            }
+                        }}
+                    >
+                        <FormControl variant="outlined" sx={{ 
+                                width: '200px',
+                            }}
+                        >
+                            <InputLabel required>{t("activity")}</InputLabel>
+                            <OutlinedInput
+                                value={formData.activity}
+                                onChange={(e) => handleChange("activity", e.target.value)} 
+                                label="Activity  ................"
+                            />
+                        </FormControl>
+                        <Button
+                            sx={{
+                                color: 'white',
+                                backgroundColor: '#2CA8D5',
+                                padding: '5px 10px',
+                                borderRadius: '10px',
+                                textDecoration: 'none',
+                                fontWeight: 'bold',
+                                width: '100px',
+                                height: '40px',
+                                marginTop: '10px',
+                                textTransform: "none",
+                                '&:hover': {
+                                    backgroundColor: '#76C5E1',
+                                    color: 'white',
+                                },
+                            }}
+                            onClick={() => {
+                                setOtherActivity(false);
+                            }}
+                        >
+                            {t("save")}
+                        </Button>
+                    </Dialog>
                     <TextField label={t("date_of_hire")} type="date" variant="outlined" 
                     InputLabelProps={{ shrink: true }} 
                     value={formData.dateOfHire} 
@@ -568,6 +707,23 @@ const TrainerTraining = () => {
                     </Button>
                 </Box>
                 </Box>
+                <Typography
+                    sx={{
+                        fontSize: 20,
+                        fontWeight: "bold",
+                        textAlign: "center",
+                        letterSpacing: 0.2,
+                        lineHeight: 1.5,
+                        userSelect: "none",
+                        cursor: "pointer",
+                        color: "text.primary",
+                        width: "100%",
+                        marginBottom: "10px",
+                    }}
+                >
+                {t("list_of_training_calls")}
+                </Typography> 
+                <TrainerCalls w="100%" p="0px"/>
             </Box>
             <Box
                 sx={{
