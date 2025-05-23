@@ -2,7 +2,7 @@ import axios from "axios";
 import { getCookie } from "./components/Cookies";
 
 const api = axios.create({
-  baseURL: "http://localhost:5000",
+  baseURL: "http://10.3.1.103:49880",
 });
 
 api.interceptors.request.use(
