@@ -421,7 +421,7 @@ const Profile = () => {
                     width:'90%',
                 }}
             >
-                    {t("Password must be at least 8 characters long and include one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)")}
+                    {t("password_warning_message")}
             </Typography>: null}
             <Link sx={linkStyle} onClick={showForgotPasswordMessage}>
                 {t("forgot_password")}

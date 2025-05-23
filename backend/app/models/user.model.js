@@ -12,7 +12,7 @@ const userSchema = new mongoose.Schema({
         return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(value);
       },
       message:
-        'Password must be at least 8 characters long and include one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)',
+        'Password_warning_message',
     },
   },
   role: { type: String, enum: ["trainer", "trainee", "trainee_trainer", "manager"], required: true },
