@@ -30,7 +30,6 @@ import { useNavbar } from '../NavbarContext';
 import socket from '../socket';
 import { useLanguage } from "../languagecontext";
 import { useUser } from '../UserContext';
-import { io } from "socket.io-client";
 
 const Navbar = () => {
 

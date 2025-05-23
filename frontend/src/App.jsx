@@ -34,7 +34,7 @@ function AppRoutes() {
         {user?.role === "admin" && signedIn ? (
           <Route path="/" element={<Navigate to="/manageusers" replace />} />
         ) :
-        user?.role !== "admin" && signedIn ? (
+        user?.role !== "admin" && signedIn && user ? (
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
         ) : (
           <Route path="/" element={<Home />} />
