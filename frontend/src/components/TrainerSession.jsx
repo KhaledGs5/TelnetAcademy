@@ -47,6 +47,31 @@ const TrainerSession = () => {
     updateStatus();
   }, []);
 
+    const [trainingHasQuizIds, setTrainingHasQuizIds] = useState([]);
+
+    useEffect(() => {
+    const fetchNotifications = async () => {
+        try {
+        const response = await api.post("/api/notifications", {rec : user?._id});
+        const notifications = response.data.notifications;
+
+        const quizNotifications = notifications.filter(
+            notif => notif.type === "Quiz_Uploaded_From_Trainee"
+        );
+        const ids = quizNotifications.map(notif => {
+            const match = notif.message;
+            return match;
+        });
+
+        setTrainingHasQuizIds(ids); 
+        } catch (error) {
+        console.error("Failed to fetch notifications:", error);
+        }
+    };
+
+    fetchNotifications();
+    }, []);
+
   const fetchTrainings = () => {
     api.get("/api/trainings")
         .then((response) => {
@@ -1220,7 +1245,7 @@ const TrainerSession = () => {
                                 marginRight: "10px",
                                 }}
                             />
-                            <Badge badgeContent={numberOfQuizFromTrainee ? 1 : 0} color="primary"
+                            <Badge badgeContent={trainingHasQuizIds?.includes(training._id) && numberOfQuizFromTrainee ? 1 : 0} color="primary"
                                 sx={{ 
                                     "& .MuiBadge-badge": { 
                                     fontSize: "10px", 

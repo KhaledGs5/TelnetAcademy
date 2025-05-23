@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import { Box, Typography, List, ListItem, ListItemIcon, ListItemText, Button, Tooltip, IconButton, Rating,
   TableContainer,Paper,Table,TableHead,TableRow,TableCell,TableBody,OutlinedInput,InputLabel,FormControl,
   DialogTitle,Dialog,MenuItem,TextField
@@ -20,8 +20,11 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { useNavbar } from '../NavbarContext';
 import { useUser } from '../UserContext';
+import { ThemeContext } from '../themecontext';
 
 const Navbar = () => {
+
+  const { darkMode } = useContext(ThemeContext);
 
     // Styles .............
 
@@ -444,10 +447,31 @@ const Navbar = () => {
           api.get("/api/sessions"),
           api.get("/api/users")
         ]);
-  
+
+        const currentYear = dayjs().year();
+        const filteredTrainings = trainingsRes.data.filter((training) => {
+          const trainingMonthDate = dayjs(
+            training.month.charAt(0).toUpperCase() +
+            training.month.slice(1).toLowerCase() + ` ${currentYear}`,
+            'MMMM YYYY'
+          );
+
+          const inRange =
+            (startMonth === null || trainingMonthDate.isAfter(startMonth)) &&
+            (endMonth === null || trainingMonthDate.isBefore(endMonth));
+
+          return inRange;
+        });
+
+        const filteredTrainingIds = new Set(filteredTrainings.map(t => t._id));
+
+        const filteredSessions = sessionsRes.data.filter(
+          session => filteredTrainingIds.has(session.training)
+        );
+
         setRawData({
-          trainings: trainingsRes.data,
-          sessions: sessionsRes.data,
+          trainings: filteredTrainings,
+          sessions: filteredSessions,
           users: usersRes.data,
           feedbacks: {}
         });
@@ -461,20 +485,11 @@ const Navbar = () => {
       const isTrainer = (user?.role === "trainer" || selectedRole === "trainer");
       const isTrainee = (user?.role === "trainee" || selectedRole === "trainee"); 
       const isManager = (user?.role === "manager");
-      const currentYear = dayjs().year();
   
       // Filter trainings
       const filteredTrainings = rawData.trainings.filter(training => {  
-        const trainingMonthDate = dayjs(
-          training.month.charAt(0).toUpperCase() + 
-          training.month.slice(1).toLowerCase() + ` ${currentYear}`, 
-          'MMMM YYYY'
-        );
-        const inRange =
-          (startMonth === null || trainingMonthDate.isAfter(startMonth)) &&
-          (endMonth === null || trainingMonthDate.isBefore(endMonth));
   
-        const trainingsMatch = (((isTrainer && training.trainer === user?._id) || (isManager && inRange && training.delivered) || (isTrainee 
+        const trainingsMatch = (((isTrainer && training.trainer === user?._id) || (isManager && training.delivered) || (isTrainee 
           && (training.confirmedtrainees.includes(user?._id) || training.acceptedtrainees.includes(user?._id) || training.rejectedtrainees.includes(user?._id))
         ))); 
         return trainingsMatch;
@@ -689,7 +704,7 @@ const Navbar = () => {
       let appnumber = 0;
       let confnumber = 0;
   
-      trainings.forEach((training) => {
+      selectedData.trainings.forEach((training) => {
         reqnumber += (training.nbOfReceivedRequests || 0);
         appnumber += (training.nbOfAcceptedRequests || 0);
         confnumber += (training.nbOfConfirmedRequests || 0);
@@ -700,7 +715,7 @@ const Navbar = () => {
       let nbofinprog = 0;
       let nbofcomp = 0;
   
-      rawData.sessions.forEach((session) => {
+      selectedData.sessions.forEach((session) => {
         if (session.status === "scheduled") {
           nbofsch++;
         } else if (session.status === "in_progress") {
@@ -729,7 +744,7 @@ const Navbar = () => {
       setTrainedEmployees(TrainedEmployees);
   
       // Requests per month
-      const requests = rawData.trainings
+      const requests = selectedData.trainings
         .flatMap((training) =>
           training.requestshistory.map((request) => ({
             ...request,
@@ -917,7 +932,7 @@ const Navbar = () => {
           const isTrainer = (user?.role === "trainer" || selectedRole === "trainer");
           const isTrainee = (user?.role === "trainee" || selectedRole === "trainee"); 
           const isManager = (user?.role === "manager");
-          const condition = (isTrainee && attended) || ((isTrainer || isManager) && t.delivered);
+          const condition = ((isTrainee && attended) || (isTrainer || isManager)) && t.delivered;
 
           return  condition;
         })
@@ -941,7 +956,7 @@ const Navbar = () => {
     // Main data flow
     useEffect(() => {
       fetchAllData();
-    }, []);
+    }, [startMonth, endMonth]);
   
     useEffect(() => {
       if (rawData.trainings.length > 0) {
@@ -952,6 +967,8 @@ const Navbar = () => {
     useEffect(() => {
       calculateMetrics();
     }, [filteredData]);
+
+    const selectedData = (user?.role === "manager" ? rawData : filteredData);
 
     // Get Training by month ..........
     
@@ -992,14 +1009,16 @@ const Navbar = () => {
 
     // Chart rendering
     useEffect(() => {
-      const skillChartInstance = skillTypeChart.current && echarts.init(skillTypeChart.current);
-      const hoursChartInstance = hoursChart.current && echarts.init(hoursChart.current);
-      const genderChartInstance = genderChart.current && echarts.init(genderChart.current);
-      const activityChartInstance = activityChart.current && echarts.init(activityChart.current);
-      const gradeChartInstance = gradeChart.current && echarts.init(gradeChart.current);
-      const registChartInstance = regisChart.current && echarts.init(regisChart.current);
-      const trainingsByMonthChartInstance = trainingsByMonthChart.current && echarts.init(trainingsByMonthChart.current);
-      const traineesByMonthChartInstance = traineesByMonthChart.current && echarts.init(traineesByMonthChart.current);
+      const theme = darkMode ? "dark" : "";
+
+      const skillChartInstance = skillTypeChart.current && echarts.init(skillTypeChart.current, theme);
+      const hoursChartInstance = hoursChart.current && echarts.init(hoursChart.current, theme);
+      const genderChartInstance = genderChart.current && echarts.init(genderChart.current, theme);
+      const activityChartInstance = activityChart.current && echarts.init(activityChart.current, theme);
+      const gradeChartInstance = gradeChart.current && echarts.init(gradeChart.current, theme);
+      const registChartInstance = regisChart.current && echarts.init(regisChart.current, theme);
+      const trainingsByMonthChartInstance = trainingsByMonthChart.current && echarts.init(trainingsByMonthChart.current, theme);
+      const traineesByMonthChartInstance = traineesByMonthChart.current && echarts.init(traineesByMonthChart.current, theme);
   
       const skillType = {
         title: {
@@ -1571,17 +1590,29 @@ const Navbar = () => {
 
     const TrainingsThisMonth = rawData.trainings.filter(training => {
       const trainingMonthIndex = monthMap[training.month.toLowerCase()];
-      return (trainingMonthIndex === thisMonthIndex && !training.delivered);
+      return (trainingMonthIndex === thisMonthIndex && !training.delivered 
+        && !training.acceptedtrainees.includes(user?._id)
+        && !training.confirmedtrainees.includes(user?._id)
+        && !(training.trainer === user?._id)
+      );
     });
 
     const TrainingsNextMonth = rawData.trainings.filter(training => {
       const trainingMonthIndex = monthMap[training.month.toLowerCase()];
-      return (trainingMonthIndex === nextMonthIndex && !training.delivered);
+      return (trainingMonthIndex === nextMonthIndex && !training.delivered      
+        && !training.acceptedtrainees.includes(user?._id)
+        && !training.confirmedtrainees.includes(user?._id)
+        && !(training.trainer === user?._id)
+      );
     });
 
     const TrainingsAfterNextMonth = rawData.trainings.filter(training => {
       const trainingMonthIndex = monthMap[training.month.toLowerCase()];
-      return (trainingMonthIndex > nextMonthIndex && !training.delivered);
+      return (trainingMonthIndex > nextMonthIndex && !training.delivered
+        && !training.acceptedtrainees.includes(user?._id)
+        && !training.confirmedtrainees.includes(user?._id)
+        && !(training.trainer === user?._id)
+      );
     });
   
     // Render functions
@@ -2205,12 +2236,12 @@ const Navbar = () => {
               >
                 <Box
                     id="section1" 
-                    sx={paperStyle}
+                    sx={{...paperStyle, backgroundColor:darkMode ? "#100C2A" : "background.paper"}}
                     ref={skillTypeChart}
                   />
                 <Box
                     id="section2"
-                    sx={paperStyle}
+                    sx={{...paperStyle, backgroundColor:darkMode ? "#100C2A" : "background.paper"}}
                     ref={hoursChart}
                   />
               </Box>:null}
@@ -2226,12 +2257,12 @@ const Navbar = () => {
               >
                 <Box
                   id="section3"
-                  sx={paperStyle}
+                  sx={{...paperStyle, backgroundColor:darkMode ? "#100C2A" : "background.paper"}}
                   ref={activityChart}
                 />
                 <Box
                   id="section4"
-                  sx={paperStyle}
+                  sx={{...paperStyle, backgroundColor:darkMode ? "#100C2A" : "background.paper"}}
                   ref={gradeChart}
                 />
               </Box>:null}
@@ -2247,24 +2278,25 @@ const Navbar = () => {
               >
                 <Box
                   id="section5"
-                  sx={paperStyle}
+                  sx={{...paperStyle, backgroundColor:darkMode ? "#100C2A" : "background.paper"}}
                   ref={trainingsByMonthChart}
                 />
                 <Box
                   id="section6"
-                  sx={paperStyle}
+                  sx={{...paperStyle, backgroundColor:darkMode ? "#100C2A" : "background.paper"}}
                   ref={traineesByMonthChart}
                 />
               </Box>:null}   
               {statView === "charts"?<Box
                 id="section7"
-                sx={paperStyle}
+                sx={{...paperStyle, backgroundColor:darkMode ? "#100C2A" : "background.paper"}}
                 ref={genderChart}
               />:null} 
-              {statView === "recap"?<TableContainer id="section6" component={Paper} >
-                <Table sx={{ minWidth: 400 }} aria-label="training metrics table">
+              {statView === "recap"?
+              <TableContainer id="section6" component={Paper} >
+                <Table sx={{ minWidth: 400}} aria-label="training metrics table">
                   <TableHead>
-                    <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                    <TableRow sx={{ backgroundColor: 'background.paper' }}>
                       <TableCell align="center" sx={{ fontWeight: 'bold', width: '60%' }}>Recap</TableCell>
                       <TableCell align="center" sx={{ fontWeight: 'bold', width: '20%' }}>Total - {new Date().getFullYear()}</TableCell>
                       <TableCell align="center" sx={{ fontWeight: 'bold', width: '20%' }}>Obj Gap</TableCell>
@@ -2303,7 +2335,7 @@ const Navbar = () => {
               {statView === "recap"?<TableContainer id="section7" component={Paper}>
                 <Table sx={{ minWidth: 400 }} aria-label="training metrics table">
                   <TableHead>
-                    <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                    <TableRow sx={{ backgroundColor: 'background.paper' }}>
                       <TableCell align="center" sx={{ fontWeight: 'bold', width: '60%' }}>Recap</TableCell>
                       <TableCell align="center" sx={{ fontWeight: 'bold', width: '20%' }}>Total - {new Date().getFullYear()}</TableCell>
                       <TableCell align="center" sx={{ fontWeight: 'bold', width: '20%' }}>Obj Gap</TableCell>
@@ -2338,7 +2370,7 @@ const Navbar = () => {
               {statView === "employees"?<TableContainer id="section8" component={Paper}>
                 <Table sx={{ minWidth: 400 }} aria-label="training metrics table">
                   <TableHead>
-                    <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                    <TableRow sx={{ backgroundColor: 'background.paper' }}>
                       <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>NB</TableCell>
                       <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Name</TableCell>
                       <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Gender</TableCell>
@@ -2379,7 +2411,7 @@ const Navbar = () => {
               {statView === "employees"?<TableContainer id="section9" component={Paper}>
                 <Table sx={{ minWidth: 400 }} aria-label="training metrics table">
                   <TableHead>
-                    <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                    <TableRow sx={{ backgroundColor: 'background.paper' }}>
                       <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Grade</TableCell>
                       <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Total NB Of Trainees</TableCell>
                       <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Employees</TableCell>
@@ -2407,7 +2439,7 @@ const Navbar = () => {
               {statView === "employees"?<TableContainer id="section11" component={Paper}>
                 <Table sx={{ minWidth: 400 }} aria-label="training metrics table">
                   <TableHead>
-                    <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                    <TableRow sx={{ backgroundColor: 'background.paper' }}>
                       <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Activity</TableCell>
                       <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Total NB Of Trainees</TableCell>
                       <TableCell align="center" sx={{ fontWeight: 'bold', width: '15%' }}>Employees</TableCell>
@@ -2450,7 +2482,7 @@ const Navbar = () => {
                     aria-label="employee details table"
                   >
                     <TableHead>
-                      <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
+                      <TableRow sx={{ backgroundColor: 'background.paper' }}>
                         <TableCell align="center" sx={{ fontWeight: 'bold', width: 60 }}>NB</TableCell>
                         <TableCell align="center" sx={{ fontWeight: 'bold', width: 200 }}>Name</TableCell>
                         <TableCell align="center" sx={{ fontWeight: 'bold', width: 120 }}>Gender</TableCell>
@@ -2536,7 +2568,7 @@ const Navbar = () => {
                       lineHeight: 1.2,
                       userSelect: "none",
                       cursor: "default",
-                      color: "#333", 
+                      color: "text.primary", 
                       fontFamily: "sans-serif",
                     }}
                   >
@@ -2649,7 +2681,7 @@ const Navbar = () => {
                       lineHeight: 1.2,
                       userSelect: "none",
                       cursor: "default",
-                      color: "#333", 
+                      color: "text.primary", 
                       fontFamily: "sans-serif",
                     }}
                   >
@@ -2694,7 +2726,7 @@ const Navbar = () => {
                       lineHeight: 1.2,
                       userSelect: "none",
                       cursor: "default",
-                      color: "#333", 
+                      color: "text.primary", 
                       fontFamily: "sans-serif",
                     }}
                   >
@@ -2731,9 +2763,6 @@ const Navbar = () => {
                       </>
                     )}
                   </Box>:null}
-                  {(user.role!=="trainee" && selectedRole!=="trainee")?<Typography variant="body2" sx={{marginTop: "30px",fontWeight:"bold",marginBottom:"5px"}}>
-                    {t("this_month")}
-                  </Typography>:null}
                   {(user.role!=="trainee" && selectedRole!=="trainee")?
                   <Box
                     sx={{
@@ -2743,6 +2772,7 @@ const Navbar = () => {
                       alignItems: "center",
                       gap: '20px',
                       marginBottom: "20px",
+                      marginTop: "20px",
                     }}
                   >
                       <Button 
@@ -2767,11 +2797,12 @@ const Navbar = () => {
                       {metrics.numberOfConfirmed}<br/>{t("confirmed")}
                       </Button>
                   </Box>:null}
-                  {(user.role!=="trainee" && selectedRole!=="trainee")?<Typography variant="body2" sx={{marginTop: "20px",fontWeight:"bold",marginBottom:"5px"}}>
+                  {(user.role!=="trainee" && selectedRole!=="trainee")?
+                  <Typography sx={{marginTop: "20px",fontWeight:"bold",marginBottom:"5px" , fontSize: 20}}>
                     {t("registrations_received_by_month")}
                   </Typography>:null}
                   {(user.role!=="trainee" && selectedRole!=="trainee")?<Box
-                    sx={{...paperStyle, width: "100%"}}
+                    sx={{...paperStyle, backgroundColor:darkMode ? "#100C2A" : "background.paper", width: "100%"}}
                     ref={regisChart}
                   />:null}
                 </Box>
@@ -2785,7 +2816,7 @@ const Navbar = () => {
                       lineHeight: 1.2,
                       userSelect: "none",
                       cursor: "default",
-                      color: "#333", 
+                      color: "text.primary", 
                       fontFamily: "sans-serif",
                     }}
                   >

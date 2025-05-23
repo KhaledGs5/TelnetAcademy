@@ -87,7 +87,8 @@ const Navbar = () => {
         setCookie("Language", newLanguage, 5);
     };
 
-    const ProfileImage = getCookie("ProfileImage");
+    const ProfileImage = localStorage.getItem("ProfileImage");
+
 
     const goToDashBoard = () =>{
         navigate("/dashboard");
@@ -524,6 +525,7 @@ const Navbar = () => {
                     deleteCookie("User");
                     deleteCookie("Role");
                     deleteCookie("Token");
+                    localStorage.removeItem("ProfileImage");
                     window.location.href = "/";
                 })
           } catch (error) {
@@ -868,7 +870,7 @@ const Navbar = () => {
                             </MenuItem>
                         ))}
                     </Menu>
-                    {(user.role !== "manager") ? 
+                    {(user.role !== "manager") && (user.role !== "admin") ? 
                     <MenuItem onClick={() => {
                         handleOpenCallNotifications();
                         window.location.href = "/trainercall";}}

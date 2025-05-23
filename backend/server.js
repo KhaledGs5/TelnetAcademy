@@ -114,7 +114,7 @@ const sendCalendarEvent = async (to, eventDetails) => {
       const mailOptions = {
         from: process.env.EMAIL_USER,
         to,
-        subject: 'Training Calendar Invite',
+        subject: `${eventDetails.summary} Invite`,
         text: 'You have a training session. Please check your calendar.',
         alternatives: [{
           contentType: 'text/calendar; charset="UTF-8"; method=REQUEST',

@@ -202,7 +202,7 @@ const translations = {
       "take_attendance": "Take Attendance",
       "if_you_have_any_training_suggestion_you_can_fill_the_form_now": "If you have any training suggestions, you can fill out the form now.",
       "register": "Register",
-      "form_submitted_successfully": "Form submitted successfully",
+      "form_submitted_successfully": "Form Submitted Successfully",
       "trainings" : "Trainings",
       "add_form": "Add Form",
       "submit_form": "Submit Form",
@@ -381,6 +381,9 @@ const translations = {
       "trainings_list": "List Of Trainings",
       "send_trainings_email": "Send Trainings Email",
       "sign_in_error": "Email/Password incorrect",
+      "user_added_successfully": "User Added Successfully",
+      "list_of_training_calls": "List Of Training Calls",
+      "form_submission_failed": "Form Subbmission Failed",
     },
     "fr": {
       "name": "Nom",
@@ -761,6 +764,9 @@ const translations = {
       "trainings_list": "Liste des formations",
       "send_trainings_email": "Envoyer un email de formation",
       "sign_in_error": "Email/Mot de passe incorrect",
+      "user_added_successfully": "Utilisateur ajouté avec succès",
+      "list_of_training_calls": "Liste des appels de formation",
+      "form_submission_failed": "Échec de la soumission du formulaire",
     }
   };
   

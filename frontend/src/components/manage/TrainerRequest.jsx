@@ -207,7 +207,7 @@ const TrainerRequest = () => {
                         api.post("/role-changed", {
                             toEmail: trainerInfo.email,
                             message: `Hello ${trainerInfo.name}, your role has been updated to Trainee-Trainer.`,
-                            url: "http://localhost:3000/dashboard",
+                            url: "http://10.3.1.103:49880/dashboard",
                         });
                     })
             }
@@ -240,7 +240,7 @@ const TrainerRequest = () => {
                     summary: newSessionsNames[i] || newTrainingTitle,
                     description: newTrainingDescription || 'Training session',
                     location: newSessionsLocations[i] || newTrainingLocation,
-                    url: 'http://localhost:3000/trainertraining',
+                    url: 'http://10.3.1.103:49880/trainertraining',
                 };
                 api.post("/send-calendar-event", {
                     recipients,
@@ -255,7 +255,7 @@ const TrainerRequest = () => {
             {
                 toEmail: trainerInfo?.email,
                 message: `Hello ${trainerInfo?.name}, your training request status has been updated to approved.`,
-                url: "http://localhost:3000/trainertraining",
+                url: "http://10.3.1.103:49880/trainertraining",
             })
     };
 
@@ -316,8 +316,8 @@ const TrainerRequest = () => {
                 sectionTitle("General Information"),
                 infoLine("Name", form.name),
                 infoLine("Matricule", form.matricule),
-                infoLine("Position", form.position),
-                infoLine("Activity", form.activity),
+                infoLine("Position", t(form.position)),
+                infoLine("Activity", t(form.activity)),
                 infoLine("Date of Hire", form.dateOfHire?.split("T")[0]),
       
                 sectionTitle("Domains"),
@@ -361,6 +361,7 @@ const TrainerRequest = () => {
         Packer.toBlob(doc).then((blob) => {
           saveAs(blob, formName);
         });
+        hideSelectFormName();
       };
 
 
@@ -396,7 +397,7 @@ const TrainerRequest = () => {
             {
                 toEmail: trainerInfo?.email,
                 message: `Hello ${trainerInfo?.name}, your training request status has been updated to ${stat}.`,
-                url: "http://localhost:3000/trainertraining",
+                url: "http://10.3.1.103:49880/trainertraining",
             })
     };
 
@@ -697,7 +698,7 @@ const TrainerRequest = () => {
                                     justifyContent: 'center',
                                 }}
                             >
-                                {form.position}
+                                {t(form.position)}
                             </Typography>
                             <Typography
                                 sx={{
@@ -707,7 +708,7 @@ const TrainerRequest = () => {
                                     justifyContent: 'center',
                                 }}
                             >
-                                {form.activity}
+                                {t(form.activity)}
                             </Typography>
                             <Typography
                                 sx={{

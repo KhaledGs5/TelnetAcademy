@@ -245,7 +245,7 @@ const TraineeTrainings = () => {
                         summary: session.name || training.title,
                         description: training.description || 'Training session',
                         location: session.location || training.location,
-                        url: 'http://localhost:3000/trainertraining',
+                        url: 'http://10.3.1.103:49880/trainertraining',
                     };
 
                     api.post("/send-calendar-event", {
@@ -1496,7 +1496,7 @@ const TraineeTrainings = () => {
                             </Badge>:null
                             }
                             {training.status === "confirmed"?
-                            <Badge badgeContent={numberOfQuizFromTrainer ? 1 : 0} color="primary"
+                            <Badge badgeContent={training.quiz && numberOfQuizFromTrainer ? 1 : 0} color="primary"
                             sx={{ 
                                 "& .MuiBadge-badge": { 
                                 fontSize: "10px", 

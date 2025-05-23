@@ -61,9 +61,9 @@ const TrainerCalls = ({ w="70%", p="20px"}) => {
     // Form ...........
     const [formData, setFormData] = useState({
         matricule: "",
-        name: "",
-        position: "",
-        activity: "",
+        name: user?.name,
+        position: user?.jobtitle,
+        activity: user?.activity,
         dateOfHire: "",
         domains: Array(4).fill({ description: "", expertise: "" }),
         hasExperience: false,
@@ -174,8 +174,7 @@ const TrainerCalls = ({ w="70%", p="20px"}) => {
                                 width: "100%",
                             }}
                         >
-                        {t("hello")} {user?.name},<br /> {call.message ? call.message
-                        :t("telnet_academy_is_not_calling_for_training_sessions")}
+                        {t("hello")} {user?.name},<br /> {call.message}
                         </Typography>    
                         <Box
                         sx={{
@@ -290,10 +289,12 @@ const TrainerCalls = ({ w="70%", p="20px"}) => {
                             {t("candidate_information")}
                         </Typography>
                         <TextField  label={t("registration_number")} variant="outlined" 
+                        required
                         value={formData.matricule} 
                         onChange={(e) => handleChange("matricule", e.target.value)} 
                         />
                         <TextField label={t("name_and_lastname")} variant="outlined" 
+                        required
                         value={formData.name} 
                         onChange={(e) => handleChange("name", e.target.value)} 
                         />
@@ -454,6 +455,7 @@ const TrainerCalls = ({ w="70%", p="20px"}) => {
                             </Button>
                         </Dialog>
                         <TextField label={t("date_of_hire")} type="date" variant="outlined" 
+                        required
                         InputLabelProps={{ shrink: true }} 
                         value={formData.dateOfHire} 
                         onChange={(e) => handleChange("dateOfHire", e.target.value)} 
@@ -636,6 +638,24 @@ const TrainerCalls = ({ w="70%", p="20px"}) => {
                     </Box>
                 </Box>
             ))}
+            {calls.length === 0 && (
+            <Box
+                sx={{
+                mt: 3,
+                p: 2,
+                textAlign: 'center',
+                color: 'text.secondary',
+                border: '1px dashed',
+                borderColor: 'grey.300',
+                borderRadius: 2,
+                backgroundColor: 'background.paper',
+                }}
+            >
+                <Typography>
+                {t("telnet_academy_is_not_calling_for_training_sessions")}
+                </Typography>
+            </Box>
+            )}
             <Snackbar open={showsVerificationAlert} autoHideDuration={3000} onClose={handleVerificationAlertClose}>
                 <Alert onClose={handleVerificationAlertClose} severity={verifyAlert} variant="filled">
                     {t(verifyAlertMessage)}

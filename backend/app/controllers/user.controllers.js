@@ -4,6 +4,7 @@ const Session = require("../models/session.model");
 const HotFeedback = require("../models/hotfeedback.model");
 const ColdFeedback = require("../models/coldfeedback.model");
 const Notification = require("../models/notification.model");
+const Form = require("../models/form.model");
 const jwt = require("jsonwebtoken");
 const { notifyUsers, deleteNotif,notify } = require("../controllers/notification.controllers");
 
@@ -40,7 +41,7 @@ const signUser = async (req, res) => {
   const token = jwt.sign(
     { id: user._id, role: user.role },
     process.env.PRIVATE_KEY,
-    { expiresIn: '5d' }
+    { expiresIn: '365d' }
   );
 
   const userResponse = {
@@ -164,6 +165,11 @@ const deleteUser = async (req, res) => {
     const deletedUser = await User.findByIdAndDelete(_id);
     if (!deletedUser) return res.status(404).json({ message: "User not found" });
 
+    const trainings = await Training.find({ trainer: _id });
+    const trainingIds = trainings.map(training => training._id);
+
+    await Session.deleteMany({ training: { $in: trainingIds } });
+
     await Training.deleteMany({ trainer: _id });
 
     await Training.updateMany(
@@ -196,6 +202,8 @@ const deleteUser = async (req, res) => {
         { sender: _id }
       ]
     });
+
+    await Form.deleteMany({ trainer: _id });
 
     res.json({ message: "User deleted successfully", deletedUser });
 

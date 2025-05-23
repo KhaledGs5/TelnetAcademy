@@ -18,7 +18,7 @@ const createForm = async (req, res) => {
         const { trainer, notifId } = req.body;
 
         notifyManagers(trainer,"New_Training_Request","None");
-        deleteNotifById(notifId); // Delete Call Notification if its still there
+        deleteNotifById(notifId); 
 
         res.status(201).json(form);
     } catch (err) {

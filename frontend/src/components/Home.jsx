@@ -41,9 +41,9 @@ const Home = () => {
         if (response.status === 200) {
             const userData = response.data.user;
 
-            setCookie("Token", response.data.token, rememberMe ? 5 : undefined);
-            setCookie("User", response.data.id, rememberMe ? 5 : undefined);
-            setCookie("SignedIn", true, rememberMe ? 5 : undefined);
+            setCookie("Token", response.data.token, rememberMe ? 365 : undefined);
+            setCookie("User", response.data.id, rememberMe ? 365 : undefined);
+            setCookie("SignedIn", true, rememberMe ? 365 : undefined);
             if (userData.role === "trainee_trainer") {
                 setSelectedRole("trainer");
             } 

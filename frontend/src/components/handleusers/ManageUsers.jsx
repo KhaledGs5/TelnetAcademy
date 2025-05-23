@@ -139,7 +139,7 @@ const ManageUsers = () => {
             setVerifyAlert("success");
             api.post("/new-user", {
                 toEmail: newUserEmail,
-                url: "http://localhost:3000/signin",
+                url: "http://10.3.1.103:49880/signin",
                 password: newUser.password,
               });    
             setVerifyAlertMessage(t("user_added_successfully"));
@@ -147,7 +147,7 @@ const ManageUsers = () => {
             setShowsVerifificationAlert(true);          
         })
         .catch((error) => {
-            setVerifyAlertMessage(error.response.data.error);
+            setVerifyAlertMessage(t("email_already_exists"));
             setVerifyAlert("error");
             setShowsVerifificationAlert(true);
         });
@@ -183,7 +183,7 @@ const ManageUsers = () => {
               password,
               sendMail: {
                 toEmail: user.email,
-                url: "http://localhost:3000/signin",
+                url: "http://10.3.1.103:49880/signin",
                 password,
               },
             };

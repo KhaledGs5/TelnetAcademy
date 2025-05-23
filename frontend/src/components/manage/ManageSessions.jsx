@@ -298,11 +298,17 @@ const ManageSessions = () => {
             setVerifyAlert("success");
             setVerifyAlertMessage("training_updated_successfully");
             setShowsVerifificationAlert(true);
+            try {
             await api.post("/training-changed", {
                 toEmail: emails,
                 message: `Dear trainee,\n\nThe training titled "${updatedTraining.title}" has been updated. Please check the details on the platform.\n\nBest regards,\nTelnet Academy`,
                 url: "http://localhost:3000/enrolledtrainee",
             });
+            } catch (error) {
+                setVerifyAlertMessage(t("email_not_found"));
+                setVerifyAlert("error");
+                setShowsVerifificationAlert(true);
+            }
             fetchTrainings();
           })
           .catch((error) => {

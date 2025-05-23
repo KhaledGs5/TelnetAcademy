@@ -233,7 +233,7 @@ const ManageTrainings = () => {
             {
                 toEmail: traineeMail,
                 message: `Hello ${traineeName}, you have been deleted from the training`,
-                url: "http://localhost:3000/enrolledtrainee",
+                url: "http://10.3.1.103:49880/enrolledtrainee",
             })
     };
 
@@ -284,7 +284,7 @@ const ManageTrainings = () => {
         api.post("/send-reminder", { 
           toEmail: m,
           message: `Reminder for Confirmation: ${name} Training`,
-          url: "http://localhost:3000/enrolledtrainee",
+          url: "http://10.3.1.103:49880/enrolledtrainee",
           trainee: id,
           managerreminded: user._id,
           training: selectedTrainingId
@@ -457,7 +457,7 @@ const ManageTrainings = () => {
                         api.post("/request-feedback", {
                           toEmail: trainee.email,
                           message: `Hello ${trainee.name}, can you please add feedback to Training : ${training.title}.`,
-                          url: "http://localhost:3000/enrolledtrainee",
+                          url: "http://10.3.1.103:49880/enrolledtrainee",
                         });
                     });    
                 }

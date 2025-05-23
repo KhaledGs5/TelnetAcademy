@@ -5,29 +5,33 @@ import EditIcon from "@mui/icons-material/Edit";
 import SaveIcon from '@mui/icons-material/Save';
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
-import { setCookie, getCookie } from "./Cookies";
 import { useUser } from '../UserContext';
 import api from "../api";
 
 const Profile = () => {
     const { t } = useLanguage();
-
+    const { user } = useUser();
 
     /// Image ...............
-    const [image, setImage] = useState(getCookie("ProfileImage") || "profile");
-
+    const [image, setImage] = useState(localStorage.getItem("ProfileImage") || "profile");
 
     const handleImageChange = (event) => {
-      const file = event.target.files[0];
-      if (file) {
-        const imageURL = URL.createObjectURL(file);
-        setImage(imageURL);
-        setCookie("ProfileImage", imageURL, 20);
-      }
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+
+        reader.onloadend = () => {
+        const base64Image = reader.result;
+        setImage(base64Image);
+        localStorage.setItem("ProfileImage", base64Image);
+        };
+
+        reader.readAsDataURL(file);
+    }
     };
 
+
     //Update Profile
-    const { user } = useUser();
     const [updateAlert, setUpdateAlert] = useState("");
     const [showUpdateAlert, setShowUpdateAlert] = useState(false);
     const [verifyUpdateAlert, setVerifyUpdateAlert] = useState("error");

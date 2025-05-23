@@ -204,7 +204,7 @@ const TraineeRequest = () => {
             {
                 toEmail: traineesData[selectedTraineeId]?.email,
                 message: `Hello ${traineesData[selectedTraineeId]?.name}, your request has been accepted.`,
-                url: "http://localhost:3000/enrolledtrainee",
+                url: "http://10.3.1.103:49880/enrolledtrainee",
             })
     };
 
@@ -241,7 +241,7 @@ const TraineeRequest = () => {
                 const receiver = {
                     toEmail: response.data.email,
                     message: rejectMessage,
-                    url: "http://localhost:3000/enrolledtrainee",
+                    url: "http://10.3.1.103:49880/enrolledtrainee",
                 }
                 api.post("/reject-request", receiver);
             })

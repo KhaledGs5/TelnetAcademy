@@ -87,9 +87,9 @@ const TrainerTraining = () => {
     // Form ...........
     const [formData, setFormData] = useState({
         matricule: "",
-        name: "",
-        position: "",
-        activity: "",
+        name: user?.name,
+        position: user?.jobtitle,
+        activity: user?.activity,
         dateOfHire: "",
         domains: Array(4).fill({ description: "", expertise: "" }),
         hasExperience: false,
@@ -131,17 +131,21 @@ const TrainerTraining = () => {
     const handleSendForm = () => {
         api.post("/api/form", formData)
            .then((response) => {
-              console.log(response.data);
-              setShowsVerifificationAlert(true);
-              setVerifyAlertMessage(t("form_submitted_successfully"));
-              setVerifyAlert("success");
-              setShowForm(false);
-              fetchForms();
+                setShowsVerifificationAlert(true);
+                setVerifyAlertMessage(t("form_submitted_successfully"));
+                setVerifyAlert("success");
+                setShowForm(false);
+                fetchForms();
+                setShowsVerifificationAlert(true);
+                setVerifyAlertMessage(t("form_submitted_successfully"));
+                setVerifyAlert("success");
            })
            .catch((error) => {
-              console.error("Error sending form data:", error);
-           });
-        
+                console.error("Error sending form data:", error);
+                setShowsVerifificationAlert(true);
+                setVerifyAlertMessage(t("form_submission_failed"));
+                setVerifyAlert("error");
+           });  
     };
 
     //Filters ...............
@@ -363,10 +367,12 @@ const TrainerTraining = () => {
                         {t("candidate_information")}
                     </Typography>
                     <TextField  label={t("registration_number")} variant="outlined" 
+                    required
                     value={formData.matricule} 
                     onChange={(e) => handleChange("matricule", e.target.value)} 
                     />
                     <TextField label={t("name_and_lastname")} variant="outlined" 
+                    required
                     value={formData.name} 
                     onChange={(e) => handleChange("name", e.target.value)} 
                     />
@@ -527,6 +533,7 @@ const TrainerTraining = () => {
                         </Button>
                     </Dialog>
                     <TextField label={t("date_of_hire")} type="date" variant="outlined" 
+                    required
                     InputLabelProps={{ shrink: true }} 
                     value={formData.dateOfHire} 
                     onChange={(e) => handleChange("dateOfHire", e.target.value)} 
@@ -719,6 +726,7 @@ const TrainerTraining = () => {
                         color: "text.primary",
                         width: "100%",
                         marginBottom: "10px",
+                        marginTop: "20px",
                     }}
                 >
                 {t("list_of_training_calls")}
