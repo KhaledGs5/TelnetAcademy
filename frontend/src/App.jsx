@@ -26,12 +26,12 @@ import './index.css';
 function AppRoutes() {
   const { user } = useUser();
   const signedIn = getCookie("SignedIn") || null;
-
+  console.log(user);
   return (
     <Router>
       <Navbar />
       <Routes>
-        {user?.role === "admin" && signedIn ? (
+        {user?.role === "admin" && signedIn && user? (
           <Route path="/" element={<Navigate to="/manageusers" replace />} />
         ) :
         user?.role !== "admin" && signedIn && user ? (

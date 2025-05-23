@@ -39,7 +39,7 @@ const Navbar = () => {
     const [choosedLanguage, setChoosedLanguage] = useState(getCookie("Language") || "en");
     const { darkMode, toggleTheme } = useContext(ThemeContext);
     const signedIn = getCookie("SignedIn");
-    console.log(signedIn);
+
     // Verify Everything
 
     const [showsVerificationAlert, setShowsVerifificationAlert] = useState(false);
@@ -559,7 +559,7 @@ const Navbar = () => {
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'center',
-        width: signedIn ? '100%' : '25%',
+        width: signedIn && user ? '100%' : '25%',
         height: '65%',
         fontWeight: 'bold',
     };
@@ -702,7 +702,7 @@ const Navbar = () => {
                 {user.role !== "admin"?<Link component={RouterLink} to="/calendar" sx={linkStyle('/calendar')}>{t("calendar")}</Link>:null}
                 <Link component={RouterLink} to="/about" sx={linkStyle('/about')}>{t("about")}</Link>
             </Box> : null}
-            {!signedIn ? 
+            {(!signedIn || !user) ? 
             <Box
                 sx={{
                     position: 'absolute',
