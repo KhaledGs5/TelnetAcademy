@@ -384,6 +384,8 @@ const translations = {
       "user_added_successfully": "User Added Successfully",
       "list_of_training_calls": "List Of Training Calls",
       "form_submission_failed": "Form Subbmission Failed",
+      "user_guide_message": "For more information on how to use the platform, you can consult our user guide",
+      "download_user_guide": "Download User Guide",
     },
     "fr": {
       "name": "Nom",
@@ -767,6 +769,8 @@ const translations = {
       "user_added_successfully": "Utilisateur ajouté avec succès",
       "list_of_training_calls": "Liste des appels de formation",
       "form_submission_failed": "Échec de la soumission du formulaire",
+      "user_guide_message": "Pour plus d'informations sur l'utilisation de la plateforme, vous pouvez consulter notre guide utilisateur",
+      "download_user_guide": "Télécharger le guide utilisateur",
     }
   };
   

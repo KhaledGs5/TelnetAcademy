@@ -22,6 +22,7 @@ import { NavbarProvider } from './NavbarContext.js';
 import { ThemeProviderWrapper } from './themecontext.js';
 import { UserProvider, useUser } from './UserContext';
 import './index.css';
+import AboutPage from "./components/About.jsx";
 
 function AppRoutes() {
   const { user } = useUser();
@@ -44,6 +45,7 @@ function AppRoutes() {
           <>
             <Route path="/manageusers" element={<ManageUsers />} />
             <Route path="/account" element={<Profile />} />
+            <Route path="/about" element={<AboutPage />} />
           </>
         )}
 
@@ -58,6 +60,7 @@ function AppRoutes() {
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/account" element={<Profile />} />
             <Route path="/feedbacks" element={<FormBuilder />} />
+            <Route path="/about" element={<AboutPage />} />
           </>
         )}
 
@@ -69,6 +72,7 @@ function AppRoutes() {
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/account" element={<Profile />} />
+            <Route path="/about" element={<AboutPage />} />
           </>
         )}
 
@@ -80,6 +84,7 @@ function AppRoutes() {
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/account" element={<Profile />} />
+            <Route path="/about" element={<AboutPage />} />
           </>
         )}
 
@@ -94,6 +99,7 @@ function AppRoutes() {
             <Route path="/calendar" element={<Calendar />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/account" element={<Profile />} />
+            <Route path="/about" element={<AboutPage />} />
           </>
         )}
       </Routes>

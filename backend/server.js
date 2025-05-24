@@ -483,16 +483,16 @@ app.post("/api/uploadUsers", async (req, res) => {
   }
 });
 
-const clientBuildPath = path.join(__dirname, '../frontend/build');
+// const clientBuildPath = path.join(__dirname, '../frontend/build');
 
-app.use(express.static(clientBuildPath));
+// app.use(express.static(clientBuildPath));
 
-app.get('*', (req, res) => {
-  res.sendFile(path.join(clientBuildPath, 'index.html'));
-});
+// app.get('*', (req, res) => {
+//   res.sendFile(path.join(clientBuildPath, 'index.html'));
+// });
 
 const PORT = 49880;
-const HOST = '0.0.0.0'; 
+const HOST = 'localhost'; 
 
 server.listen(PORT, HOST, () => {
   console.log(`Server running at http://${HOST}:${PORT}`);
